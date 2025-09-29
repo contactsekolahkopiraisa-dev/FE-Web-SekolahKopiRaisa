@@ -9,7 +9,7 @@ import {
   resetPasswordRequest,
 } from "../utils/auth";
 import { useRouter } from "next/navigation";
-import Popup from "../components/Popup";
+import Popup from "../../components/Popup";
 
 export default function Login() {
   const [form, setForm] = useState({ emailOrPhone: "", password: "" });

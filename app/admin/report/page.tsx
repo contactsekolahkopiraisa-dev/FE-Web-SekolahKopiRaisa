@@ -1,12 +1,12 @@
 "use client";
 
-import ConfirmModal from "@/app/components/ConfirmModal";
-import Popup from "@/app/components/Popup";
+import ConfirmModal from "@/components/ConfirmModal";
+import Popup from "@/components/Popup";
 import { Plus } from "lucide-react";
 import { use, useEffect, useState } from "react";
 import ReportListAdmin, {
     ReportListAdminProps,
-} from "@/app/components/ReportListAdmin";
+} from "@/components/admin/ReportListAdmin";
 import { useRouter } from "next/navigation";
 
 export default function Report() {

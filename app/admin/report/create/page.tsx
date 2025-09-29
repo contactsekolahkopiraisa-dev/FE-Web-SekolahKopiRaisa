@@ -1,12 +1,12 @@
 "use client";
-import Popup from "@/app/components/Popup";
+import Popup from "@/components/Popup";
 import { useEffect, useState, ChangeEvent, useRef } from "react";
 import { LoaderCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-import ReportListAdmin from "@/app/components/ReportListAdmin";
+import ReportListAdmin from "@/components/admin/ReportListAdmin";
 import { createReport } from "@/app/utils/report";
-import RadioButton from "@/app/components/RadioButton";
+import RadioButton from "@/components/RadioButton";
 
 export default function CreateReportPage() {
     const [report, setReport] = useState({

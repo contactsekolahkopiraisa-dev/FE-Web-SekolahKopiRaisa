@@ -1,10 +1,10 @@
 "use client";
-import TextEditor from "@/app/components/TextEditor";
+import TextEditor from "@/components/TextEditor";
 import { createActivity } from "@/app/utils/activity";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { LoaderCircle, X } from "lucide-react";
-import Popup from "@/app/components/Popup";
+import Popup from "@/components/Popup";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 
 export default function CreateActivityPage() {

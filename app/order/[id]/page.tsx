@@ -9,9 +9,9 @@ import {
   updateStatusOrder,
 } from "@/app/utils/order";
 import { UserItem } from "@/app/types/userType";
-import Popup from "@/app/components/Popup";
-import ConfirmModal from "@/app/components/ConfirmModal";
-import ReasonModal from "@/app/components/ReasonModal";
+import Popup from "@/components/Popup";
+import ConfirmModal from "@/components/ConfirmModal";
+import ReasonModal from "@/components/ReasonModal";
 import {
   ArrowLeft,
   Package,

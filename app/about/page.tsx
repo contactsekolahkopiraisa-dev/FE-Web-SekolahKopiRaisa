@@ -1,5 +1,5 @@
-import MemberCard from "../components/MemberCard";
-import Footer from "../components/Footer";
+import MemberCard from "../../components/card/MemberCard";
+import Footer from "../../components/main/Footer";
 
 export default function AboutPage() {
   return (

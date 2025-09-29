@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import { formatCurrency } from "../utils/helper";
-import { ProductItem } from "../types/productType";
+import { formatCurrency } from "../../app/utils/helper";
+import { ProductItem } from "../../app/types/productType";
 
 export default function ProductCard({
   id,

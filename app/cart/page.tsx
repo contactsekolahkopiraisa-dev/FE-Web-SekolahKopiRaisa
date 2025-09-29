@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import CartItem, { CartItemData } from "../components/CartCard";
+import CartItem, { CartItemData } from "../../components/card/CartCard";
 import { formatCurrency } from "../utils/helper";
 import { deleteCart, fetchAllCart } from "../utils/cart";
 import { useRouter } from "next/navigation";
 import { useCartStore } from "../stores/cartStore";
-import Popup from "../components/Popup";
-import CartCard from "../components/CartCard";
+import Popup from "../../components/Popup";
+import CartCard from "../../components/card/CartCard";
 import { Partner } from "../types/partnerType";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";

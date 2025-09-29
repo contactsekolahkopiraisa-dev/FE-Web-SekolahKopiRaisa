@@ -1,6 +1,6 @@
 // store/cartStore.ts
 import { create } from "zustand";
-import { CartItemData } from "../components/CartCard";
+import { CartItemData } from "../../components/card/CartCard";
 
 interface CartState {
   cartItems: CartItemData[];

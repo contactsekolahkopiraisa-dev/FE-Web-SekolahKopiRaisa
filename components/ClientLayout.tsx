@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { Building, CalendarCheck, Coffee, House } from "lucide-react";
-import Navbar from "./Navbar";
+import Navbar from "./main/Navbar";
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

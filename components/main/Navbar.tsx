@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { use, useEffect, useState } from "react";
-import { getUser } from "../utils/user";
+import { getUser } from "../../app/utils/user";
 import {
   Bell,
   LogOut,
@@ -13,18 +13,18 @@ import {
   X,
   ShieldUser,
 } from "lucide-react";
-import { logout } from "../utils/auth";
+import { logout } from "../../app/utils/auth";
 import { useRouter, usePathname } from "next/navigation";
-import { Dropdown } from "./Dropdown";
-import { DropdownItem } from "./DropdownItem";
+import { Dropdown } from "../dropdown/Dropdown";
+import { DropdownItem } from "../dropdown/DropdownItem";
 import { AnimatePresence, motion } from "framer-motion";
 import clsx from "clsx";
-import ConfirmModal from "./ConfirmModal";
-import { fetchAllCart } from "../utils/cart";
-import { UserItem } from "../types/userType";
-import Popup from "./Popup";
-import NotificationDropdown from "./NotificationDropdown";
-import { fetchNotifications } from "../utils/notif";
+import ConfirmModal from "../ConfirmModal";
+import { fetchAllCart } from "../../app/utils/cart";
+import { UserItem } from "../../app/types/userType";
+import Popup from "../Popup";
+import NotificationDropdown from "../NotificationDropdown";
+import { fetchNotifications } from "../../app/utils/notif";
 
 interface NavbarItem {
   title: string;

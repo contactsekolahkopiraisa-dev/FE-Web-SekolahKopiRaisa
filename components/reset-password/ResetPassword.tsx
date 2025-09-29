@@ -3,10 +3,10 @@
 import { useState, Suspense } from "react";
 import { Eye, EyeOff, ChevronLeft } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Popup from "../components/Popup";
+import Popup from "../Popup";
 import Link from "next/link";
 import Image from "next/image";
-import { resetPassword } from "../utils/auth";
+import { resetPassword } from "../../app/utils/auth";
 
 export default function ResetPassword() {
   const [form, setForm] = useState({ password: "", confirmPassword: "" });

@@ -4,8 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { LoaderCircle } from "lucide-react";
 import { createPartner } from "@/app/utils/partner";
-import Popup from "@/app/components/Popup";
-import ConfirmModal from "@/app/components/ConfirmModal";
+import Popup from "@/components/Popup";
+import ConfirmModal from "@/components/ConfirmModal";
 
 export default function CreatePartnerPage() {
   // State to manage partner data

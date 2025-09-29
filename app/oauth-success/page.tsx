@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import OAuthSuccess from "../components/OAuthSuccess"; // atau sesuai path kamu
+import OAuthSuccess from "../../components/oauth-success/OAuthSuccess"; // atau sesuai path kamu
 
 export default function OauthSuccess() {
   return (

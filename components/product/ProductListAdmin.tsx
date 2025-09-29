@@ -1,6 +1,6 @@
 import { Pencil, SquarePen, Trash } from "lucide-react";
-import { formatCurrency } from "../utils/helper";
-import { ProductItem } from "../types/productType";
+import { formatCurrency } from "../../app/utils/helper";
+import { ProductItem } from "../../app/types/productType";
 
 
 

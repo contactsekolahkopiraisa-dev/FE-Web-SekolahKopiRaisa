@@ -2,10 +2,10 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { fetchActivityById, fetchAllActivity } from "@/app/utils/activity";
-import NewsContent from "@/app/components/NewsContent";
-import LatestNews from "@/app/components/LatestNews";
-import Footer from "@/app/components/Footer";
-import ActivityDetailSkeleton from "@/app/components/ActivityDetailSkeleton";
+import NewsContent from "@/components/NewsContent";
+import LatestNews from "@/components/LatestNews";
+import Footer from "@/components/main/Footer";
+import ActivityDetailSkeleton from "@/components/activity/ActivityDetailSkeleton";
 
 export default function ActivityDetail() {
   const router = useRouter();

@@ -9,9 +9,9 @@ import {
   updateProduct,
 } from "@/app/utils/product";
 import { useParams, useRouter } from "next/navigation";
-import Popup from "@/app/components/Popup";
-import ProductListAdmin from "@/app/components/ProductListAdmin";
-import ConfirmModal from "@/app/components/ConfirmModal";
+import Popup from "@/components/Popup";
+import ProductListAdmin from "@/components/product/ProductListAdmin";
+import ConfirmModal from "@/components/ConfirmModal";
 
 export default function EditProductPage() {
   // State for product data

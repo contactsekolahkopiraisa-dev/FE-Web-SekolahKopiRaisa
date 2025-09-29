@@ -18,10 +18,10 @@ import {
   NotepadText,
 } from "lucide-react";
 import clsx from "clsx";
-import { logout } from "../utils/auth";
-import { getUser } from "../utils/user";
+import { logout } from "../../app/utils/auth";
+import { getUser } from "../../app/utils/user";
 import { AnimatePresence, motion } from "framer-motion";
-import ConfirmModal from "./ConfirmModal";
+import ConfirmModal from "../ConfirmModal";
 
 interface SidebarItemType {
   icon: React.ReactNode;

@@ -1,4 +1,4 @@
-import CheckOutPage from "../components/CheckOutPage";
+import CheckOutPage from "../../components/CheckOutPage";
 
 export default function CheckoutPage() {
   return (

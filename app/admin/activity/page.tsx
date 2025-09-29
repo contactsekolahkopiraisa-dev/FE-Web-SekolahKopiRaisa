@@ -1,11 +1,11 @@
 "use client";
 
-import ActivityAdminSkeleton from "@/app/components/ActivityAdminSkeleton";
+import ActivityAdminSkeleton from "@/components/activity/ActivityAdminSkeleton";
 import ActivityListAdmin, {
   ActivityListProps,
-} from "@/app/components/ActivityListAdmin";
-import ConfirmModal from "@/app/components/ConfirmModal";
-import Popup from "@/app/components/Popup";
+} from "@/components/activity/ActivityListAdmin";
+import ConfirmModal from "@/components/ConfirmModal";
+import Popup from "@/components/Popup";
 import { deleteActivity, fetchAllActivity } from "@/app/utils/activity";
 import { ChevronDown, Funnel, FunnelPlus, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";

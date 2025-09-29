@@ -1,10 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
-import ActivitySlider from "../components/ActivitySlider";
-import ActivityCard from "../components/ActivityCard";
-import Footer from "../components/Footer";
+import ActivitySlider from "../../components/activity/ActivitySlider";
+import ActivityCard from "../../components/activity/ActivityCard";
+import Footer from "../../components/main/Footer";
 import { fetchAllActivity } from "../utils/activity";
-import ActivityUserSkeleton from "../components/ActivityUserSkeleton";
+import ActivityUserSkeleton from "../../components/activity/ActivityUserSkeleton";
 import { useRouter } from "next/navigation";
 
 interface ActivityItemApi {

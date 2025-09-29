@@ -4,7 +4,7 @@
 
 import { useEffect, useState } from "react";
 import { fetchMyOrder } from "../utils/order";
-import OrderCard, { OrderItem } from "../components/OrderCard";
+import OrderCard, { OrderItem } from "../../components/order/OrderCard";
 import { useRouter } from "next/navigation";
 import {
   ChevronLeft,

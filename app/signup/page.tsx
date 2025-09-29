@@ -5,7 +5,7 @@ import Link from "next/link";
 import { loginWithGoogle, registerUser } from "../utils/auth";
 import { ChevronLeft, Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
-import Popup from "../components/Popup";
+import Popup from "../../components/Popup";
 
 export default function Signup() {
   const [form, setForm] = useState({

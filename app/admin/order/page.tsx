@@ -1,11 +1,11 @@
 "use client";
 
-import OrderTable, { Order, OrderStatus } from "@/app/components/OrderTable";
+import OrderTable, { Order, OrderStatus } from "@/components/order/OrderTable";
 import { fetchAllOrder, updateStatusOrder } from "@/app/utils/order";
 import { useEffect, useState } from "react";
-import OrderDetailModal from "@/app/components/OrderDetailModal";
+import OrderDetailModal from "@/components/order/OrderDetailModal";
 import { formatCurrency } from "@/app/utils/helper";
-import ConfirmModal from "@/app/components/ConfirmModal";
+import ConfirmModal from "@/components/ConfirmModal";
 import {
   Check,
   ChevronLeft,
@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { callPartner } from "@/app/utils/partner";
-import Popup from "@/app/components/Popup";
+import Popup from "@/components/Popup";
 
 export default function AdminOrderPage() {
   const [ordersData, setOrdersData] = useState<Order[]>([]);

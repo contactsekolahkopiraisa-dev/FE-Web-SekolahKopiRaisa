@@ -5,7 +5,7 @@ import { Autoplay, Navigation, Pagination } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
-import { ProductItem } from "../types/productType";
+import { ProductItem } from "../../app/types/productType";
 
 // export interface ProductCarouselItemProps {
 //   // Mengganti nama interface agar lebih jelas

@@ -1,8 +1,8 @@
 "use client";
 
-import ConfirmModal from "@/app/components/ConfirmModal";
-import Popup from "@/app/components/Popup";
-import ProductListAdmin from "@/app/components/ProductListAdmin";
+import ConfirmModal from "@/components/ConfirmModal";
+import Popup from "@/components/Popup";
+import ProductListAdmin from "@/components/product/ProductListAdmin";
 import { ProductItem } from "@/app/types/productType";
 
 import { deleteProduct, fetchAllProduct } from "@/app/utils/product";

@@ -1,7 +1,7 @@
 // components/OrderCard.tsx
 "use client";
 
-import { formatCurrency } from "../utils/helper";
+import { formatCurrency } from "../../app/utils/helper";
 import { 
   Package, 
   Calendar, 

@@ -1,14 +1,14 @@
 "use client";
 
 import { use, useEffect, useState } from "react";
-import ProductCard from "../components/ProductCard";
+import ProductCard from "../../components/product/ProductCard";
 import { fetchAllProduct } from "../utils/product";
 import { ProductItem } from "../types/productType";
 import { useRouter } from "next/navigation";
 import { Box, Search } from "lucide-react";
 import Skeleton, { SkeletonTheme } from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
-import Footer from "../components/Footer";
+import Footer from "../../components/main/Footer";
 
 export default function ProductPage() {
   const [products, setProducts] = useState<ProductItem[]>([]);

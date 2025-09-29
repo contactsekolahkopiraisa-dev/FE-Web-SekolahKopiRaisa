@@ -7,9 +7,9 @@ import {
   deletePartner,
   callPartner,
 } from "@/app/utils/partner";
-import PartnerTable, { PartnerListProps } from "@/app/components/PartnerTable";
-import Popup from "@/app/components/Popup";
-import ConfirmModal from "@/app/components/ConfirmModal";
+import PartnerTable, { PartnerListProps } from "@/components/partner/PartnerTable";
+import Popup from "@/components/Popup";
+import ConfirmModal from "@/components/ConfirmModal";
 
 export default function AdminPartnerPage() {
   const router = useRouter();

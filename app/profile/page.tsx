@@ -5,8 +5,8 @@ import { useEffect, useState } from "react";
 import { Mail, Pen, Phone, TriangleAlert, User } from "lucide-react";
 import { UserItem } from "@/app/types/userType";
 import { getUser, updateUser } from "@/app/utils/user";
-import Popup from "@/app/components/Popup";
-import ConfirmModal from "@/app/components/ConfirmModal";
+import Popup from "@/components/Popup";
+import ConfirmModal from "@/components/ConfirmModal";
 
 export default function Profile() {
   const [user, setUser] = useState<UserItem | null>(null);

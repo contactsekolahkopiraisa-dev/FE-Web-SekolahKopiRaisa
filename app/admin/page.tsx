@@ -1,7 +1,7 @@
 "use client";
 
 import { CalendarCheck, Building, Store } from "lucide-react";
-import ProductTable from "../components/ProductTable";
+import ProductTable from "../../components/product/ProductTable";
 import { use, useEffect, useState } from "react";
 import { fetchAllActivity } from "../utils/activity";
 import { fetchAllProduct } from "../utils/product";

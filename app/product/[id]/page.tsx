@@ -16,10 +16,10 @@ import {
   Wallet,
 } from "lucide-react";
 import { addToCart } from "@/app/utils/cart";
-import Popup from "@/app/components/Popup";
-import { CartItemData } from "@/app/components/CartCard";
+import Popup from "@/components/Popup";
+import { CartItemData } from "@/components/card/CartCard";
 import { useCartStore } from "@/app/stores/cartStore";
-import Footer from "@/app/components/Footer";
+import Footer from "@/components/main/Footer";
 import { ProductItem } from "@/app/types/productType";
 
 export default function ProductDetailPage() {

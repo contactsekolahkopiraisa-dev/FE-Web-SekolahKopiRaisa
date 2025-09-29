@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { formatCurrency } from "../utils/helper";
+import { formatCurrency } from "../../app/utils/helper";
 import { Trash2 } from "lucide-react";
 
 // Tipe untuk data item dalam keranjang

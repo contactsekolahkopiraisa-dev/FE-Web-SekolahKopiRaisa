@@ -1,14 +1,14 @@
 "use client";
-import TextEditor from "@/app/components/TextEditor";
+import TextEditor from "@/components/TextEditor";
 
 import { useParams, useRouter } from "next/navigation";
 import { FormEvent, use, useEffect, useState } from "react";
 import { X, Loader2, LoaderPinwheel, LoaderCircle } from "lucide-react";
-import Popup from "@/app/components/Popup";
+import Popup from "@/components/Popup";
 import { fetchActivityById, updateActivity } from "@/app/utils/activity";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
-import ConfirmModal from "@/app/components/ConfirmModal";
+import ConfirmModal from "@/components/ConfirmModal";
 
 export default function EditActivityPage() {
   const params = useParams();

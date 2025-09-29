@@ -1,21 +1,21 @@
 "use client";
 
 import Image from "next/image";
-import Footer from "./components/Footer";
-import ImageAboutus from "./components/ImageAboutus";
+import Footer from "../components/main/Footer";
+import ImageAboutus from "../components/ImageAboutus";
 import { useEffect, useState } from "react";
 import { fetchAllActivity } from "./utils/activity";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import ActivityCarousel from "./components/ActivityCarousel";
+import ActivityCarousel from "../components/activity/ActivityCarousel";
 import { fetchAllProduct } from "./utils/product";
 import { get } from "http";
 import { addToCart, fetchAllCart } from "./utils/cart";
-import Popup from "./components/Popup";
-import ProductCarouselCard from "./components/ProductCarousel";
-import ProductCarousel from "./components/ProductCarousel";
+import Popup from "../components/Popup";
+import ProductCarouselCard from "../components/product/ProductCarousel";
+import ProductCarousel from "../components/product/ProductCarousel";
 import { useCartStore } from "./stores/cartStore";
-import { CartItemData } from "./components/CartCard";
+import { CartItemData } from "../components/card/CartCard";
 import { ProductItem } from "./types/productType";
 import { getUser } from "./utils/user";
 
