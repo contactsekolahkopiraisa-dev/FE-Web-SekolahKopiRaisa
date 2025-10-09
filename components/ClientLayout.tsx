@@ -7,7 +7,7 @@ import Navbar from "./main/Navbar";
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
-  const isAuthPage = pathname === "/login" || pathname === "/signup" || pathname === "/reset-password";
+  const isAuthPage = pathname === "/login" || pathname === "/signup" || pathname === "/signup/umkm" || pathname === "/reset-password";
   const isAdminPage = pathname.startsWith("/admin");
   const isUmkmPage = pathname.startsWith("/umkm");
 

@@ -38,7 +38,7 @@ export default function LaporanKeuanganTable({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-secondary border-2 border-secondary rounded-xl p-4 shadow-sm">
           <h3 className="text-sm font-medium text-primary mb-1">
-            Total Pemasukan
+            Total Pemasukannn
           </h3>
           <p className="text-2xl font-bold text-primary">
             {formatCurrency(totalPemasukan)}

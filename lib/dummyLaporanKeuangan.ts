@@ -10,7 +10,7 @@ export interface LaporanKeuangan {
 export const dummyLaporanKeuangan: LaporanKeuangan[] = [
     {
         id: 1,
-        tanggal: "15 September 2025",
+        tanggal: "15 Septemberrr 2025",
         keterangan: "Penjualan Produk A",
         pemasukan: 500000,
         pengeluaran: 100000,
@@ -120,23 +120,28 @@ export const getSaldoAkhir = (data: LaporanKeuangan[]): number => {
 };
 
 // Fungsi untuk mendapatkan ringkasan berdasarkan filter
-export const getRingkasanKeuangan = (
-    data: LaporanKeuangan[], 
-    tahun?: number, 
-    bulan?: number
-) => {
-    let filteredData = data;
-    
-    if (tahun && bulan !== undefined) {
-        filteredData = filterByBulan(data, bulan, tahun);
-    } else if (tahun) {
-        filteredData = filterByTahun(data, tahun);
-    }
-    
-    return {
-        data: filteredData,
-        totalPemasukan: getTotalPemasukan(filteredData),
-        totalPengeluaran: getTotalPengeluaran(filteredData),
-        saldoAkhir: getSaldoAkhir(filteredData)
-    };
+export const getRingkasanKeuangan = (data: LaporanKeuangan[], tahun?: number, bulan?: number) => {
+  let filteredData = data;
+  
+  if (tahun && bulan !== undefined) {
+    filteredData = data.filter(item => {
+      const date = parseTanggalIndonesia(item.tanggal);
+      return date.getMonth() === bulan && date.getFullYear() === tahun;
+    });
+  } else if (tahun) {
+    filteredData = data.filter(item => {
+      const date = parseTanggalIndonesia(item.tanggal);
+      return date.getFullYear() === tahun;
+    });
+  }
+  
+  const totalPemasukan = filteredData.reduce((total, item) => total + item.pemasukan, 0);
+  const totalPengeluaran = filteredData.reduce((total, item) => total + item.pengeluaran, 0);
+  
+  return {
+    data: filteredData,
+    totalPemasukan,
+    totalPengeluaran,
+    saldoAkhir: totalPemasukan - totalPengeluaran
+  };
 };
