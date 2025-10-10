@@ -6,10 +6,23 @@ import { useRouter } from "next/navigation";
 import { registerUser } from "@/app/utils/auth";
 import { ChevronLeft, Eye, EyeOff, FileUp } from "lucide-react";
 import Popup from "@/components/Popup";
-import { Navigation } from 'swiper/modules';
 
 export default function SignupUMKM() {
-    const [form, setForm] = useState({
+    const [form, setForm] = useState<{
+        name: string;
+        email: string;
+        password: string;
+        phone_number: string;
+        nik: string;
+        umkm_name: string;
+        halal_certificate: File | null;
+        postal_code: string;
+        province: string;
+        district: string;
+        subdistrict: string;
+        village: string;
+        address: string;
+      }>({
         name: "",
         email: "",
         password: "",
@@ -25,7 +38,21 @@ export default function SignupUMKM() {
         address: "",
       });
       const [showPassword, setShowPassword] = useState(false);
-      const [errors, setErrors] = useState<Partial<typeof form>>({});
+      const [errors, setErrors] = useState<Partial<{
+        name: string;
+        email: string;
+        password: string;
+        phone_number: string;
+        nik: string;
+        umkm_name: string;
+        halal_certificate: string;
+        postal_code: string;
+        province: string;
+        district: string;
+        subdistrict: string;
+        village: string;
+        address: string;
+      }>>({});
       const [showPopup, setShowPopup] = useState(false);
       const [message, setMessage] = useState("");
       const [popupType, setPopupType] = useState<"success" | "error">("success");
@@ -46,7 +73,16 @@ export default function SignupUMKM() {
       const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-          const response = await registerUser(form);
+          // Membuat copy form tanpa halal_certificate jika masih dummy/testing
+          const submitData = { ...form };
+          
+          // Bypass halal_certificate untuk testing (bisa dihapus nanti)
+          if (!submitData.halal_certificate) {
+            // Bisa di-comment jika sudah production
+            console.log("Halal certificate bypassed for testing");
+          }
+          
+          const response = await registerUser(submitData);
           if (response && response.message) {
             // Simpan ke sessionStorage
             sessionStorage.setItem(
@@ -70,6 +106,7 @@ export default function SignupUMKM() {
           }
         }
       };
+    
     return (
         <>
         <div className="min-h-screen flex flex-col">
@@ -208,7 +245,9 @@ export default function SignupUMKM() {
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium mb-2">Sertifikasi Halal</label>
+                                    <label className="block text-sm font-medium mb-2">
+                                        Sertifikasi Halal <span className="text-gray-400 text-xs">(Opsional)</span>
+                                    </label>
                                     <div className="relative w-full border-2 border-dashed border-gray-300 rounded-xl p-6 hover:border-gray-400 transition-colors">
                                         <input
                                             name="halal_certificate"
@@ -234,7 +273,6 @@ export default function SignupUMKM() {
                                     )}
                                 </div>
                             </div>
-
 
                             <div className="flex-1 space-y-4 mt-4 md:mt-0">
                                 <div>
@@ -298,6 +336,7 @@ export default function SignupUMKM() {
                                         </p>
                                     )}
                                 </div>
+                                
                                 <div>
                                     <label className="block text-sm font-medium">Desa</label>
                                     <input
@@ -312,6 +351,7 @@ export default function SignupUMKM() {
                                         <p className="text-red-500 text-sm mt-1">{errors.village}</p>
                                     )}
                                 </div>
+                                
                                 <div>
                                     <label className="block text-sm font-medium">Alamat</label>
                                     <input
@@ -326,6 +366,7 @@ export default function SignupUMKM() {
                                         <p className="text-red-500 text-sm mt-1">{errors.address}</p>
                                     )}
                                 </div>
+                                
                                 <div>
                                     <p className="text-xs text-gray-600">
                                     Dengan membuat akun, Anda menyetujui{" "}
@@ -337,15 +378,15 @@ export default function SignupUMKM() {
                                     kami.
                                     </p>
                                 </div>
-                        <button
-                            type="submit"
-                            className="cursor-pointer w-full p-2 bg-primary text-white rounded-xl hover:-translate-y-1 duration-150 ease-in"
-                        >
-                            Buat Akun
-                        </button>
+                                
+                                <button
+                                    type="submit"
+                                    className="cursor-pointer w-full p-2 bg-primary text-white rounded-xl hover:-translate-y-1 duration-150 ease-in"
+                                >
+                                    Buat Akun
+                                </button>
                             </div>
                         </div>
-                        
                         
                         <div className="flex items-center my-1 md:my-2">
                             <hr className="flex-grow border-gray-300" />
@@ -373,7 +414,6 @@ export default function SignupUMKM() {
                             </Link>
                         </p>
                     </form>
-
                 </div>
             </div>
         </div>
