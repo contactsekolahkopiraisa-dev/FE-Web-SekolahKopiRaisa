@@ -2,9 +2,10 @@
 
 import ConfirmModal from "@/components/ConfirmModal";
 import Popup from "@/components/Popup";
+import CalendarPicker from "@/components/CalenderPicker";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
-import { LoaderCircle } from "lucide-react";
+import { FormEvent, useState, useEffect, useRef } from "react";
+import { LoaderCircle, Calendar } from "lucide-react";
 
 export default function CreateLaporanKeuanganAdmin() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -14,7 +15,9 @@ export default function CreateLaporanKeuanganAdmin() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Form state
-  const [date, setDate] = useState("");
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const calendarRef = useRef<HTMLDivElement>(null);
   const [description, setDescription] = useState("");
   const [pemasukan, setPemasukan] = useState("");
   const [pengeluaran, setPengeluaran] = useState("");
@@ -22,13 +25,57 @@ export default function CreateLaporanKeuanganAdmin() {
 
   const router = useRouter();
 
+  const getDisplayText = () => {
+    if (!selectedDate) return "Pilih Tanggal Laporan";
+    const bulanNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+    const tanggal = selectedDate.getDate();
+    const bulan = bulanNames[selectedDate.getMonth()];
+    const tahun = selectedDate.getFullYear();
+    return `${tanggal} ${bulan} ${tahun}`;
+  };
+
+  const handleDateInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value) {
+      const date = new Date(value);
+      setSelectedDate(date);
+      setErrors((prev) => ({ ...prev, date: "" }));
+    } else {
+      setSelectedDate(null);
+    }
+  };
+
+  const getDateInputValue = () => {
+    if (!selectedDate) return "";
+    const year = selectedDate.getFullYear();
+    const month = String(selectedDate.getMonth() + 1).padStart(2, "0");
+    const day = String(selectedDate.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (calendarRef.current && !calendarRef.current.contains(event.target as Node)) {
+        setIsCalendarOpen(false);
+      }
+    };
+
+    if (isCalendarOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isCalendarOpen]);
+
   const handleFormSubmit = (e: FormEvent) => {
     e.preventDefault();
     setErrors({});
     
     // Validasi sederhana
     const newErrors: Record<string, string> = {};
-    if (!date.trim()) newErrors.date = "Tanggal laporan harus diisi";
+    if (!selectedDate) newErrors.date = "Tanggal laporan harus diisi";
     if (!description.trim()) newErrors.description = "Keterangan harus diisi";
     if (!pemasukan.trim()) newErrors.pemasukan = "Pemasukan harus diisi";
     if (!pengeluaran.trim()) newErrors.pengeluaran = "Pengeluaran harus diisi";
@@ -51,7 +98,7 @@ export default function CreateLaporanKeuanganAdmin() {
 
       // Data dummy untuk submit
       const formData = {
-        date,
+        date: selectedDate,
         description,
         pemasukan: parseFloat(pemasukan.replace(/[^0-9]/g, "")),
         pengeluaran: parseFloat(pengeluaran.replace(/[^0-9]/g, "")),
@@ -116,17 +163,45 @@ export default function CreateLaporanKeuanganAdmin() {
           <label className="block text-xl font-medium mb-2" htmlFor="date">
             Tanggal Laporan
           </label>
-          <input
-            type="text"
-            id="date"
-            value={date}
-            onChange={(e) => {
-              setDate(e.target.value);
-              setErrors((prev) => ({ ...prev, date: "" }));
-            }}
-            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
-            placeholder="Masukkan tanggal bulan tahun laporan"
-          />
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <input
+                type="date"
+                id="date"
+                value={getDateInputValue()}
+                onChange={handleDateInputChange}
+                className={`w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary ${
+                  errors.date ? 'border-red-500' : 'border-gray-300'
+                }`}
+              />
+            </div>
+            <div className="flex-1" ref={calendarRef}>
+              <button
+                type="button"
+                onClick={() => setIsCalendarOpen(!isCalendarOpen)}
+                className={`w-full border rounded-lg px-4 py-2 flex items-center justify-center gap-2 hover:border-gray-400 transition-colors bg-white text-left ${
+                  errors.date ? 'border-red-500' : 'border-gray-300'
+                }`}
+              >
+                <Calendar size={18} className="text-gray-600" />
+                <span className={selectedDate ? "text-gray-700" : "text-gray-400"}>
+                  {getDisplayText()}
+                </span>
+              </button>
+
+              {isCalendarOpen && (
+                <CalendarPicker
+                  selectedDate={selectedDate}
+                  onSelectDate={(date) => {
+                    setSelectedDate(date);
+                    setErrors((prev) => ({ ...prev, date: "" }));
+                    setIsCalendarOpen(false);
+                  }}
+                  onClose={() => setIsCalendarOpen(false)}
+                />
+              )}
+            </div>
+          </div>
           {errors.date && (
             <p className="text-sm text-red-600 mt-1">{errors.date}</p>
           )}
