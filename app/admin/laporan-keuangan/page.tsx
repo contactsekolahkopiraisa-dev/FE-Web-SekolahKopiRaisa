@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import LaporanKeuanganTable from "@/components/laporan-keuangan/dummyLaporanKeuanganTable";
 import { dummyLaporanKeuangan, getRingkasanKeuangan } from "@/lib/dummyLaporanKeuangan";
 import { Calendar, Plus } from "lucide-react";
-import CalendarPicker from "@/components/CalenderPicker";
+import CalendarPicker from "@/components/CalenderPickerFilter";
 import Link from "next/link";
 
 export default function LaporanKeuanganAdmin() {
@@ -130,16 +130,17 @@ export default function LaporanKeuanganAdmin() {
                       {formatCurrency(item.pengeluaran)}
                     </td>
                     <td className="px-2 sm:px-4 py-3 whitespace-nowrap">
-                      <button
-                        onClick={() => console.log("Edit ID:", item.id)}
-                        className="cursor-pointer p-2 text-white rounded-xl bg-primary hover:-translate-y-1 duration-150 ease-in"
-                        title="Edit"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
-                          <path d="m15 5 4 4"/>
-                        </svg>
-                      </button>
+                      <Link href={`/admin/laporan-keuangan/edit/${item.id}`}>
+                        <button
+                          className="cursor-pointer p-2 text-white rounded-xl bg-primary hover:-translate-y-1 duration-150 ease-in"
+                          title="Edit"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+                            <path d="m15 5 4 4"/>
+                          </svg>
+                        </button>
+                      </Link>
                     </td>
                   </tr>
                 ))

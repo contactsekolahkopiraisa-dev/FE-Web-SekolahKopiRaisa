@@ -6,6 +6,13 @@ import { useRouter } from "next/navigation";
 import { registerUser } from "@/app/utils/auth";
 import { ChevronLeft, Eye, EyeOff, FileUp } from "lucide-react";
 import Popup from "@/components/Popup";
+import { 
+    dummyKodePosUMKM, 
+    dummyProvinsiUMKM, 
+    dummyKabupatenUMKM, 
+    dummyKecamatanUMKM, 
+    dummyDesaUMKM 
+} from "@/lib/dummySignUpUMKM";
 
 export default function SignupUMKM() {
     const [form, setForm] = useState<{
@@ -58,10 +65,10 @@ export default function SignupUMKM() {
       const [popupType, setPopupType] = useState<"success" | "error">("success");
       const router = useRouter();
     
-      const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setForm({ ...form, [name]: value });
-        setErrors((prev) => ({ ...prev, [name]: "" })); // Clear error for field
+        setErrors((prev) => ({ ...prev, [name]: "" }));
       };
 
       const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -73,18 +80,14 @@ export default function SignupUMKM() {
       const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-          // Membuat copy form tanpa halal_certificate jika masih dummy/testing
           const submitData = { ...form };
           
-          // Bypass halal_certificate untuk testing (bisa dihapus nanti)
           if (!submitData.halal_certificate) {
-            // Bisa di-comment jika sudah production
             console.log("Halal certificate bypassed for testing");
           }
           
           const response = await registerUser(submitData);
           if (response && response.message) {
-            // Simpan ke sessionStorage
             sessionStorage.setItem(
               "popup",
               JSON.stringify({
@@ -93,16 +96,15 @@ export default function SignupUMKM() {
               })
             );
     
-            // Langsung redirect tanpa delay
             router.push("/login");
           }
         } catch (error: any) {
           if (error.type === "validation") {
-            setErrors(error.errors); // munculkan pesan error di bawah input
+            setErrors(error.errors);
           } else {
             setMessage(error.message || "Terjadi kesalahan");
             setPopupType("error");
-            setShowPopup(true); // munculkan popup
+            setShowPopup(true);
           }
         }
       };
@@ -277,14 +279,19 @@ export default function SignupUMKM() {
                             <div className="flex-1 space-y-4 mt-4 md:mt-0">
                                 <div>
                                     <label className="block text-sm font-medium">Kode Pos</label>
-                                    <input
+                                    <select
                                         name="postal_code"
                                         value={form.postal_code}
                                         onChange={handleChange}
-                                        type="text"
                                         className="w-full p-2 border border-gray-300 rounded-xl"
-                                        placeholder="Masukkan kode pos"
-                                    />
+                                    >
+                                        <option value="">Pilih Kode Pos</option>
+                                        {dummyKodePosUMKM.map((item) => (
+                                            <option key={item.id} value={item.kodePos}>
+                                                {item.kodePos}
+                                            </option>
+                                        ))}
+                                    </select>
                                     {errors.postal_code && (
                                         <p className="text-red-500 text-sm mt-1">{errors.postal_code}</p>
                                     )}
@@ -292,14 +299,19 @@ export default function SignupUMKM() {
 
                                 <div>
                                     <label className="block text-sm font-medium">Provinsi</label>
-                                    <input
+                                    <select
                                         name="province"
                                         value={form.province}
                                         onChange={handleChange}
-                                        type="text"
                                         className="w-full p-2 border border-gray-300 rounded-xl"
-                                        placeholder="Masukkan provinsi"
-                                    />
+                                    >
+                                        <option value="">Pilih Provinsi</option>
+                                        {dummyProvinsiUMKM.map((item) => (
+                                            <option key={item.id} value={item.provinsi}>
+                                                {item.provinsi}
+                                            </option>
+                                        ))}
+                                    </select>
                                     {errors.province && (
                                         <p className="text-red-500 text-sm mt-1">{errors.province}</p>
                                     )}
@@ -307,14 +319,19 @@ export default function SignupUMKM() {
 
                                 <div className="relative">
                                     <label className="block text-sm font-medium">Kabupaten</label>
-                                    <input
+                                    <select
                                         name="district"
                                         value={form.district}
                                         onChange={handleChange}
-                                        type="text"
                                         className="w-full p-2 border border-gray-300 rounded-xl"
-                                        placeholder="Masukkan kabupaten"
-                                    />
+                                    >
+                                        <option value="">Pilih Kabupaten</option>
+                                        {dummyKabupatenUMKM.map((item) => (
+                                            <option key={item.id} value={item.kabupaten}>
+                                                {item.kabupaten}
+                                            </option>
+                                        ))}
+                                    </select>
                                     {errors.district && (
                                         <p className="text-red-500 text-sm mt-1">{errors.district}</p>
                                     )}
@@ -322,14 +339,19 @@ export default function SignupUMKM() {
 
                                 <div>
                                     <label className="block text-sm font-medium">Kecamatan</label>
-                                    <input
+                                    <select
                                         name="subdistrict"
                                         value={form.subdistrict}
                                         onChange={handleChange}
-                                        type="text"
                                         className="w-full p-2 border border-gray-300 rounded-xl"
-                                        placeholder="Masukkan kecamatan"
-                                    />
+                                    >
+                                        <option value="">Pilih Kecamatan</option>
+                                        {dummyKecamatanUMKM.map((item) => (
+                                            <option key={item.id} value={item.kecamatan}>
+                                                {item.kecamatan}
+                                            </option>
+                                        ))}
+                                    </select>
                                     {errors.subdistrict && (
                                         <p className="text-red-500 text-sm mt-1">
                                         {errors.subdistrict}
@@ -339,14 +361,19 @@ export default function SignupUMKM() {
                                 
                                 <div>
                                     <label className="block text-sm font-medium">Desa</label>
-                                    <input
+                                    <select
                                         name="village"
                                         value={form.village}
                                         onChange={handleChange}
-                                        type="text"
                                         className="w-full p-2 border border-gray-300 rounded-xl"
-                                        placeholder="Masukkan desa"
-                                    />
+                                    >
+                                        <option value="">Pilih Desa</option>
+                                        {dummyDesaUMKM.map((item) => (
+                                            <option key={item.id} value={item.desa}>
+                                                {item.desa}
+                                            </option>
+                                        ))}
+                                    </select>
                                     {errors.village && (
                                         <p className="text-red-500 text-sm mt-1">{errors.village}</p>
                                     )}
