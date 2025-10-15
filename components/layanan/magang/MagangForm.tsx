@@ -5,6 +5,7 @@ import FileUpload from "../FileUpload";
 interface MagangFormProps {
   formData: {
     namaPeserta: string;
+    namaNIM: string;
     instansi: string;
     tanggalMulai: string;
     tanggalSelesai: string;
@@ -45,6 +46,15 @@ export default function MagangForm({
             value={formData.namaPeserta}
             onChange={onInputChange}
             placeholder="Masukkan nama lengkap"
+          />
+
+          <FormField
+            label="NIM / NIS"
+            name="namaNIM"
+            type="text"
+            value={formData.namaNIM}
+            onChange={onInputChange}
+            placeholder="Masukkan NIM / NIS"
           />
 
           <FormField

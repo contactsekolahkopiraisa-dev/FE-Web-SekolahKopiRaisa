@@ -5,6 +5,7 @@ import FileUpload from "../FileUpload";
 interface PKLFormProps {
   formData: {
     namaPeserta: string;
+    namaNIM: string;
     instansi: string;
     tanggalMulai: string;
     tanggalSelesai: string;
@@ -48,6 +49,16 @@ export default function PKLForm({
             value={formData.namaPeserta}
             onChange={onInputChange}
             placeholder="Masukkan nama lengkap"
+          />
+
+           {/* NIM */}
+          <FormField
+            label="NIM / NIS"
+            name="nim"
+            type="text"
+            value={formData.namaNIM}
+            onChange={onInputChange}
+            placeholder="Masukkan NIM / NIS"
           />
 
           {/* Instansi */}

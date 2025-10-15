@@ -10,6 +10,7 @@ export default function PKLFormPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
     namaPeserta: "",
+    namaNIM: "",
     instansi: "",
     tanggalMulai: "",
     tanggalSelesai: "",

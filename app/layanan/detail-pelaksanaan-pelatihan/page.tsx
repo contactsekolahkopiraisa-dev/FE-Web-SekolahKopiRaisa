@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Download, Eye, FileText, Handshake, ClipboardList, FileCheck, Award, XCircle, Upload, Info } from "lucide-react";
+import { Check, Download, Eye, FileText, Handshake, ClipboardList, FileCheck, Award, XCircle, Upload, Info, ArrowLeft } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
@@ -152,7 +152,7 @@ export default function DetailPelaksanaanPelatihanPage() {
     const Swal = (await import("sweetalert2")).default;
     const result = await Swal.fire({
       title: "Yakin Mengirimkan Laporan Akhir ?",
-      text: "Apakah Anda yakin ingin mengirimkan laporan akhir kegiatan ini? Pastikan semua data sudah lengkap dan benar untuk dapat mengunduh sertifikat.",
+      text: "Apakah Anda yakin ingin mengirimkan laporan akhir kegiatan ini? Setelah dikirim Anda dapat langsung mengunduh sertifikat.",
       icon: "question",
       showCancelButton: true,
       confirmButtonText: "Ya, Submit",
@@ -171,7 +171,8 @@ export default function DetailPelaksanaanPelatihanPage() {
     setSubmitting(false);
     setSuccessOpen(true);
     setLaporanSubmitted(true);
-    setLaporanDecision("menunggu" as typeof laporanDecision);
+    setLaporanDecision("disetujui" as typeof laporanDecision);
+    scrollToSertifikat();
   };
 
   const pengajuanDecisionText: Record<typeof pengajuanDecision, string> = {
@@ -209,11 +210,85 @@ export default function DetailPelaksanaanPelatihanPage() {
       <div className="min-h-screen bg-tertiary pt-24 md:pt-28">
         <div className="container mx-auto px-4 max-w-6xl py-10">
           <div className="mb-4">
-            <Link href="/layanan" className="text-sm text-amber-800 hover:underline">
-              ← Kembali ke Layanan
-            </Link>
+          <Link href="/layanan" className="flex items-center text-amber-600 hover:text-amber-700 transition-colors">
+            <ArrowLeft size={20} className="mr-2" />
+            <span className="font-medium">Kembali ke Layanan</span>
+          </Link>
           </div>
-          {/* Decision Test controls removed */}
+          {/* Decision Test */}
+          <div className="mb-4 rounded-lg border border-[#E8E2DB] bg-white p-3 text-[12px] text-[#3B3B3B]">
+            <p className="font-semibold mb-2">Decision Test</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <label className="flex items-center gap-2">
+                <span className="w-28">Pengajuan</span>
+                <select
+                  className="flex-1 rounded-md border border-[#E8E2DB] px-2 py-1"
+                  value={pengajuanDecision}
+                  onChange={(e) => setPengajuanDecision(e.target.value as typeof pengajuanDecision)}
+                >
+                  <option value="menunggu">menunggu</option>
+                  <option value="disetujui">disetujui</option>
+                  <option value="ditolak">ditolak</option>
+                </select>
+              </label>
+              <label className="flex items-center gap-2">
+                <span className="w-28">MOU</span>
+                <select
+                  className="flex-1 rounded-md border border-[#E8E2DB] px-2 py-1"
+                  value={mouDecision}
+                  onChange={(e) => setMouDecision(e.target.value as typeof mouDecision)}
+                >
+                  <option value="menunggu">menunggu</option>
+                  <option value="disetujui">disetujui</option>
+                  <option value="ditolak">ditolak</option>
+                </select>
+              </label>
+              <label className="flex items-center gap-2">
+                <span className="w-28">Pelaksanaan</span>
+                <select
+                  className="flex-1 rounded-md border border-[#E8E2DB] px-2 py-1"
+                  value={pelaksanaanDecision}
+                  onChange={(e) => setPelaksanaanDecision(e.target.value as typeof pelaksanaanDecision)}
+                >
+                  <option value="menunggu">menunggu</option>
+                  <option value="berjalan">berjalan</option>
+                  <option value="selesai">selesai</option>
+                </select>
+              </label>
+              <label className="flex items-center gap-2">
+                <span className="w-28">Laporan</span>
+                <select
+                  className="flex-1 rounded-md border border-[#E8E2DB] px-2 py-1"
+                  value={laporanDecision}
+                  onChange={(e) => setLaporanDecision(e.target.value as typeof laporanDecision)}
+                >
+                  <option value="menunggu">menunggu</option>
+                  <option value="disetujui">disetujui</option>
+                  <option value="ditolak">ditolak</option>
+                </select>
+              </label>
+              <label className="flex items-center gap-2">
+                <span className="w-28">Sertifikat</span>
+                <select
+                  className="flex-1 rounded-md border border-[#E8E2DB] px-2 py-1"
+                  value={sertifikatDecision}
+                  onChange={(e) => setSertifikatDecision(e.target.value as typeof sertifikatDecision)}
+                >
+                  <option value="menunggu">menunggu</option>
+                  <option value="selesai">selesai</option>
+                  <option value="ditolak">ditolak</option>
+                </select>
+              </label>
+              <div className="flex items-center gap-2">
+                <button className="rounded-md border border-[#E8E2DB] px-3 py-1" onClick={() => setLaporanSubmitted((v) => !v)}>
+                  toggle laporanSubmitted ({laporanSubmitted ? "true" : "false"})
+                </button>
+                <button className="rounded-md border border-[#E8E2DB] px-3 py-1" onClick={() => setPelaksanaanAgree((v) => !v)}>
+                  toggle pelaksanaanAgree ({pelaksanaanAgree ? "true" : "false"})
+                </button>
+              </div>
+            </div>
+          </div>
           <h1 className="text-center text-2xl md:text-[22px] font-semibold text-[#3B3B3B]">
             Detail Pelaksanaan Pelatihan
           </h1>
@@ -558,14 +633,38 @@ export default function DetailPelaksanaanPelatihanPage() {
                   <input name="lamaPelaksanaan" value={laporanForm.lamaPelaksanaan} onChange={handleLaporanChange} placeholder="Contoh : 4 Bulan" className="w-full rounded-lg border border-[#E8E2DB] bg-white px-3 py-2 text-[12px] text-[#3B3B3B]" />
                 </div>
 
+                {/* Upload Foto Kegiatan */}
                 <div>
-                  <label className="block text-[12px] text-[#3B3B3B] mb-1">Foto Kegiatan *</label>
-                  <div className="rounded-lg border border-[#E8E2DB] bg-white p-3">
-                    <p className="text-[11px] text-[#9A948E] mb-2">Format : Pdf, Image (Max : 10MB)</p>
-                    <button type="button" onClick={handlePickFoto} className="inline-flex items-center rounded-lg border border-[#E8E2DB] px-3 py-1.5 text-[12px] text-[#3B3B3B] hover:bg-[#F5EFE8]">
-                      {fotoKegiatan ? `Ganti File (${fotoKegiatan.name})` : "Upload Foto Kegiatan"}
-                    </button>
-                    <input ref={fotoInputRef} type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={handleFotoChange} />
+                  <label className="block text-[12px] text-[#3B3B3B] mb-1">
+                    Foto Kegiatan *
+                  </label>
+                  <div
+                    className="border border-dashed border-[#E8E2DB] rounded-lg bg-white p-4 flex flex-col items-center justify-center cursor-pointer hover:bg-[#F9F7F5]"
+                    onClick={handlePickFoto}
+                  >
+                    {fotoKegiatan ? (
+                      <div className="text-center">
+                        <p className="text-[12px] text-[#3B3B3B]">
+                          {fotoKegiatan.name}
+                        </p>
+                        <p className="text-[11px] text-[#6B6B6B] mt-1">Klik untuk ganti</p>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center text-center text-[#6B6B6B]">
+                        <Download size={20} />
+                        <p className="text-[12px] mt-2">Upload Foto Kegiatan</p>
+                        <p className="text-[11px] text-[#A0A0A0]">
+                          Format: JPG, PNG (maks. 2MB)
+                        </p>
+                      </div>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      ref={fotoInputRef}
+                      className="hidden"
+                      onChange={handleFotoChange}
+                    />
                   </div>
                 </div>
 
@@ -580,18 +679,6 @@ export default function DetailPelaksanaanPelatihanPage() {
 
       <div className="container mx-auto px-4 max-w-6xl mb-8" id="sertifikat-section">
         <div className="rounded-xl border border-[#E8E2DB] bg-white p-5 md:p-6">
-          {laporanSubmitted && laporanDecision === "menunggu" && (
-            <div className="rounded-xl border border-[#CFEAD9] bg-[#F3FBF7] p-6 text-center">
-              <div className="mx-auto mb-2 w-10 h-10 rounded-lg border border-[#CBE6D7] bg-white flex items-center justify-center">
-                <Check className="text-[#2F8A57]" />
-              </div>
-              <p className="text-sm font-semibold text-[#2F8A57]">Selesaikan Program</p>
-              <p className="mt-1 text-[12px] text-[#6B6B6B]">Setelah menyelesaikan semua kegiatan silahkan klik tombol dibawah untuk menyelesaikan program dan dapat mengunduh sertifikat</p>
-              <div className="mt-3 flex items-center justify-center">
-                <button onClick={() => setLaporanDecision("disetujui" as typeof laporanDecision)} className="inline-flex items-center rounded-lg bg-[#2F8A57] text-white px-3 py-2 text-[12px] hover:opacity-90">Lanjut ke Sertifikat</button>
-              </div>
-            </div>
-          )}
           {laporanSubmitted && laporanDecision === "ditolak" && (
             <div className="rounded-lg border border-[#F0CFCF] bg-[#FFF6F6] p-4 text-center">
               <div className="mx-auto mb-2 w-10 h-10 rounded-lg border border-[#F0C3C3] bg-[#FBECEC] flex items-center justify-center">

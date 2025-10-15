@@ -4,7 +4,6 @@ import FileUpload from "../FileUpload";
 interface KunjunganFormProps {
   formData: {
     jumlahPeserta: string;
-    namaPeserta: string;
     instansi: string;
     tanggalKunjungan: string;
     suratPengantarFile: File | null;
@@ -40,15 +39,6 @@ export default function KunjunganForm({
             value={formData.jumlahPeserta}
             onChange={onInputChange}
             readOnly={true}
-          />
-
-          <FormField
-            label="Nama Peserta"
-            name="namaPeserta"
-            type="text"
-            value={formData.namaPeserta}
-            onChange={onInputChange}
-            placeholder="Masukkan nama lengkap"
           />
 
           <FormField

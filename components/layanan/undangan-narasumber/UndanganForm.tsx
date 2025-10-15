@@ -8,7 +8,7 @@ interface UndanganFormProps {
     tanggalKegiatan: string;
     tempatKegiatan: string;
     proposalFile: File | null;
-    suratPermohonanFile: File | null;
+    suratUndaganNarasumberFile: File | null;
   };
   onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onFileUpload: (field: string, file: File | null) => void;
@@ -81,9 +81,9 @@ export default function UndanganForm({
           <div className="bg-gray-100 p-6 rounded-lg">
             <div>
               <FileUpload
-                label="Surat Permohonan"
-                onFileChange={(file) => onFileUpload('suratPermohonanFile', file)}
-                file={formData.suratPermohonanFile}
+                label="Surat Undangan Narasumber"
+                onFileChange={(file) => onFileUpload('suratUndaganNarasumberFile', file)}
+                file={formData.suratUndaganNarasumberFile}
               />
             </div>
           </div>

@@ -10,7 +10,6 @@ export default function KunjunganFormPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
     jumlahPeserta: "",
-    namaPeserta: "",
     instansi: "",
     tanggalKunjungan: "",
     suratPengantarFile: null as File | null,

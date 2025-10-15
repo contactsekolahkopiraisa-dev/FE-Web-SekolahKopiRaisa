@@ -14,7 +14,7 @@ export default function UndanganNarasumberFormPage() {
     tanggalKegiatan: "",
     tempatKegiatan: "",
     proposalFile: null as File | null,
-    suratPermohonanFile: null as File | null,
+    suratUndaganNarasumberFile: null as File | null,
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
