@@ -616,6 +616,23 @@ export default function DetailPelaksanaanMagangPage() {
                     <p className="text-sm text-green-800 font-medium">Link Logbook Terkirim</p>
                     <p className="text-xs text-green-600 mt-1">Status: Logbook telah dikirim</p>
                   </div>
+                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                    <p className="text-xs text-gray-600 mb-2">Link yang dikirim:</p>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="url"
+                        value={logbookLink}
+                        readOnly
+                        className="flex-1 rounded-lg border border-[#E8E2DB] bg-white px-3 py-2 text-[12px] text-[#3B3B3B] focus:outline-none"
+                      />
+                      <button
+                        onClick={() => window.open(logbookLink, '_blank')}
+                        className="inline-flex items-center rounded-lg bg-[#5C3A1E] text-white px-3 py-2 text-[12px] hover:opacity-90"
+                      >
+                        Buka Link
+                      </button>
+                    </div>
+                  </div>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={handleEditLogbook}
