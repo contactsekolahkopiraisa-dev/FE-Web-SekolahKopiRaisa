@@ -25,13 +25,33 @@ export default function LayananPage() {
         setAuthorized(true);
       } catch {
         setAuthorized(false);
-       
+        router.push("/login");
       }
     };
     checkAuth();
   }, [router]);
 
-  if (authorized === null) return null;
+  if (authorized === null) {
+    return (
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-gray-600">Memeriksa autentikasi...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (authorized === false) {
+    return (
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-gray-600">Mengalihkan ke halaman login...</p>
+        </div>
+      </div>
+    );
+  }
 
   const services = [
     {
@@ -63,7 +83,7 @@ export default function LayananPage() {
     },
     {
       id: 4,
-      icon: <Users size={48} strokeWidth={1.5} />,
+       icon: <Users size={48} strokeWidth={1.5} />,
       title: "Undangan Narasumber",
       description: "Program PKL untuk Siswa/ Mahasiswa di Industri Kopi",
       duration: "2 - 4 Bulan",

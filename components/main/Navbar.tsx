@@ -62,14 +62,12 @@ export default function Navbar({ navbarItems }: { navbarItems: NavbarItem[] }) {
       try {
         const isLoggedIn = await checkUserAuthentication();
         if (!isLoggedIn) {
-          setPopupMessage("Silakan login terlebih dahulu");
-          setShowPopup(true);
+          router.push("/login");
           return;
         }
       } catch (error) {
         // Fallback jika ada error tak terduga
-        setPopupMessage("Silakan login terlebih dahulu");
-        setShowPopup(true);
+        router.push("/login");
         return;
       }
     }

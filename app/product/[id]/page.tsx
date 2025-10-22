@@ -21,6 +21,7 @@ import { CartItemData } from "@/components/card/CartCard";
 import { useCartStore } from "@/app/stores/cartStore";
 import Footer from "@/components/main/Footer";
 import { ProductItem } from "@/app/types/productType";
+import { getUser } from "@/app/utils/user";
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -32,6 +33,7 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
+  const [authorized, setAuthorized] = useState<boolean | null>(null);
 
   const [showPopup, setShowPopup] = useState(false);
   const [message, setMessage] = useState("");
@@ -40,6 +42,42 @@ export default function ProductDetailPage() {
   const [isAddingToCart, setIsAddingToCart] = useState(false); // Add loading state
 
   const router = useRouter();
+
+  // Authentication check
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        await getUser();
+        setAuthorized(true);
+      } catch {
+        setAuthorized(false);
+        router.push("/login");
+      }
+    };
+    checkAuth();
+  }, [router]);
+
+  if (authorized === null) {
+    return (
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-gray-600">Memeriksa autentikasi...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (authorized === false) {
+    return (
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-gray-600">Mengalihkan ke halaman login...</p>
+        </div>
+      </div>
+    );
+  }
 
   useEffect(() => {
     if (productIdString) {
