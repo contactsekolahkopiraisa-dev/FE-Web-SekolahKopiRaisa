@@ -7,8 +7,9 @@ import Navbar from "./main/Navbar";
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
-  const isAuthPage = pathname === "/login" || pathname === "/signup" || pathname === "/reset-password";
+  const isAuthPage = pathname === "/login" || pathname === "/signup" || pathname === "/signup/umkm" || pathname === "/reset-password";
   const isAdminPage = pathname.startsWith("/admin");
+  const isUmkmPage = pathname.startsWith("/umkm");
 
   const navbarItems = [
     { title: "Beranda", link: "/", icon: <House size={20} /> },
@@ -20,7 +21,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
   return (
     <>
-      {!isAuthPage && !isAdminPage && <Navbar navbarItems={navbarItems} />}
+      {!isAuthPage && !isAdminPage && !isUmkmPage && <Navbar navbarItems={navbarItems} />}
       <main>{children}</main>
     </>
   );

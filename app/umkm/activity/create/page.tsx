@@ -1,4 +1,3 @@
-//app/admin/activity/create/page.tsx
 "use client";
 import TextEditor from "@/components/TextEditor";
 import { createActivity } from "@/app/utils/activity";

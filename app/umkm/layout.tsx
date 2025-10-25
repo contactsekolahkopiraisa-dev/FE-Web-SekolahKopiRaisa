@@ -8,43 +8,40 @@ import {
   Package,
   Handshake,
   NotepadText,
-  HandCoins,
-  StoreIcon,
-  Wallet,
 } from "lucide-react";
 
-export default function AdminLayout({ children }: { children: ReactNode }) {
+export default function UmkmLayout({ children }: { children: ReactNode }) {
   const sidebarItems = [
-    { icon: <LayoutDashboard size={20} />, text: "Dashboard", href: "/admin" },
+    { icon: <LayoutDashboard size={20} />, text: "Dashboard", href: "/umkm" },
     {
       icon: <CalendarCheck size={20} />,
       text: "Kegiatan",
-      href: "/admin/activity",
+      href: "/umkm/activity",
     },
     {
       icon: <Package size={20} />,
       text: "Produk",
-      href: "/admin/product",
+      href: "/umkm/product",
     },
     {
       icon: <Handshake size={20} />,
       text: "Mitra",
-      href: "/admin/partner",
+      href: "/umkm/partner",
     },
     {
-        icon: <StoreIcon size={20} />,
+        icon: <Handshake size={20} />,
         text: "UMKM",
-        href: "/admin/umkm",
+        href: "/umkm/partner",
       },
     {
-      icon: <FileText size={20} />,
+      icon: <NotepadText size={20} />,
       text: "Order",
-      href: "/admin/order",
+      href: "/umkm/order",
     },
     {
-      icon: <Wallet size={20} />,
+      icon: <Handshake size={20} />,
       text: "Laporan Keuangan",
-      href: "/admin/laporan-keuangan",
+      href: "/umkm/partner",
     },
   ];
 

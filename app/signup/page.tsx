@@ -198,6 +198,15 @@ export default function Signup() {
               Masuk
             </Link>
           </p>
+          <p className="text-center mt-4 text-gray-700 text-sm">
+            Daftar sebagai UMKM?
+            <Link
+              href="/signup/umkm"
+              className="text-blue-500 font-medium hover:underline ml-1"
+            >
+              Daftar
+            </Link>
+          </p>
         </div>
       </div>
 
