@@ -8,6 +8,9 @@ import {
   Package,
   Handshake,
   NotepadText,
+  HandCoins,
+  StoreIcon,
+  Wallet,
 } from "lucide-react";
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
@@ -29,9 +32,19 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       href: "/admin/partner",
     },
     {
-      icon: <NotepadText size={20} />,
+        icon: <StoreIcon size={20} />,
+        text: "UMKM",
+        href: "/admin/umkm",
+      },
+    {
+      icon: <FileText size={20} />,
       text: "Order",
       href: "/admin/order",
+    },
+    {
+      icon: <Wallet size={20} />,
+      text: "Laporan Keuangan",
+      href: "/admin/laporan-keuangan",
     },
   ];
 

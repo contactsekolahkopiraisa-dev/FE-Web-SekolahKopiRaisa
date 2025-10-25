@@ -57,17 +57,22 @@ export default function Navbar({ navbarItems }: { navbarItems: NavbarItem[] }) {
 
   // Handle protected navigation
   const handleProtectedNavigation = async (href: string, title: string) => {
-    // Check if the link is for products page
-    if (href === "/product") {
-      const isLoggedIn = await checkUserAuthentication();
-      if (!isLoggedIn) {
-        setPopupMessage("Silakan login terlebih dahulu");
-        setShowPopup(true);
+    // Proteksi untuk halaman yang perlu login
+    if (href === "/product" || href.startsWith("/layanan")) {
+      try {
+        const isLoggedIn = await checkUserAuthentication();
+        if (!isLoggedIn) {
+          router.push("/login");
+          return;
+        }
+      } catch (error) {
+        // Fallback jika ada error tak terduga
+        router.push("/login");
         return;
       }
     }
 
-    // Navigate normally for other pages or if user is authenticated
+    // Navigate normally untuk halaman lain atau jika sudah login
     router.push(href);
   };
 
