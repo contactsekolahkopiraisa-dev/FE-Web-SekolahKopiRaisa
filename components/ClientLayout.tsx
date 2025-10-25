@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { Building, CalendarCheck, Coffee, House } from "lucide-react";
+import { Building, CalendarCheck, Coffee, House, Settings } from "lucide-react";
 import Navbar from "./main/Navbar";
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
@@ -15,6 +15,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     { title: "Tentang", link: "/about", icon: <Building size={20} /> },
     { title: "Produk", link: "/product", icon: <Coffee size={20} /> },
     { title: "Kegiatan", link: "/activity", icon: <CalendarCheck size={20} /> },
+    { title: "Layanan", link: "/layanan", icon: <Settings size={20} /> },
   ];
 
   return (

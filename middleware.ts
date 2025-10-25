@@ -7,8 +7,15 @@ export function middleware(request: NextRequest) {
   console.log('Token found:', !!token);
   console.log('Token value (first 50 chars):', token?.substring(0, 50));
   
-  // If no token, allow access to public routes
+  const isAdminRoute = request.nextUrl.pathname.startsWith('/admin');
+  const isLayananRoute = request.nextUrl.pathname.startsWith('/layanan');
+
+  // If no token, block protected routes (/admin and /layanan) and redirect to login
   if (!token) {
+    if (isAdminRoute || isLayananRoute) {
+      console.log('No token found, redirecting to login for protected route');
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
     console.log('No token found, allowing public access');
     return NextResponse.next();
   }
@@ -18,7 +25,6 @@ export function middleware(request: NextRequest) {
     const payload = JSON.parse(atob(token.split('.')[1]));
     console.log('Decoded payload:', payload);
     
-    const isAdminRoute = request.nextUrl.pathname.startsWith('/admin');
     const isAdmin = payload.admin;
     
     // If user is admin
@@ -45,7 +51,7 @@ export function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/unauthorized', request.url));
       }
       
-      console.log('Non-admin accessing public route, allowing access');
+      console.log('Non-admin accessing public route or /layanan, allowing access');
       return NextResponse.next();
     }
     
