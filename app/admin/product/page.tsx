@@ -124,20 +124,39 @@ export default function AdminProductPage() {
       try {
         setLoading(true);
         const response = await fetchAllProduct();
+        console.log("Full API response:", response);
         const rawData = response.data;
-        const formattedData = rawData.map((item: any) => ({
-          id: item.id,
-          image: item.image,
-          name: item.name,
-          price: item.price,
-          stock: item.inventory.stock,
-          weight: item.weight || 0,
-          sold: item.sold || 0,
-          partner: item.partner || { name: "Tidak Diketahui" }, // Ensure partner is always defined
-        }));
+        console.log("Raw product data:", rawData);
+
+        if (!Array.isArray(rawData)) {
+          console.error("Expected array but got:", typeof rawData, rawData);
+          setError("Data produk tidak valid.");
+          return;
+        }
+
+        const formattedData = rawData.map((item: any) => {
+          console.log("Processing item:", item);
+          return {
+            id: item.id,
+            image: item.image,
+            name: item.name,
+            price: item.price,
+            stock: item.inventory?.stock ?? 0, // Safe access dengan nullish coalescing
+            weight: item.weight || 0,
+            sold: item.sold || 0,
+            partner: item.partner || { name: "Tidak Diketahui" },
+          };
+        });
+        console.log("Formatted data:", formattedData);
         setProduct(formattedData);
-      } catch (err) {
+      } catch (err: any) {
         console.error("Failed to fetch products:", err);
+        console.error("Error details:", {
+          message: err?.message,
+          type: err?.type,
+          response: err?.response,
+          stack: err?.stack,
+        });
         setError("Failed to load products. Please try again later.");
       } finally {
         setLoading(false);
