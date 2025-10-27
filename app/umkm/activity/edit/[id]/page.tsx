@@ -2,7 +2,7 @@
 import TextEditor from "@/components/TextEditor";
 
 import { useParams, useRouter } from "next/navigation";
-import { FormEvent, use, useEffect, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { X, Loader2, LoaderPinwheel, LoaderCircle } from "lucide-react";
 import Popup from "@/components/Popup";
 import { fetchActivityById, updateActivity } from "@/app/utils/activity";
@@ -152,7 +152,6 @@ export default function EditActivityPage() {
     } catch (error: any) {
       if (error.type === "validation") {
         setErrors(error.errors);
-       
       } else {
         console.error("Error:", error);
         setMessage(
@@ -267,7 +266,6 @@ export default function EditActivityPage() {
                     alt="Thumbnail Preview"
                     className="w-full h-40 object-cover rounded-xl"
                   />
-                  
                 </div>
               ) : currentThumbnail ? (
                 <div className="relative mb-3">

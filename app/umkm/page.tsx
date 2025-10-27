@@ -2,7 +2,7 @@
 
 import { CalendarCheck, Building, Store } from "lucide-react";
 import ProductTable from "../../components/product/ProductTable";
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { fetchAllActivity } from "../utils/activity";
 import { fetchAllProduct } from "../utils/product";
 import { fetchAllPartner } from "../utils/partner";
@@ -200,16 +200,16 @@ export default function UmkmDashboard() {
   }, []);
 
   useEffect(() => {
-      const fetchUser = async () => {
-        try {
-          const data = await getUser();
-          if (data) setUser(data);
-        } catch (error) {
-          console.error("Gagal mendapatkan user:", error);
-        }
-      };
-      fetchUser();
-    }, []);
+    const fetchUser = async () => {
+      try {
+        const data = await getUser();
+        if (data) setUser(data);
+      } catch (error) {
+        console.error("Gagal mendapatkan user:", error);
+      }
+    };
+    fetchUser();
+  }, []);
 
   const formatTimeAgo = (dateString: string) => {
     const now = new Date();

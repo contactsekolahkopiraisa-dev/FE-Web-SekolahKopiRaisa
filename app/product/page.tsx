@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import ProductCard from "../../components/product/ProductCard";
 import { fetchAllProduct } from "../utils/product";
 import { ProductItem } from "../types/productType";
@@ -35,32 +35,10 @@ export default function ProductPage() {
     checkAuth();
   }, [router]);
 
-  if (authorized === null) {
-    return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Memeriksa autentikasi...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (authorized === false) {
-    return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Mengalihkan ke halaman login...</p>
-        </div>
-      </div>
-    );
-  }
-  const handleViewDetails = (id: number) => {
-    router.push(`/product/${id}`);
-  };
-
+  // Load products - hanya jika sudah terautentikasi
   useEffect(() => {
+    if (authorized !== true) return;
+
     const loadProducts = async () => {
       setLoading(true);
       setError(null);
@@ -103,8 +81,9 @@ export default function ProductPage() {
     };
 
     loadProducts();
-  }, []);
+  }, [authorized]);
 
+  // Search filter
   useEffect(() => {
     if (searchTerm) {
       const filtered = products.filter((product) =>
@@ -115,6 +94,33 @@ export default function ProductPage() {
       setFilteredProducts(products);
     }
   }, [searchTerm, products]);
+
+  const handleViewDetails = (id: number) => {
+    router.push(`/product/${id}`);
+  };
+
+  // Early returns AFTER all hooks
+  if (authorized === null) {
+    return (
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-gray-600">Memeriksa autentikasi...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (authorized === false) {
+    return (
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-gray-600">Mengalihkan ke halaman login...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

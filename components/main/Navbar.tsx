@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { getUser } from "../../app/utils/user";
 import {
   Bell,
@@ -84,21 +84,32 @@ export default function Navbar({ navbarItems }: { navbarItems: NavbarItem[] }) {
   const fetchCartCount = async () => {
     try {
       const response = await fetchAllCart();
-      const rawData = response.data;
+      const rawData = response?.data;
 
-      if (rawData && rawData.length > 0 && rawData[0].cartItems) {
-        const cartItems = rawData[0].cartItems;
-        const productNames = new Set(
-          cartItems.map(
-            (item: { product: { name: string } }) => item.product.name
-          )
-        );
-        setCartCount(productNames.size);
+      if (rawData && Array.isArray(rawData) && rawData.length > 0) {
+        const cartItems = rawData[0]?.cartItems;
+
+        if (cartItems && Array.isArray(cartItems) && cartItems.length > 0) {
+          const productNames = new Set(
+            cartItems.map(
+              (item: { product: { name: string } }) => item.product?.name
+            )
+          );
+          setCartCount(productNames.size);
+        } else {
+          setCartCount(0);
+        }
       } else {
         setCartCount(0);
       }
-    } catch (error) {
-      console.error("Gagal mengambil data keranjang:", error);
+    } catch (error: any) {
+      // Hanya log error jika bukan error autentikasi
+      if (
+        error?.type !== "general" ||
+        !error?.message?.includes("Unauthorized")
+      ) {
+        console.error("Gagal mengambil data keranjang:", error);
+      }
       setCartCount(0);
     }
   };
@@ -121,14 +132,41 @@ export default function Navbar({ navbarItems }: { navbarItems: NavbarItem[] }) {
       } else {
         setNotificationCount(0);
       }
-    } catch (error) {
-      console.error("Gagal mengambil notifikasi:", error);
+    } catch (error: any) {
+      // Hanya log error jika bukan error autentikasi
+      if (
+        error?.type !== "general" ||
+        !error?.message?.includes("Unauthorized")
+      ) {
+        console.error("Gagal mengambil notifikasi:", error);
+      }
       setNotificationCount(0);
     }
   };
 
+  // Fetch user data first
   useEffect(() => {
-    fetchCartCount();
+    const fetchUser = async () => {
+      try {
+        const data = await getUser();
+        if (data) {
+          setUser(data);
+          // Fetch cart dan notifikasi hanya jika user sudah login
+          fetchCartCount();
+          fetchRecentNotifications();
+        }
+      } catch (error) {
+        // User belum login, tidak perlu log error
+        setUser(null);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  // Listen to cart updates - hanya jika user sudah login
+  useEffect(() => {
+    if (!user) return;
+
     const handleCartUpdated = () => {
       fetchCartCount();
     };
@@ -136,7 +174,7 @@ export default function Navbar({ navbarItems }: { navbarItems: NavbarItem[] }) {
     return () => {
       window.removeEventListener("cartUpdated", handleCartUpdated);
     };
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     if (isMobileMenuOpen) {
@@ -149,23 +187,7 @@ export default function Navbar({ navbarItems }: { navbarItems: NavbarItem[] }) {
     return () => {
       document.body.style.overflow = "auto"; // Pastikan overflow di-reset saat komponen unmount
     };
-  }, [isMobileMenuOpen]); //
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const data = await getUser();
-        if (data) {
-          setUser(data);
-          // Fetch notifikasi hanya jika user sudah login
-          fetchRecentNotifications();
-        }
-      } catch (error) {
-        console.error("Gagal mendapatkan user:", error);
-      }
-    };
-    fetchUser();
-  }, []);
+  }, [isMobileMenuOpen]);
 
   const toggleUserDropdown = (
     e: React.MouseEvent<HTMLButtonElement, MouseEvent>

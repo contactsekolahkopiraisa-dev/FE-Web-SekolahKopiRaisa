@@ -8,7 +8,7 @@ import { ProductItem } from "@/app/types/productType";
 import { deleteProduct, fetchAllProduct } from "@/app/utils/product";
 import { Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function AdminProductPage() {
   const [showPopup, setShowPopup] = useState(false);
