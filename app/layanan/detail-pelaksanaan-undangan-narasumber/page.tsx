@@ -1,6 +1,14 @@
 "use client";
 
-import { Check, Download, Eye, FileText, FileCheck, XCircle, ArrowLeft } from "lucide-react";
+import {
+  Check,
+  Download,
+  Eye,
+  FileText,
+  FileCheck,
+  XCircle,
+  ArrowLeft,
+} from "lucide-react";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import Footer from "@/components/main/Footer";
@@ -47,7 +55,9 @@ export default function DetailPelaksanaanUndanganNarasumberPage() {
 
   const scrollToLaporan = () => {
     if (typeof window !== "undefined") {
-      document.getElementById("laporan-section")?.scrollIntoView({ behavior: "smooth" });
+      document
+        .getElementById("laporan-section")
+        ?.scrollIntoView({ behavior: "smooth" });
     }
   };
 
@@ -111,7 +121,7 @@ export default function DetailPelaksanaanUndanganNarasumberPage() {
 
   return (
     <>
-      <div className="min-h-screen bg-gray-50 pt-24 md:pt-28">
+      <div className="min-h-screen bg-[#FCFBF7] pt-24 md:pt-28">
         <div className="container mx-auto px-4 max-w-6xl py-10">
           <div className="mb-4">
             <Link
@@ -133,7 +143,9 @@ export default function DetailPelaksanaanUndanganNarasumberPage() {
                   className="flex-1 rounded-md border border-[#E8E2DB] px-2 py-1"
                   value={pengajuanDecision}
                   onChange={(e) =>
-                    setPengajuanDecision(e.target.value as typeof pengajuanDecision)
+                    setPengajuanDecision(
+                      e.target.value as typeof pengajuanDecision
+                    )
                   }
                 >
                   <option value="menunggu">menunggu</option>
@@ -165,7 +177,9 @@ export default function DetailPelaksanaanUndanganNarasumberPage() {
                   <Check className="text-amber-700" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-[#3B3B3B]">Progres Kegiatan</p>
+                  <p className="text-sm font-semibold text-[#3B3B3B]">
+                    Progres Kegiatan
+                  </p>
                   <p className="text-[12px] text-[#6B6B6B]">
                     Pantau Status Pelaksanaan Kegiatan Anda
                   </p>
@@ -259,7 +273,9 @@ export default function DetailPelaksanaanUndanganNarasumberPage() {
               <div className="rounded-lg bg-[#F7F4F0] border border-[#E8E2DB] p-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                   <div>
-                    <p className="text-[11px] text-[#6B6B6B] mb-1">Jenis Kegiatan</p>
+                    <p className="text-[11px] text-[#6B6B6B] mb-1">
+                      Jenis Kegiatan
+                    </p>
                     <p className="text-[13px] font-medium text-[#3B3B3B]">
                       Undangan Narasumber
                     </p>
@@ -273,13 +289,17 @@ export default function DetailPelaksanaanUndanganNarasumberPage() {
                     </p>
                   </div>
                   <div>
-                    <p className="text-[11px] text-[#6B6B6B] mb-1">Nama Kegiatan</p>
+                    <p className="text-[11px] text-[#6B6B6B] mb-1">
+                      Nama Kegiatan
+                    </p>
                     <p className="text-[13px] font-medium text-[#3B3B3B]">
                       From Bean to Brand: Workshop Bersama CEO Sekolah Kopi
                     </p>
                   </div>
                   <div>
-                    <p className="text-[11px] text-[#6B6B6B] mb-1">Tempat Kegiatan</p>
+                    <p className="text-[11px] text-[#6B6B6B] mb-1">
+                      Tempat Kegiatan
+                    </p>
                     <p className="text-[13px] font-medium text-[#3B3B3B]">
                       Zoom Meeting
                     </p>
@@ -291,6 +311,20 @@ export default function DetailPelaksanaanUndanganNarasumberPage() {
                     </p>
                   </div>
                 </div>
+              </div>
+
+              <p className="mt-5 text-[13px] font-semibold text-[#3B3B3B] mb-3">
+                Dokumen yang diupload
+              </p>
+              <div className="space-y-2">
+                <DocItem
+                  name="Proposal / Surat Permohonan"
+                  file="Proposal.pdf"
+                />
+                <DocItem
+                  name="Surat Undangan Narasumber"
+                  file="Surat Undangan Narasumber.pdf"
+                />
               </div>
             </div>
           </div>
@@ -308,9 +342,9 @@ export default function DetailPelaksanaanUndanganNarasumberPage() {
               Pengajuan Ditolak
             </p>
             <p className="mt-1 text-[12px] text-[#6B6B6B]">
-              Pengajuan Anda Ditolak karena Proposal belum ditandatangani pimpinan
-              fakultas dan jadwal pelaksanaan tidak jelas. Silakan perbaiki sesuai
-              catatan di atas dan ajukan kembali.
+              Pengajuan Anda Ditolak karena Proposal belum ditandatangani
+              pimpinan fakultas dan jadwal pelaksanaan tidak jelas. Silakan
+              perbaiki sesuai catatan di atas dan ajukan kembali.
             </p>
             <div className="mt-4">
               <Link
@@ -347,11 +381,31 @@ export default function DetailPelaksanaanUndanganNarasumberPage() {
               <div className="space-y-3">
                 {/* Input Fields */}
                 {[
-                  { label: "Nama P4S", name: "namaP4s", placeholder: "Contoh : P4S Tani Makmur" },
-                  { label: "Kabupaten / Kota", name: "kota", placeholder: "Contoh : Kota Lumajang" },
-                  { label: "Asal Peserta / Mitra Kerjasama", name: "asalPeserta", placeholder: "Contoh : Universitas Jember" },
-                  { label: "Jumlah Peserta", name: "jumlahPeserta", placeholder: "Contoh : 1" },
-                  { label: "Lama Pelaksanaan", name: "lamaPelaksanaan", placeholder: "Contoh : 4 Bulan" },
+                  {
+                    label: "Nama P4S",
+                    name: "namaP4s",
+                    placeholder: "Contoh : P4S Tani Makmur",
+                  },
+                  {
+                    label: "Kabupaten / Kota",
+                    name: "kota",
+                    placeholder: "Contoh : Kota Lumajang",
+                  },
+                  {
+                    label: "Asal Peserta / Mitra Kerjasama",
+                    name: "asalPeserta",
+                    placeholder: "Contoh : Universitas Jember",
+                  },
+                  {
+                    label: "Jumlah Peserta",
+                    name: "jumlahPeserta",
+                    placeholder: "Contoh : 1",
+                  },
+                  {
+                    label: "Lama Pelaksanaan",
+                    name: "lamaPelaksanaan",
+                    placeholder: "Contoh : 4 Bulan",
+                  },
                 ].map((f) => (
                   <div key={f.name}>
                     <label className="block text-[12px] text-[#3B3B3B] mb-1">
@@ -385,8 +439,8 @@ export default function DetailPelaksanaanUndanganNarasumberPage() {
                   </select>
                 </div>
 
-                                {/* Tanggal Pelaksanaan */}
-                                <div>
+                {/* Tanggal Pelaksanaan */}
+                <div>
                   <label className="block text-[12px] text-[#3B3B3B] mb-1">
                     Tanggal Pelaksanaan *
                   </label>
@@ -413,7 +467,9 @@ export default function DetailPelaksanaanUndanganNarasumberPage() {
                         <p className="text-[12px] text-[#3B3B3B]">
                           {fotoKegiatan.name}
                         </p>
-                        <p className="text-[11px] text-[#6B6B6B] mt-1">Klik untuk ganti</p>
+                        <p className="text-[11px] text-[#6B6B6B] mt-1">
+                          Klik untuk ganti
+                        </p>
                       </div>
                     ) : (
                       <div className="flex flex-col items-center text-center text-[#6B6B6B]">
@@ -435,7 +491,7 @@ export default function DetailPelaksanaanUndanganNarasumberPage() {
                 </div>
 
                 {/* Tombol Submit */}
-                <div className="pt-2 text-right" >
+                <div className="pt-2 text-right">
                   <button
                     onClick={handleSubmitLaporan}
                     className="w-full md:w-auto bg-[#5C3A1E] text-white text-[13px] px-6 py-2 rounded-lg hover:bg-[#4C2E15] transition-colors"
@@ -455,3 +511,27 @@ export default function DetailPelaksanaanUndanganNarasumberPage() {
   );
 }
 
+/* Komponen kecil: Dokumen item */
+function DocItem({ name, file }: { name: string; file: string }) {
+  return (
+    <div className="flex items-center justify-between rounded-lg border border-[#E8E2DB] bg-white p-3 hover:bg-[#FAFAF9] transition-colors">
+      <div className="flex items-center gap-3">
+        <div className="w-9 h-9 rounded-lg bg-[#F7F4F0] border border-[#E8E2DB] flex items-center justify-center flex-shrink-0">
+          <FileText size={18} className="text-[#6B6B6B]" />
+        </div>
+        <div>
+          <p className="text-[13px] font-semibold text-[#3B3B3B]">{name}</p>
+          <p className="text-[11px] text-[#6B6B6B]">{file}</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <button className="inline-flex items-center gap-1 rounded-lg border border-[#E8E2DB] px-3 py-1.5 text-[11px] text-[#3B3B3B] hover:bg-[#F5EFE8] transition-colors">
+          <Eye size={14} /> Lihat
+        </button>
+        <button className="inline-flex items-center gap-1 rounded-lg bg-primary text-white px-3 py-1.5 text-[11px] hover:opacity-90 transition-opacity">
+          <Download size={14} /> Download
+        </button>
+      </div>
+    </div>
+  );
+}

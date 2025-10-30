@@ -92,10 +92,7 @@ export default function DetailPelaksanaanKunjunganPage() {
     }, 2000);
   };
 
-  const pengajuanDecisionText: Record<
-    typeof pengajuanDecision,
-    string
-  > = {
+  const pengajuanDecisionText: Record<typeof pengajuanDecision, string> = {
     menunggu: "Menunggu Persetujuan",
     disetujui: "Disetujui",
     ditolak: "Ditolak",
@@ -113,7 +110,7 @@ export default function DetailPelaksanaanKunjunganPage() {
 
   return (
     <>
-      <div className="min-h-screen bg-gray-50 pt-24 md:pt-28">
+      <div className="min-h-screen bg-[#FCFBF7] pt-24 md:pt-28">
         <div className="container mx-auto px-4 max-w-6xl py-10">
           <div className="mb-4">
             <Link
@@ -305,9 +302,8 @@ export default function DetailPelaksanaanKunjunganPage() {
                 Dokumen yang diupload
               </p>
               <div className="space-y-2">
-                <DocItem name="Proposal" file="Proposal.pdf" />
                 <DocItem
-                  name="Surat Permohonan"
+                  name="Surat Permohonan / Surat Tugas"
                   file="Surat Permohonan.pdf"
                 />
               </div>
@@ -327,8 +323,9 @@ export default function DetailPelaksanaanKunjunganPage() {
               Pengajuan Ditolak
             </p>
             <p className="mt-1 text-[12px] text-[#6B6B6B]">
-              Pengajuan Anda Ditolak karena Proposal belum ditandatangani pimpinan fakultas dan jadwal pelaksanaan tidak jelas.
-              Silakan perbaiki sesuai catatan di atas dan ajukan kembali.
+              Pengajuan Anda Ditolak karena Proposal belum ditandatangani
+              pimpinan fakultas dan jadwal pelaksanaan tidak jelas. Silakan
+              perbaiki sesuai catatan di atas dan ajukan kembali.
             </p>
             <div className="mt-4">
               <Link
@@ -377,7 +374,7 @@ function DocItem({ name, file }: { name: string; file: string }) {
         <button className="inline-flex items-center gap-1 rounded-lg border border-[#E8E2DB] px-3 py-1.5 text-[11px] text-[#3B3B3B] hover:bg-[#F5EFE8] transition-colors">
           <Eye size={14} /> Lihat
         </button>
-        <button className="inline-flex items-center gap-1 rounded-lg bg-amber-700 text-white px-3 py-1.5 text-[11px] hover:opacity-90 transition-opacity">
+        <button className="inline-flex items-center gap-1 rounded-lg bg-primary text-white px-3 py-1.5 text-[11px] hover:opacity-90 transition-opacity">
           <Download size={14} /> Download
         </button>
       </div>
@@ -396,10 +393,7 @@ function LaporanAkhirForm({
   handleSubmitLaporan,
 }: any) {
   return (
-    <div
-      className="container mx-auto px-4 max-w-6xl mb-8"
-      id="laporan-section"
-    >
+    <div className="container mx-auto px-4 max-w-6xl mb-8" id="laporan-section">
       <div className="rounded-xl border border-[#E8E2DB] bg-white p-5 md:p-6">
         <div className="flex items-center gap-2 mb-2">
           <span className="w-5 h-5 rounded-full border border-[#E8E2DB] flex items-center justify-center">

@@ -1,14 +1,9 @@
 "use client";
 
-import { 
-  Briefcase, 
-  User, 
-  GraduationCap, 
-  Users, 
-  MapPin
-} from "lucide-react";
+import { Briefcase, User, GraduationCap, Users, MapPin } from "lucide-react";
 import LayananHeader from "../../components/layanan/LayananHeader";
 import ServiceGrid from "../../components/layanan/ServiceGrid";
+import Footer from "../../components/main/Footer";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getUser } from "../utils/user";
@@ -61,7 +56,7 @@ export default function LayananPage() {
       description: "Program PKL untuk Siswa/ Mahasiswa di Industri Kopi",
       duration: "2 - 4 Bulan",
       target: "Siswa/Mahasiswa",
-      route: "/layanan/pkl"
+      route: "/layanan/pkl",
     },
     {
       id: 2,
@@ -70,7 +65,7 @@ export default function LayananPage() {
       description: "Program PKL untuk Siswa/ Mahasiswa di Industri Kopi",
       duration: "2 - 4 Bulan",
       target: "Siswa/Mahasiswa",
-      route: "/layanan/magang"
+      route: "/layanan/magang",
     },
     {
       id: 3,
@@ -79,16 +74,16 @@ export default function LayananPage() {
       description: "Program PKL untuk Siswa/ Mahasiswa di Industri Kopi",
       duration: "2 - 4 Bulan",
       target: "Umum",
-      route: "/layanan/pelatihan"
+      route: "/layanan/pelatihan",
     },
     {
       id: 4,
-       icon: <Users size={48} strokeWidth={1.5} />,
+      icon: <Users size={48} strokeWidth={1.5} />,
       title: "Undangan Narasumber",
       description: "Program PKL untuk Siswa/ Mahasiswa di Industri Kopi",
       duration: "2 - 4 Bulan",
       target: "Umum",
-      route: "/layanan/undangan-narasumber"
+      route: "/layanan/undangan-narasumber",
     },
     {
       id: 5,
@@ -97,15 +92,18 @@ export default function LayananPage() {
       description: "Program PKL untuk Siswa/ Mahasiswa di Industri Kopi",
       duration: "2 - 4 Bulan",
       target: "Umum",
-      route: "/layanan/kunjungan"
-    }
+      route: "/layanan/kunjungan",
+    },
   ];
-
+  <br></br>;
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className="min-h-screen bg-neutral-50 flex flex-col">
       <LayananHeader />
       <SubNavLayanan />
       <ServiceGrid services={services} />
+      <div className="mt-auto">
+        <Footer />
+      </div>
     </div>
   );
 }
