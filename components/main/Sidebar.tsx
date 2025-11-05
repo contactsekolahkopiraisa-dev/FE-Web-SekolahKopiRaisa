@@ -23,10 +23,17 @@ import { getUser } from "../../app/utils/user";
 import { AnimatePresence, motion } from "framer-motion";
 import ConfirmModal from "../ConfirmModal";
 
+interface SidebarChildItemType {
+  icon?: React.ReactNode;
+  text: string;
+  href: string;
+}
+
 interface SidebarItemType {
   icon: React.ReactNode;
   text: string;
-  href: string;
+  href?: string;
+  children?: SidebarChildItemType[];
 }
 interface User {
   name: string;
@@ -111,16 +118,38 @@ export default function Sidebar({ items }: { items: SidebarItemType[] }) {
       {/* Navigation */}
       <nav className="flex-1 px-4 overflow-y-auto">
         <ul className="space-y-3">
-          {items.map((item) => (
-            <SidebarItem
-              key={item.href}
-              icon={item.icon}
-              text={item.text}
-              href={item.href}
-              isActive={pathname === item.href}
-              isSidebarOpen={isMobile ? true : isSidebarOpen}
-            />
-          ))}
+          {items.map((item) => {
+            const isOpenByPath = item.href ? pathname.startsWith(item.href) : false;
+            const isOpen = isOpenByPath;
+            const sidebarOpen = isMobile ? true : isSidebarOpen;
+
+            if (item.children && item.children.length > 0) {
+              return (
+                <SidebarGroup
+                  key={item.text}
+                  icon={item.icon}
+                  text={item.text}
+                  childrenItems={item.children}
+                  isSidebarOpen={sidebarOpen}
+                  isActiveParent={isOpenByPath}
+                  pathname={pathname}
+                />
+              );
+            }
+
+            if (!item.href) return null;
+
+            return (
+              <SidebarItem
+                key={item.href}
+                icon={item.icon}
+                text={item.text}
+                href={item.href}
+                isActive={pathname === item.href}
+                isSidebarOpen={sidebarOpen}
+              />
+            );
+          })}
         </ul>
       </nav>
 
@@ -251,6 +280,70 @@ function SidebarItem({
           {isSidebarOpen && <span>{text}</span>}
         </div>
       </Link>
+    </li>
+  );
+}
+
+function SidebarGroup({
+  icon,
+  text,
+  childrenItems,
+  isSidebarOpen,
+  isActiveParent,
+  pathname,
+}: {
+  icon: React.ReactNode;
+  text: string;
+  childrenItems: SidebarChildItemType[];
+  isSidebarOpen: boolean;
+  isActiveParent: boolean;
+  pathname: string;
+}) {
+  const [openInternal, setOpenInternal] = useState(false);
+  const open = isSidebarOpen ? openInternal || isActiveParent : false;
+
+  return (
+    <li>
+      <button
+        type="button"
+        className={clsx(
+          "w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 cursor-pointer text-sm",
+          isActiveParent
+            ? "bg-primary text-white font-medium shadow-lg"
+            : "text-gray-700 hover:bg-gray-100 hover:text-gray-900",
+          !isSidebarOpen && "justify-center"
+        )}
+        onClick={() => setOpenInternal(!openInternal)}
+      >
+        {icon}
+        {isSidebarOpen && (
+          <div className="flex-1 flex items-center justify-between">
+            <span>{text}</span>
+            {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+          </div>
+        )}
+      </button>
+      {isSidebarOpen && open && (
+        <ul className="mt-2 ml-8 space-y-2">
+          {childrenItems.map((child) => (
+            <li key={child.href}>
+              <Link href={child.href}>
+                <div
+                  className={clsx(
+                    "flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 cursor-pointer text-sm",
+                    pathname === child.href
+                      ? "bg-primary text-white font-medium shadow-lg"
+                      : "text-gray-700 hover:bg-gray-100 hover:text-gray-900",
+                  )}
+                >
+                  {child.icon}
+                  <span>{child.text}</span>
+                </div>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
     </li>
   );
 }

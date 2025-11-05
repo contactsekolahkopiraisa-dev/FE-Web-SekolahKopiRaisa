@@ -1,12 +1,12 @@
 "use client";
 import { Clock, User, ChevronRight, X } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 interface ServiceCardProps {
   id: number;
-  icon: React.ReactNode;
+  icon: ReactNode;
   title: string;
   description: string;
   duration: string;

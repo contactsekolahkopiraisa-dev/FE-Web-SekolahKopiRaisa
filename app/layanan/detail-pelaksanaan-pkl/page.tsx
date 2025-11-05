@@ -861,81 +861,71 @@ export default function DetailPelaksanaanPKLPage() {
                 ))}
               </div>
 
-              {/* Logbook Link Input Section */}
-              <div className="mt-6 rounded-lg border border-[#F0EAE3] bg-[#FBF9F7] p-4">
-                <h3 className="text-sm font-semibold text-[#3B3B3B] mb-3">
-                  Link Logbook
-                </h3>
-                <p className="text-[12px] text-[#6B6B6B] mb-4">
-                  Masukkan link logbook
-                </p>
-
-                {isLogbookSubmitted && !isEditingLogbook ? (
-                  <div className="space-y-3">
-                    <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                      <p className="text-sm text-green-800 font-medium">
-                        Link Logbook Terkirim
-                      </p>
-                      <p className="text-xs text-green-600 mt-1">
-                        Status: Logbook telah dikirim
-                      </p>
-                    </div>
-                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                      <p className="text-xs text-gray-600 mb-2">
-                        Link yang dikirim:
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="url"
-                          value={logbookLink}
-                          readOnly
-                          className="flex-1 rounded-lg border border-[#E8E2DB] bg-white px-3 py-2 text-[12px] text-[#3B3B3B] focus:outline-none"
-                        />
-                        <button
-                          onClick={() => window.open(logbookLink, "_blank")}
-                          className="inline-flex items-center rounded-lg bg-[#5C3A1E] text-white px-3 py-2 text-[12px] hover:opacity-90"
-                        >
-                          Buka Link
-                        </button>
-                      </div>
-                    </div>
+              {/* Input link logbook */}
+            <div className="mt-6 rounded-lg border border-[#F0EAE3] bg-[#FBF9F7] p-4">
+              <h3 className="text-sm font-semibold text-[#3B3B3B] mb-3">Link Logbook</h3>
+              <p className="text-[12px] text-[#6B6B6B] mb-4">Masukkan link logbook</p>
+              
+              {isLogbookSubmitted && !isEditingLogbook ? (
+                <div className="space-y-3">
+                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="text-sm text-green-800 font-medium">Link Logbook Terkirim</p>
+                    <p className="text-xs text-green-600 mt-1">Status: Logbook telah dikirim</p>
+                  </div>
+                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                    <p className="text-xs text-gray-600 mb-2">Link yang dikirim:</p>
                     <div className="flex items-center gap-2">
+                      <input
+                        type="url"
+                        value={logbookLink}
+                        readOnly
+                        className="flex-1 rounded-lg border border-[#E8E2DB] bg-white px-3 py-2 text-[12px] text-[#3B3B3B] focus:outline-none"
+                      />
                       <button
-                        onClick={handleEditLogbook}
+                        onClick={() => window.open(logbookLink, '_blank')}
+                        className="inline-flex items-center rounded-lg bg-[#5C3A1E] text-white px-3 py-2 text-[12px] hover:opacity-90"
+                      >
+                        Buka Link
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleEditLogbook}
+                      className="inline-flex items-center rounded-lg border border-[#E8E2DB] px-3 py-2 text-[12px] text-[#3B3B3B] hover:bg-[#F5EFE8]"
+                    >
+                      Edit
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <input
+                    type="url"
+                    value={logbookLink}
+                    onChange={handleLogbookLinkChange}
+                    placeholder="Masukkan link logbook (contoh: https://drive.google.com/...)"
+                    className="w-full rounded-lg border border-[#E8E2DB] bg-white px-3 py-2 text-[12px] text-[#3B3B3B] focus:outline-none focus:ring-2 focus:ring-[#5C3A1E] focus:border-transparent"
+                  />
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleSubmitLogbook}
+                      className="inline-flex items-center rounded-lg bg-[#5C3A1E] text-white px-4 py-2 text-[12px] hover:opacity-90"
+                    >
+                      Kirim
+                    </button>
+                    {isEditingLogbook && (
+                      <button
+                        onClick={() => setIsEditingLogbook(false)}
                         className="inline-flex items-center rounded-lg border border-[#E8E2DB] px-3 py-2 text-[12px] text-[#3B3B3B] hover:bg-[#F5EFE8]"
                       >
-                        Edit
+                        Batal
                       </button>
-                    </div>
+                    )}
                   </div>
-                ) : (
-                  <div className="space-y-3">
-                    <input
-                      type="url"
-                      value={logbookLink}
-                      onChange={handleLogbookLinkChange}
-                      placeholder="Masukkan link logbook (contoh: https://drive.google.com/...)"
-                      className="w-full rounded-lg border border-[#E8E2DB] bg-white px-3 py-2 text-[12px] text-[#3B3B3B] focus:outline-none focus:ring-2 focus:ring-[#5C3A1E] focus:border-transparent"
-                    />
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={handleSubmitLogbook}
-                        className="inline-flex items-center rounded-lg bg-[#5C3A1E] text-white px-4 py-2 text-[12px] hover:opacity-90"
-                      >
-                        Kirim
-                      </button>
-                      {isEditingLogbook && (
-                        <button
-                          onClick={() => setIsEditingLogbook(false)}
-                          className="inline-flex items-center rounded-lg border border-[#E8E2DB] px-3 py-2 text-[12px] text-[#3B3B3B] hover:bg-[#F5EFE8]"
-                        >
-                          Batal
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
+            </div>
 
               <div
                 className={`mt-5 rounded-xl border p-6 text-center ${
