@@ -112,6 +112,85 @@ export default function AdminLayananMonitoringPage() {
   const [openP4s, setOpenP4s] = useState(false);
   const [openPengajuan, setOpenPengajuan] = useState(false);
 
+  const handleUploadSertifikat = async (row: MonitoringItem) => {
+    const Swal = (await import("sweetalert2")).default;
+
+    const { value: file, isConfirmed } = await Swal.fire({
+      title: "Upload Sertifikat",
+      html: `
+        <input type="file" id="swal-cert-input" accept="application/pdf" class="hidden" />
+        <div class="flex items-center gap-3">
+          <button id="swal-cert-btn" class="px-3 py-2 text-sm rounded-md bg-amber-900 text-white hover:bg-amber-950">Pilih File</button>
+          <span id="swal-cert-name" class="text-sm text-gray-700">Belum ada file dipilih</span>
+        </div>
+      `,
+      focusConfirm: false,
+      confirmButtonText: "Upload",
+      showCancelButton: true,
+      cancelButtonText: "Batal",
+      confirmButtonColor: "#4E342E",
+      customClass: { popup: "rounded-xl" },
+      didOpen: () => {
+        const input = document.getElementById("swal-cert-input") as HTMLInputElement | null;
+        const btn = document.getElementById("swal-cert-btn") as HTMLButtonElement | null;
+        const name = document.getElementById("swal-cert-name") as HTMLSpanElement | null;
+        if (!input || !btn || !name) return;
+        btn.addEventListener("click", (e) => { e.preventDefault(); input.click(); });
+        input.addEventListener("change", () => {
+          const f = input.files && input.files[0];
+          name.textContent = f ? f.name : "Belum ada file dipilih";
+        });
+      },
+      preConfirm: () => {
+        const input = document.getElementById("swal-cert-input") as HTMLInputElement | null;
+        const selected = input?.files && input.files[0];
+        if (!selected) {
+          Swal.showValidationMessage("Silakan pilih file PDF sertifikat");
+          return;
+        }
+        if (selected.type !== "application/pdf") {
+          Swal.showValidationMessage("Hanya file PDF yang diperbolehkan");
+          return;
+        }
+        return selected;
+      },
+    });
+
+    if (!isConfirmed || !file) return;
+
+    // TODO: Replace with actual API upload
+    const uploading = Swal.fire({
+      title: "Mengunggah...",
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      },
+      customClass: { popup: "rounded-xl" },
+    });
+
+    try {
+      await new Promise((r) => setTimeout(r, 1200));
+
+      await Swal.fire({
+        icon: "success",
+        title: "Sertifikat berhasil diunggah",
+        text: `${row.nama} sekarang memiliki sertifikat.`,
+        confirmButtonColor: "#4E342E",
+        customClass: { popup: "rounded-xl" },
+      });
+    } catch (e) {
+      await Swal.fire({
+        icon: "error",
+        title: "Gagal mengunggah",
+        text: "Terjadi kesalahan saat mengunggah sertifikat. Coba lagi.",
+        confirmButtonColor: "#4E342E",
+        customClass: { popup: "rounded-xl" },
+      });
+    } finally {
+      Swal.close();
+    }
+  };
+
   const filtered = useMemo(() => {
     return dataSeed.filter((i) => {
       const q = query.toLowerCase();
@@ -148,11 +227,10 @@ export default function AdminLayananMonitoringPage() {
   };
 
   return (
-    <div className="min-h-screen bg-tertiary">
+    <div className="max-w-6xl mx-auto px-4">
       <LayananHeader title="Monitoring Kegiatan" subtitle="Kelola dan Review Setiap Kegiatan Peserta" />
       <SubNavLayananAdmin />
 
-      <div className="container mx-auto px-4 max-w-6xl py-6">
         {/* Tabs */}
         <div className="flex items-center gap-6 border-b">
           {[
@@ -172,8 +250,8 @@ export default function AdminLayananMonitoringPage() {
         </div>
 
         {/* Filters */}
-        <div className="mt-4 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="mt-4 flex flex-col gap-3">
+          <div className="flex items-center gap-2 w-full">
             <div className="relative w-full sm:w-96">
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
@@ -184,11 +262,11 @@ export default function AdminLayananMonitoringPage() {
               />
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-stretch flex-wrap gap-2">
             <div className="relative">
               <button
                 onClick={() => setOpenMou((s) => !s)}
-                className="inline-flex items-center gap-2 px-3 py-2 text-sm rounded-md border bg-white"
+                className="inline-flex w-full sm:w-auto items-center gap-2 px-3 py-2 text-sm rounded-md border bg-white"
               >
                 Status MOU
                 <span className="text-gray-500">{filterMou === "semua" ? "Semua" : filterMou}</span>
@@ -212,7 +290,7 @@ export default function AdminLayananMonitoringPage() {
             <div className="relative">
               <button
                 onClick={() => setOpenP4s((s) => !s)}
-                className="inline-flex items-center gap-2 px-3 py-2 text-sm rounded-md border bg-white"
+                className="inline-flex w-full sm:w-auto items-center gap-2 px-3 py-2 text-sm rounded-md border bg-white"
               >
                 Status P4S
                 <span className="text-gray-500">{filterPas === "semua" ? "Semua" : filterPas}</span>
@@ -236,7 +314,7 @@ export default function AdminLayananMonitoringPage() {
             <div className="relative">
               <button
                 onClick={() => setOpenPengajuan((s) => !s)}
-                className="inline-flex items-center gap-2 px-3 py-2 text-sm rounded-md border bg-white"
+                className="inline-flex w-full sm:w-auto items-center gap-2 px-3 py-2 text-sm rounded-md border bg-white"
               >
                 Status Pengajuan
                 <span className="text-gray-500">{filterPengajuan === "semua" ? "Semua" : filterPengajuan}</span>
@@ -289,7 +367,7 @@ export default function AdminLayananMonitoringPage() {
                     <td className="px-4 py-3">
                       {activeTab === "selesai" ? (
                         row.pasStatus === "selesai" && (
-                          <button className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md bg-amber-900 text-white hover:bg-amber-950">
+                          <button onClick={() => handleUploadSertifikat(row)} className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md bg-amber-900 text-white hover:bg-amber-950">
                             Upload Sertifikat
                           </button>
                         )
@@ -307,7 +385,6 @@ export default function AdminLayananMonitoringPage() {
             </table>
           </div>
         </div>
-      </div>
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { FileText, Plus, Eye, Pencil, Trash2 } from "lucide-react";
 import Link from "next/link";
 import ModuleDetailModal from "../../../../components/admin/layanan/ModuleDetailModal";
+import LayananHeader from "@/components/layanan/LayananHeader";
 
 interface Module {
   id: number;
@@ -64,7 +65,11 @@ export default function AdminLayananModulPage() {
   ];
 
   const handleView = (module: Module) => {
-    setSelectedModule(module);
+    if (module.moduleFile) {
+      window.open(module.moduleFile, "_blank", "noopener,noreferrer");
+      return;
+    }
+    setSelectedModule(module); // fallback to modal if no file
     setIsModalOpen(true);
   };
 
@@ -93,13 +98,10 @@ export default function AdminLayananModulPage() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 p-4 md:p-6">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-6xl mx-auto px-4">
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">
-            Modul Sekolah Kopi Raisa
-          </h1>
+        <LayananHeader title="Modul Sekolah Kopi Raisa" subtitle="Kelola dan Review Setiap Modul" />
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3">
           <Link href="/admin/layanan/modul/tambah">
             <button className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium">
               <Plus size={18} />
@@ -115,9 +117,9 @@ export default function AdminLayananModulPage() {
               key={module.id}
               className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100"
             >
-              <div className="flex">
+              <div className="flex flex-col sm:flex-row">
                 {/* Image */}
-                <div className="w-32 h-32 flex-shrink-0">
+                <div className="w-full h-40 sm:w-32 sm:h-32 flex-shrink-0">
                   <img
                     src={module.image}
                     alt={module.title}
@@ -138,15 +140,15 @@ export default function AdminLayananModulPage() {
                   </p>
 
                   {/* Action Buttons */}
-                  <div className="flex gap-2 mt-auto">
+                  <div className="mt-auto flex flex-wrap gap-2">
                     <button
                       onClick={() => handleView(module)}
-                      className="flex-1 py-2 px-3 text-xs rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all flex items-center justify-center gap-1.5 font-medium"
+                      className="flex-1 min-w-[110px] py-2 px-3 text-xs rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all flex items-center justify-center gap-1.5 font-medium"
                     >
                       <Eye size={14} />
                       Lihat
                     </button>
-                    <Link href={`/admin/layanan/modul/edit/${module.id}`} className="flex-1">
+                    <Link href={`/admin/layanan/modul/edit/${module.id}`} className="flex-1 min-w-[110px]">
                       <button className="w-full py-2 px-3 text-xs rounded-md bg-amber-900 text-white hover:bg-amber-950 transition-all flex items-center justify-center gap-1.5 font-medium">
                         <Pencil size={14} />
                         Edit
@@ -154,7 +156,7 @@ export default function AdminLayananModulPage() {
                     </Link>
                     <button
                       onClick={() => handleDelete(module.id, module.title)}
-                      className="flex-1 py-2 px-3 text-xs rounded-md bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 transition-all flex items-center justify-center gap-1.5 font-medium"
+                      className="flex-1 min-w-[110px] py-2 px-3 text-xs rounded-md bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 transition-all flex items-center justify-center gap-1.5 font-medium"
                     >
                       <Trash2 size={14} />
                       Hapus
@@ -165,14 +167,13 @@ export default function AdminLayananModulPage() {
             </div>
           ))}
         </div>
-      </div>
 
       {/* Modal */}
       {selectedModule && (
         <ModuleDetailModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          module={selectedModule}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        module={selectedModule}
         />
       )}
     </div>

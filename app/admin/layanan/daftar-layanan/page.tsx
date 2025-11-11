@@ -159,8 +159,8 @@ export default function AdminLayananPage() {
       <LayananHeader title="Layanan" subtitle="Kelola dan Review Pengajuan dari Peserta" />
       <SubNavLayananAdmin />
       <div className="py-4">
-        <div className="container mx-auto px-4 max-w-6xl">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="container mx-auto px-4 max-w-6xl">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {services.map((s) => (
               <ServiceCardAdmin
                 key={s.id}
@@ -176,8 +176,8 @@ export default function AdminLayananPage() {
                 editHref={`/admin/layanan/daftar-layanan/${s.slug}/edit`}
               />
             ))}
+            </div>
           </div>
-        </div>
       </div>
     </div>
   );
