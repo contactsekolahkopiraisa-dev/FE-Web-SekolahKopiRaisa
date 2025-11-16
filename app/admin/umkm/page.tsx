@@ -1,9 +1,9 @@
 // app/admin/umkm/page.tsx
 "use client";
 import { useState, useEffect } from "react";
-import ConfirmModal from "@/components/ConfirmModal";
 import Popup from "@/components/Popup";
 import { getAllUMKM } from "@/app/utils/auth";
+import Swal from "sweetalert2";
 
 interface UMKM {
   id_umkm: number;
@@ -15,9 +15,13 @@ interface UMKM {
   User?: {
     name?: string;
     email?: string;
-    alamat_lengkap?: string;
+    addresses?: Array<{
+      id_address?: number;
+      id_desa?: number;
+      alamat?: string;
+      kode_pos?: string;
+    }>;
   };
-  alamat_lengkap?: string;
   addresses?: Array<{
     id_address?: number;
     id_desa?: number;
@@ -29,15 +33,9 @@ interface UMKM {
 export default function UmkmAdmin() {
   const [data, setData] = useState<UMKM[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
   const [message, setMessage] = useState("");
   const [popupType, setPopupType] = useState<"success" | "error">("success");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [actionType, setActionType] = useState<"approve" | "reject" | null>(
-    null
-  );
   const [showImageModal, setShowImageModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string>("");
 
@@ -57,12 +55,9 @@ export default function UmkmAdmin() {
         search: searchTerm || undefined,
       });
 
-      console.log("Full Response:", response);
-
       if (response && response.data) {
         let umkmData: UMKM[] = [];
 
-        // Handle different response structures
         if (Array.isArray(response.data)) {
           umkmData = response.data;
         } else if (response.data.umkm && Array.isArray(response.data.umkm)) {
@@ -70,14 +65,12 @@ export default function UmkmAdmin() {
           setTotalPages(response.data.totalPages || 1);
         }
 
-        // Filter only Pending status on frontend
         const pendingData = umkmData.filter(
           (item) => item.status_verifikasi === "Pending"
         );
 
         setData(pendingData);
 
-        // Recalculate total pages based on filtered data if needed
         if (Array.isArray(response.data)) {
           setTotalPages(Math.ceil(pendingData.length / itemsPerPage) || 1);
         }
@@ -99,91 +92,141 @@ export default function UmkmAdmin() {
     fetchUMKMData();
   }, [currentPage, searchTerm]);
 
-  const handleApprove = (id: number) => {
-    setSelectedId(id);
-    setActionType("approve");
-    setShowConfirmModal(true);
-  };
+  const handleApprove = async (id: number) => {
+    const umkm = data.find((item) => item.id_umkm === id);
+    if (!umkm) return;
 
-  const handleReject = (id: number) => {
-    setSelectedId(id);
-    setActionType("reject");
-    setShowConfirmModal(true);
-  };
+    const result = await Swal.fire({
+      title: "Setujui UMKM",
+      html: `
+        <div style="text-align: left;">
+          <p style="margin-bottom: 15px;">Apakah Anda yakin ingin menyetujui UMKM <strong>${umkm.nama_umkm}</strong>?</p>
+          <label style="display: block; margin-bottom: 8px; font-weight: 500;">Alasan Persetujuan (Opsional):</label>
+        </div>
+      `,
+      input: "textarea",
+      inputPlaceholder: "Masukkan alasan persetujuan (opsional)...",
+      inputAttributes: {
+        style: "min-height: 100px; resize: vertical;"
+      },
+      showCancelButton: true,
+      confirmButtonText: "Ya, Setujui",
+      cancelButtonText: "Batal",
+      confirmButtonColor: "#10b981",
+      cancelButtonColor: "#6b7280",
+      showLoaderOnConfirm: true,
+      preConfirm: async (alasan) => {
+        try {
+          // Call API to approve UMKM
+          const response = await fetch(`/api/admin/umkm/${id}/approve`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              alasan: alasan || "UMKM Anda telah disetujui.",
+              email: umkm.User?.email,
+              nama_umkm: umkm.nama_umkm,
+            }),
+          });
 
-  const handleConfirm = async () => {
-    if (!selectedId || !actionType) return;
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Gagal menyetujui UMKM");
+          }
 
-    setIsSubmitting(true);
+          return await response.json();
+        } catch (error: any) {
+          Swal.showValidationMessage(`Error: ${error.message}`);
+        }
+      },
+      allowOutsideClick: () => !Swal.isLoading(),
+    });
 
-    try {
-      // TODO: Replace with actual API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      if (actionType === "approve") {
-        console.log("Menyetujui UMKM dengan ID:", selectedId);
-        setMessage(
-          "Berhasil Disetujui! UMKM berhasil disetujui dan ditambahkan ke daftar."
-        );
-        setPopupType("success");
-      } else if (actionType === "reject") {
-        console.log("Menolak UMKM dengan ID:", selectedId);
-        setMessage("UMKM Ditolak! UMKM telah ditolak dan dihapus dari daftar.");
-        setPopupType("success");
-      }
-
+    if (result.isConfirmed) {
       await fetchUMKMData();
-      setShowConfirmModal(false);
-      setShowPopup(true);
+      Swal.fire({
+        title: "Berhasil!",
+        text: `UMKM ${umkm.nama_umkm} telah disetujui dan email notifikasi telah dikirim.`,
+        icon: "success",
+        confirmButtonColor: "#10b981",
+      });
+    }
+  };
 
-      setTimeout(() => {
-        setShowPopup(false);
-        setSelectedId(null);
-        setActionType(null);
-      }, 2000);
-    } catch (error) {
-      console.error("Error:", error);
-      setShowConfirmModal(false);
-      setMessage("Terjadi kesalahan saat memproses UMKM.");
-      setPopupType("error");
-      setShowPopup(true);
-    } finally {
-      setIsSubmitting(false);
+  const handleReject = async (id: number) => {
+    const umkm = data.find((item) => item.id_umkm === id);
+    if (!umkm) return;
+
+    const result = await Swal.fire({
+      title: "Tolak UMKM",
+      html: `
+        <div style="text-align: left;">
+          <p style="margin-bottom: 15px;">Apakah Anda yakin ingin menolak UMKM <strong>${umkm.nama_umkm}</strong>?</p>
+          <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #dc2626;">Alasan Penolakan (Wajib):</label>
+        </div>
+      `,
+      input: "textarea",
+      inputPlaceholder: "Masukkan alasan penolakan...",
+      inputAttributes: {
+        style: "min-height: 100px; resize: vertical;"
+      },
+      inputValidator: (value) => {
+        if (!value) {
+          return "Alasan penolakan wajib diisi!";
+        }
+        if (value.length < 10) {
+          return "Alasan penolakan minimal 10 karakter!";
+        }
+      },
+      showCancelButton: true,
+      confirmButtonText: "Ya, Tolak",
+      cancelButtonText: "Batal",
+      confirmButtonColor: "#dc2626",
+      cancelButtonColor: "#6b7280",
+      showLoaderOnConfirm: true,
+      preConfirm: async (alasan) => {
+        try {
+          // Call API to reject UMKM
+          const response = await fetch(`/api/admin/umkm/${id}/reject`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              alasan: alasan,
+              email: umkm.User?.email,
+              nama_umkm: umkm.nama_umkm,
+            }),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Gagal menolak UMKM");
+          }
+
+          return await response.json();
+        } catch (error: any) {
+          Swal.showValidationMessage(`Error: ${error.message}`);
+        }
+      },
+      allowOutsideClick: () => !Swal.isLoading(),
+    });
+
+    if (result.isConfirmed) {
+      await fetchUMKMData();
+      Swal.fire({
+        title: "Berhasil!",
+        text: `UMKM ${umkm.nama_umkm} telah ditolak dan email notifikasi telah dikirim.`,
+        icon: "success",
+        confirmButtonColor: "#10b981",
+      });
     }
   };
 
   const handleViewImage = (imageUrl: string) => {
     setSelectedImage(imageUrl);
     setShowImageModal(true);
-  };
-
-  const handleDownloadImage = (imageUrl: string, filename: string) => {
-    const link = document.createElement("a");
-    link.href = imageUrl;
-    link.download = filename;
-    link.target = "_blank";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const getModalTitle = () => {
-    if (actionType === "approve") return "Setujui UMKM";
-    if (actionType === "reject") return "Tolak UMKM";
-    return "";
-  };
-
-  const getModalDescription = () => {
-    const umkmName = data.find(
-      (item) => item.id_umkm === selectedId
-    )?.nama_umkm;
-    if (actionType === "approve") {
-      return `Apakah Anda yakin ingin menyetujui UMKM "${umkmName}"? UMKM ini akan ditambahkan ke daftar yang disetujui.`;
-    }
-    if (actionType === "reject") {
-      return `Apakah Anda yakin ingin menolak UMKM "${umkmName}"? UMKM ini akan dihapus dari daftar pengajuan.`;
-    }
-    return "";
   };
 
   const handleSearch = (e: React.FormEvent) => {
@@ -201,19 +244,6 @@ export default function UmkmAdmin() {
           onClose={() => setShowPopup(false)}
         />
       )}
-
-      <ConfirmModal
-        title={getModalTitle()}
-        description={getModalDescription()}
-        isOpen={showConfirmModal}
-        isSubmitting={isSubmitting}
-        onClose={() => {
-          setShowConfirmModal(false);
-          setSelectedId(null);
-          setActionType(null);
-        }}
-        onConfirm={handleConfirm}
-      />
 
       {/* Image Modal */}
       {showImageModal && (
@@ -242,14 +272,6 @@ export default function UmkmAdmin() {
               />
             </div>
             <div className="p-4 border-t flex justify-end gap-2">
-              <button
-                onClick={() =>
-                  handleDownloadImage(selectedImage, "sertifikat-halal.png")
-                }
-                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
-              >
-                Download
-              </button>
               <button
                 onClick={() => setShowImageModal(false)}
                 className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
@@ -343,30 +365,14 @@ export default function UmkmAdmin() {
                     </td>
                     <td className="px-2 sm:px-4 py-3 whitespace-nowrap">
                       {item.sertifikat_halal ? (
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() =>
-                              handleViewImage(item.sertifikat_halal!)
-                            }
-                            className="text-blue-600 hover:text-blue-800 underline"
-                            title="Lihat Gambar"
-                          >
-                            Lihat
-                          </button>
-                          <span className="text-gray-300">|</span>
-                          <button
-                            onClick={() =>
-                              handleDownloadImage(
-                                item.sertifikat_halal!,
-                                `sertifikat-${item.nama_umkm}.png`
-                              )
-                            }
-                            className="text-green-600 hover:text-green-800 underline"
-                            title="Download"
-                          >
-                            Download
-                          </button>
-                        </div>
+                        <a
+                          href={item.sertifikat_halal}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 underline hover:no-underline transition-colors"
+                        >
+                          File Sertifikat
+                        </a>
                       ) : (
                         <span className="text-gray-400">-</span>
                       )}
@@ -374,25 +380,27 @@ export default function UmkmAdmin() {
                     <td
                       className="px-2 sm:px-4 py-3 max-w-xs truncate"
                       title={
-                        item.alamat_lengkap || item.User?.alamat_lengkap || "-"
+                        item.User?.addresses?.[0]?.alamat ||
+                        item.addresses?.[0]?.alamat ||
+                        "-"
                       }
                     >
-                      {item.alamat_lengkap || item.User?.alamat_lengkap || "-"}
+                      {item.User?.addresses?.[0]?.alamat ||
+                        item.addresses?.[0]?.alamat ||
+                        "-"}
                     </td>
                     <td className="px-2 sm:px-4 py-3 whitespace-nowrap">
                       <div className="flex gap-2 justify-center">
                         <button
                           onClick={() => handleApprove(item.id_umkm)}
-                          disabled={isSubmitting}
-                          className="cursor-pointer px-3 py-2 text-white text-xs sm:text-sm rounded-lg bg-primary hover:-translate-y-1 duration-150 ease-in disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="cursor-pointer px-3 py-2 text-white text-xs sm:text-sm rounded-lg bg-primary hover:-translate-y-1 duration-150 ease-in"
                           title="Setuju"
                         >
                           Setuju
                         </button>
                         <button
                           onClick={() => handleReject(item.id_umkm)}
-                          disabled={isSubmitting}
-                          className="cursor-pointer px-3 py-2 text-white text-xs sm:text-sm rounded-lg bg-red-600 hover:-translate-y-1 duration-150 ease-in disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="cursor-pointer px-3 py-2 text-white text-xs sm:text-sm rounded-lg bg-red-600 hover:-translate-y-1 duration-150 ease-in"
                           title="Tolak"
                         >
                           Tolak
