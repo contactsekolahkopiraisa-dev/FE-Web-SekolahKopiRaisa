@@ -128,6 +128,8 @@ export const registerUser = async (formData: RegisterUserData) => {
 
 export const registerUMKM = async (formData: RegisterUMKMData) => {
   try {
+    console.log("🔧 Membangun FormData...");
+
     const data = new FormData();
 
     // Append required fields
@@ -138,13 +140,52 @@ export const registerUMKM = async (formData: RegisterUMKMData) => {
     data.append("namaUmkm", formData.namaUmkm);
     data.append("ktp", formData.ktp);
 
-    // Append certificate file if exists
-    if (formData.sertifikasiHalal instanceof File) {
+    // ✅ HANYA APPEND FILE JIKA ADA DAN VALID
+    if (
+      formData.sertifikasiHalal &&
+      formData.sertifikasiHalal instanceof File
+    ) {
+      console.log("📎 File akan dikirim:", {
+        name: formData.sertifikasiHalal.name,
+        type: formData.sertifikasiHalal.type,
+        size: `${(formData.sertifikasiHalal.size / 1024).toFixed(2)} KB`,
+      });
+
+      // PASTIKAN HANYA APPEND SEKALI
       data.append("sertifikasiHalal", formData.sertifikasiHalal);
+    } else {
+      console.log("ℹ️ Tidak ada file sertifikat");
     }
 
     // Append addresses as JSON string
     data.append("addresses", JSON.stringify(formData.addresses));
+
+    // ✅ LOG SEMUA ENTRIES DALAM FORMDATA
+    console.log("📦 FormData entries:");
+    let fileCount = 0;
+    for (let [key, value] of data.entries()) {
+      if (value instanceof File) {
+        fileCount++;
+        console.log(`  ${key} [FILE #${fileCount}]:`, {
+          name: value.name,
+          type: value.type,
+          size: `${(value.size / 1024).toFixed(2)} KB`,
+        });
+      } else {
+        console.log(
+          `  ${key}:`,
+          typeof value === "string" && value.length > 50
+            ? value.substring(0, 50) + "..."
+            : value
+        );
+      }
+    }
+
+    if (fileCount > 1) {
+      console.error("⚠️ WARNING: FormData contains multiple files!");
+    }
+
+    console.log("🚀 Mengirim request ke backend...");
 
     const res = await api.post("/api/v1/auth/umkm", data, {
       headers: {
@@ -152,10 +193,15 @@ export const registerUMKM = async (formData: RegisterUMKMData) => {
       },
     });
 
+    console.log("✅ Response berhasil:", res.data);
     return res.data;
   } catch (error: any) {
+    console.error("💥 Error saat registrasi UMKM:");
+
     if (error.response) {
       const { data, status, statusText } = error.response;
+      console.error("  Status:", status, statusText);
+      console.error("  Response data:", data);
 
       // Handle validation errors
       if (
@@ -190,6 +236,7 @@ export const registerUMKM = async (formData: RegisterUMKMData) => {
 
     // Network error
     if (error.request) {
+      console.error("  Network error - no response received");
       throw {
         type: "network",
         message:
@@ -198,6 +245,7 @@ export const registerUMKM = async (formData: RegisterUMKMData) => {
     }
 
     // Unknown error
+    console.error("  Unknown error:", error.message);
     throw {
       type: "unknown",
       message: error.message || "Terjadi kesalahan yang tidak diketahui",
@@ -277,10 +325,7 @@ export const getAllUMKM = async (params?: {
     if (params?.page) queryParams.append("page", params.page.toString());
     if (params?.limit) queryParams.append("limit", params.limit.toString());
     if (params?.search) queryParams.append("search", params.search);
-    // Jangan kirim status ke API jika tidak diperlukan
-    // Filtering akan dilakukan di frontend
-    // if (params?.status) queryParams.append("status", params.status);
-
+    
     const url = `/api/v1/auth/umkm${
       queryParams.toString() ? `?${queryParams.toString()}` : ""
     }`;

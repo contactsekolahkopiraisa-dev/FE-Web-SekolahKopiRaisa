@@ -11,7 +11,7 @@ import {
   fetchDistricts,
   fetchVillages,
 } from "@/app/utils/wilayah";
-import { ChevronLeft, Eye, EyeOff, FileUp } from "lucide-react";
+import { ChevronLeft, Eye, EyeOff, FileUp, X } from "lucide-react";
 import Popup from "@/components/Popup";
 
 export default function SignupUMKM() {
@@ -22,7 +22,7 @@ export default function SignupUMKM() {
     phone_number: string;
     nik: string;
     umkm_name: string;
-    halal_certificate: File | null;
+    sertifikasiHalal: File | null;
     addresses: Array<{
       id_desa: string;
       alamat: string;
@@ -35,7 +35,7 @@ export default function SignupUMKM() {
     phone_number: "",
     nik: "",
     umkm_name: "",
-    halal_certificate: null,
+    sertifikasiHalal: null,
     addresses: [
       {
         id_desa: "",
@@ -82,7 +82,7 @@ export default function SignupUMKM() {
       phone_number: string;
       nik: string;
       umkm_name: string;
-      halal_certificate: string;
+      sertifikasiHalal: string;
       postal_code: string;
       province: string;
       regency: string;
@@ -94,6 +94,7 @@ export default function SignupUMKM() {
   const [showPopup, setShowPopup] = useState(false);
   const [message, setMessage] = useState("");
   const [popupType, setPopupType] = useState<"success" | "error">("success");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
   // Load provinces
@@ -107,9 +108,6 @@ export default function SignupUMKM() {
         }
       } catch (error: any) {
         console.error("Error loading provinces:", error.message);
-        setMessage("Gagal memuat data provinsi");
-        setPopupType("error");
-        setShowPopup(true);
       } finally {
         setLoadingProvinces(false);
       }
@@ -134,9 +132,6 @@ export default function SignupUMKM() {
         }
       } catch (error: any) {
         console.error("Error loading regencies:", error.message);
-        setMessage("Gagal memuat data kabupaten");
-        setPopupType("error");
-        setShowPopup(true);
       } finally {
         setLoadingRegencies(false);
       }
@@ -161,9 +156,6 @@ export default function SignupUMKM() {
         }
       } catch (error: any) {
         console.error("Error loading districts:", error.message);
-        setMessage("Gagal memuat data kecamatan");
-        setPopupType("error");
-        setShowPopup(true);
       } finally {
         setLoadingDistricts(false);
       }
@@ -188,9 +180,6 @@ export default function SignupUMKM() {
         }
       } catch (error: any) {
         console.error("Error loading village:", error.message);
-        setMessage("Gagal memuat data desa");
-        setPopupType("error");
-        setShowPopup(true);
       } finally {
         setLoadingVillages(false);
       }
@@ -214,10 +203,9 @@ export default function SignupUMKM() {
       return;
     }
 
-    // PERBAIKAN: Validasi NIK
     if (name === "nik") {
       const numericValue = value.replace(/[^0-9]/g, "");
-      if (numericValue.length > 16) return; // Batasi 16 digit
+      if (numericValue.length > 16) return;
       setForm({ ...form, nik: numericValue });
       if (errors.nik) {
         setErrors((prev) => ({ ...prev, nik: "" }));
@@ -314,72 +302,99 @@ export default function SignupUMKM() {
     setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  // ✅ PERBAIKAN: Handler file yang lebih ketat
+const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const files = e.target.files;
 
-    // Reset error
-    setErrors((prev) => ({ ...prev, halal_certificate: "" }));
+  // Reset error
+  setErrors((prev) => ({ ...prev, sertifikasiHalal: "" }));
 
-    // Jika tidak ada file yang dipilih, set null
-    if (!file) {
-      setForm({ ...form, halal_certificate: null });
-      return;
+  // Validasi: pastikan hanya 1 file
+  if (!files || files.length === 0) {
+    setForm({ ...form, sertifikasiHalal: null });
+    return;
+  }
+
+  if (files.length > 1) {
+    setErrors((prev) => ({
+      ...prev,
+      sertifikasiHalal: "Hanya boleh upload 1 file",
+    }));
+    e.target.value = "";
+    setForm({ ...form, sertifikasiHalal: null }); // ✅ Reset form state
+    return;
+  }
+
+  const file = files[0];
+
+  // Validasi ukuran file (max 5MB)
+  const maxSize = 5 * 1024 * 1024;
+  if (file.size > maxSize) {
+    setErrors((prev) => ({
+      ...prev,
+      sertifikasiHalal: `Ukuran file terlalu besar (${(
+        file.size /
+        1024 /
+        1024
+      ).toFixed(2)} MB). Maksimal 5MB`,
+    }));
+    e.target.value = "";
+    setForm({ ...form, sertifikasiHalal: null });
+    return;
+  }
+
+  // Validasi format file
+  const allowedTypes = [
+    "application/pdf",
+    "image/jpeg",
+    "image/jpg",
+    "image/png",
+  ];
+
+  if (!allowedTypes.includes(file.type)) {
+    setErrors((prev) => ({
+      ...prev,
+      sertifikasiHalal: `Format tidak didukung (${file.type}). Gunakan PDF, JPG, atau PNG`,
+    }));
+    e.target.value = "";
+    setForm({ ...form, sertifikasiHalal: null });
+    return;
+  }
+
+  setForm({ ...form, sertifikasiHalal: file });
+};
+
+  // ✅ PERBAIKAN: Handler hapus file
+  const handleRemoveFile = () => {
+    setForm({ ...form, sertifikasiHalal: null });
+    setErrors((prev) => ({ ...prev, sertifikasiHalal: "" }));
+
+    // Reset input file
+    const input = document.getElementById(
+      "halal-certificate-input"
+    ) as HTMLInputElement;
+    if (input) {
+      input.value = "";
     }
-
-    // Validasi ukuran file (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      setErrors((prev) => ({
-        ...prev,
-        halal_certificate: "Ukuran file maksimal 5MB",
-      }));
-      // Reset input file
-      e.target.value = "";
-      return;
-    }
-
-    // Validasi format file
-    const allowedTypes = [
-      "application/pdf",
-      "image/jpeg",
-      "image/jpg",
-      "image/png",
-    ];
-    if (!allowedTypes.includes(file.type)) {
-      setErrors((prev) => ({
-        ...prev,
-        halal_certificate: "Format file harus PDF, JPG, JPEG, atau PNG",
-      }));
-      // Reset input file
-      e.target.value = "";
-      return;
-    }
-
-    // Set file jika valid
-    setForm({ ...form, halal_certificate: file });
   };
 
-
-  // PERBAIKAN: Validasi form yang lebih ketat
   const validateForm = () => {
     const newErrors: any = {};
 
     if (!form.name.trim()) newErrors.name = "Nama wajib diisi";
 
-    // Validasi email
     if (!form.email.trim()) {
       newErrors.email = "Email wajib diisi";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
       newErrors.email = "Format email tidak valid";
     }
 
-    // Validasi password
     if (!form.password.trim()) {
       newErrors.password = "Password wajib diisi";
     } else if (form.password.length < 6) {
       newErrors.password = "Password minimal 6 karakter";
     }
 
-    // Validasi phone number
     if (!form.phone_number.trim()) {
       newErrors.phone_number = "No. HP wajib diisi";
     } else if (!/^08\d{8,11}$/.test(form.phone_number)) {
@@ -387,7 +402,6 @@ export default function SignupUMKM() {
         "Format tidak valid. Gunakan 08xxxxxxxxxx (10-13 digit)";
     }
 
-    // PERBAIKAN: Validasi NIK harus 16 digit
     if (!form.nik.trim()) {
       newErrors.nik = "NIK wajib diisi";
     } else if (!/^\d{16}$/.test(form.nik)) {
@@ -396,7 +410,6 @@ export default function SignupUMKM() {
 
     if (!form.umkm_name.trim()) newErrors.umkm_name = "Nama UMKM wajib diisi";
 
-    // Validasi alamat
     if (!form.addresses[0].kode_pos) {
       newErrors.postal_code = "Kode Pos wajib diisi";
     } else if (!/^\d{5}$/.test(form.addresses[0].kode_pos)) {
@@ -415,68 +428,61 @@ export default function SignupUMKM() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    if (!validateForm()) {
-      setMessage("Mohon lengkapi semua field yang wajib diisi dengan benar");
-      setPopupType("error");
-      setShowPopup(true);
-      return;
+  if (isSubmitting) return;
+
+  if (!validateForm()) {
+    setMessage("Mohon lengkapi semua field yang wajib diisi dengan benar");
+    setPopupType("error");
+    setShowPopup(true);
+    return;
+  }
+
+  setIsSubmitting(true);
+
+  try {
+    const submitData = {
+      name: form.name.trim(),
+      email: form.email.trim(),
+      password: form.password,
+      phone_number: form.phone_number,
+      namaUmkm: form.umkm_name.trim(),
+      ktp: form.nik,
+      sertifikasiHalal: form.sertifikasiHalal || undefined,
+      addresses: form.addresses.map((addr) => ({
+        id_desa: parseInt(addr.id_desa),
+        alamat: addr.alamat.trim(),
+        kode_pos: addr.kode_pos,
+      })),
+    };
+
+    const response = await registerUMKM(submitData);
+
+    if (response && response.message) {
+      sessionStorage.setItem(
+        "popup",
+        JSON.stringify({
+          message: response.message,
+          type: "success",
+        })
+      );
+      router.push("/signup/umkm/verification");
     }
-
-    try {
-      // Format data yang benar untuk API
-      const submitData = {
-        name: form.name.trim(),
-        email: form.email.trim(),
-        password: form.password,
-        phone_number: form.phone_number,
-        namaUmkm: form.umkm_name.trim(),
-        ktp: form.nik,
-        // PENTING: Hanya kirim file jika benar-benar ada file yang dipilih
-        sertifikasiHalal: form.halal_certificate || undefined,
-        addresses: form.addresses.map((addr) => ({
-          id_desa: parseInt(addr.id_desa),
-          alamat: addr.alamat.trim(),
-          kode_pos: addr.kode_pos,
-        })),
-      };
-
-      console.log("Data yang akan dikirim:");
-      console.log("- Name:", submitData.name);
-      console.log("- Email:", submitData.email);
-      console.log("- Phone:", submitData.phone_number);
-      console.log("- UMKM Name:", submitData.namaUmkm);
-      console.log("- NIK:", submitData.ktp);
-      console.log("- Has Certificate:", !!submitData.sertifikasiHalal);
-      console.log("- Addresses:", submitData.addresses);
-
-      const response = await registerUMKM(submitData);
-
-      if (response && response.message) {
-        sessionStorage.setItem(
-          "popup",
-          JSON.stringify({
-            message: response.message,
-            type: "success",
-          })
-        );
-        router.push("/signup/umkm/verification");
-      }
-    } catch (error: any) {
-      console.error("Error detail:", error);
-
-      if (error.type === "validation") {
-        setErrors(error.errors);
-        setMessage(error.message || "Validasi gagal");
-      } else {
-        setMessage(error.message || "Terjadi kesalahan saat mendaftar");
-      }
-      setPopupType("error");
-      setShowPopup(true);
+  } catch (error: any) {
+    if (error.type === "validation") {
+      setErrors(error.errors || {});
+      setMessage(error.message || "Validasi gagal");
+    } else {
+      setMessage(error.message || "Terjadi kesalahan saat mendaftar");
     }
-  };
+    setPopupType("error");
+    setShowPopup(true);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   return (
     <>
@@ -525,6 +531,7 @@ export default function SignupUMKM() {
                       type="text"
                       className="w-full p-2 border border-gray-300 rounded-xl"
                       placeholder="Masukkan nama pemilik umkm"
+                      disabled={isSubmitting}
                     />
                     {errors.name && (
                       <p className="text-red-500 text-sm mt-1">{errors.name}</p>
@@ -540,6 +547,7 @@ export default function SignupUMKM() {
                       type="email"
                       className="w-full p-2 border border-gray-300 rounded-xl"
                       placeholder="Masukkan email"
+                      disabled={isSubmitting}
                     />
                     {errors.email && (
                       <p className="text-red-500 text-sm mt-1">
@@ -559,11 +567,13 @@ export default function SignupUMKM() {
                       type={showPassword ? "text" : "password"}
                       className="w-full p-2 border border-gray-300 rounded-xl"
                       placeholder="Masukkan kata sandi (min. 6 karakter)"
+                      disabled={isSubmitting}
                     />
                     <button
                       type="button"
                       className="cursor-pointer absolute top-7.5 right-3 text-gray-500"
                       onClick={() => setShowPassword(!showPassword)}
+                      disabled={isSubmitting}
                     >
                       {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
@@ -583,6 +593,7 @@ export default function SignupUMKM() {
                       type="text"
                       className="w-full p-2 border border-gray-300 rounded-xl"
                       placeholder="Contoh: 08xxxxxxxxxx"
+                      disabled={isSubmitting}
                     />
                     {errors.phone_number && (
                       <p className="text-red-500 text-sm mt-1">
@@ -601,6 +612,7 @@ export default function SignupUMKM() {
                       className="w-full p-2 border border-gray-300 rounded-xl"
                       placeholder="Masukkan NIK (16 digit)"
                       maxLength={16}
+                      disabled={isSubmitting}
                     />
                     {errors.nik && (
                       <p className="text-red-500 text-sm mt-1">{errors.nik}</p>
@@ -621,6 +633,7 @@ export default function SignupUMKM() {
                       type="text"
                       className="w-full p-2 border border-gray-300 rounded-xl"
                       placeholder="Masukkan nama UMKM"
+                      disabled={isSubmitting}
                     />
                     {errors.umkm_name && (
                       <p className="text-red-500 text-sm mt-1">
@@ -629,67 +642,68 @@ export default function SignupUMKM() {
                     )}
                   </div>
 
+                  {/* ✅ PERBAIKAN: Upload file yang lebih jelas */}
                   <div>
                     <label className="block text-sm font-medium mb-2">
-                      Sertifikasi Halal{" "}
-                      {/* <span className="text-gray-400 text-xs">(Opsional)</span> */}
+                      Sertifikasi Halal (Opsional)
                     </label>
-                    <div className="relative w-full border-2 border-dashed border-gray-300 rounded-xl p-6 hover:border-gray-400 transition-colors">
-                      <input
-                        name="halal_certificate"
-                        onChange={handleFileChange}
-                        type="file"
-                        accept=".pdf,.jpg,.jpeg,.png"
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        id="halal-certificate-input"
-                      />
-                      <div className="flex flex-col items-center justify-center text-center">
-                        <FileUp size={32} className="text-gray-400 mb-2" />
-                        <p className="text-sm text-gray-600 mb-1">
-                          {form.halal_certificate ? (
-                            <>
-                              <span className="text-green-600 font-medium">
-                                ✓ {form.halal_certificate.name}
-                              </span>
-                              <br />
-                              <span className="text-xs text-gray-500">
-                                (
-                                {(
-                                  form.halal_certificate.size /
-                                  1024 /
-                                  1024
-                                ).toFixed(2)}{" "}
-                                MB)
-                              </span>
-                            </>
-                          ) : (
-                            "Klik atau drag file ke sini"
-                          )}
-                        </p>
-                        <p className="text-xs text-gray-400">
-                          Format: PDF, JPG, PNG (Max 5MB)
-                        </p>
+
+                    {!form.sertifikasiHalal ? (
+                      <div className="relative w-full border-2 border-dashed border-gray-300 rounded-xl p-6 hover:border-gray-400 transition-colors">
+                        <input
+                          name="sertifikasiHalal"
+                          onChange={handleFileChange}
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                          id="halal-certificate-input"
+                          disabled={isSubmitting}
+                          multiple={false}
+                        />
+                        <div className="flex flex-col items-center justify-center text-center pointer-events-none">
+                          <FileUp size={32} className="text-gray-400 mb-2" />
+                          <p className="text-sm text-gray-600 mb-1">
+                            Klik atau drag file ke sini
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            PDF, JPG, PNG (Max 5MB)
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                    {errors.halal_certificate && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.halal_certificate}
-                      </p>
+                    ) : (
+                      <div className="border-2 border-green-300 bg-green-50 rounded-xl p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <FileUp
+                              size={24}
+                              className="text-green-600 flex-shrink-0"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-green-800 truncate">
+                                {form.sertifikasiHalal.name}
+                              </p>
+                              <p className="text-xs text-green-600">
+                                {(form.sertifikasiHalal.size / 1024).toFixed(2)}{" "}
+                                KB
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleRemoveFile}
+                            className="ml-2 p-1 hover:bg-red-100 rounded-full transition-colors flex-shrink-0"
+                            disabled={isSubmitting}
+                          >
+                            <X size={18} className="text-red-600" />
+                          </button>
+                        </div>
+                      </div>
                     )}
-                    {form.halal_certificate && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setForm({ ...form, halal_certificate: null });
-                          const input = document.getElementById(
-                            "halal-certificate-input"
-                          ) as HTMLInputElement;
-                          if (input) input.value = "";
-                        }}
-                        className="mt-2 text-xs text-red-500 hover:text-red-700 underline"
-                      >
-                        Hapus file
-                      </button>
+
+                    {errors.sertifikasiHalal && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.sertifikasiHalal}
+                      </p>
                     )}
                   </div>
                 </div>
