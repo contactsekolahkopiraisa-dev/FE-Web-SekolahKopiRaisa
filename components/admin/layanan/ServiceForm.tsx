@@ -1,7 +1,8 @@
 "use client";
 import { useState } from "react";
-import { Upload, X } from "lucide-react";
+import { Upload, X, ChevronDown } from "lucide-react";
 import Image from "next/image";
+import { TargetPesertaItem } from "@/app/types/jenisLayananType";
 
 interface ServiceFormProps {
   initialData?: {
@@ -12,6 +13,7 @@ interface ServiceFormProps {
     targetPeserta: string;
     image?: string;
   };
+  targetPesertaOptions?: TargetPesertaItem[];
   onSubmit: (data: any, file: File | null) => void;
   onCancel: () => void;
   isLoading?: boolean;
@@ -19,6 +21,7 @@ interface ServiceFormProps {
 
 export default function ServiceForm({
   initialData,
+  targetPesertaOptions = [],
   onSubmit,
   onCancel,
   isLoading = false,
@@ -37,7 +40,9 @@ export default function ServiceForm({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -125,7 +130,9 @@ export default function ServiceForm({
               <div className="flex flex-col items-center justify-center py-6">
                 <Upload className="w-10 h-10 text-gray-400 mb-2" />
                 <p className="text-sm text-gray-500 font-medium">Unggah File</p>
-                <p className="text-xs text-gray-400 mt-1">PNG, JPG hingga 5MB</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  PNG, JPG hingga 5MB
+                </p>
               </div>
               <input
                 id="file-upload"
@@ -206,17 +213,30 @@ export default function ServiceForm({
           >
             Target Peserta
           </label>
-          <select
-            id="targetPeserta"
-            name="targetPeserta"
-            value={formData.targetPeserta}
-            onChange={handleInputChange}
-            required
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition appearance-none bg-white cursor-pointer"
-          >
-            <option value="">Pilih</option>
-            <option value="Umum & Siswa / Mahasiswa">Umum & Siswa / Mahasiswa</option>
-          </select>
+          <div className="relative">
+            <select
+              id="targetPeserta"
+              name="targetPeserta"
+              value={formData.targetPeserta}
+              onChange={handleInputChange}
+              required
+              className="w-full px-4 py-2.5 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition appearance-none bg-white text-gray-900 cursor-pointer"
+            >
+              <option value="" className="text-gray-500">
+                Pilih Target Peserta
+              </option>
+              {targetPesertaOptions.map((option) => (
+                <option
+                  key={option.id}
+                  value={option.id}
+                  className="text-gray-900"
+                >
+                  {option.nama_target}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+          </div>
         </div>
 
         {/* Action Buttons */}
@@ -234,7 +254,7 @@ export default function ServiceForm({
             disabled={isLoading}
             className="px-8 py-2.5 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
-          Kembali
+            Kembali
           </button>
         </div>
       </form>

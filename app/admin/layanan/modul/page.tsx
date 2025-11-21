@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FileText, Plus, Eye, Pencil, Trash2 } from "lucide-react";
 import Link from "next/link";
 import ModuleDetailModal from "../../../../components/admin/layanan/ModuleDetailModal";
 import LayananHeader from "@/components/layanan/LayananHeader";
+import { fetchAllModul, deleteModul } from "@/app/utils/modul";
+import { ModulItem } from "@/app/types/modulType";
 
 interface Module {
   id: number;
@@ -17,59 +19,50 @@ interface Module {
 export default function AdminLayananModulPage() {
   const [selectedModule, setSelectedModule] = useState<Module | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modules, setModules] = useState<ModulItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Sample data - replace with actual API call
-  const modules: Module[] = [
-    {
-      id: 1,
-      title: "Modul 1: Pengenalan Kopi",
-      description: "pengetahuan dasar tentang kopi, sejarah kopi",
-      image: "/assets/coffee.jpg",
-      moduleFile: "/assets/modul1.pdf",
-    },
-    {
-      id: 2,
-      title: "Modul 2: Proses Roasting",
-      description: "dasar-dasar roasting dan profil rasa",
-      image: "/assets/coffee.jpg",
-      moduleFile: "/assets/modul2.pdf",
-    },
-    {
-      id: 3,
-      title: "Modul 3: Brewing",
-      description: "metode seduh dan teknik ekstraksi",
-      image: "/assets/coffee.jpg",
-      moduleFile: "/assets/modul3.pdf",
-    },
-    {
-      id: 4,
-      title: "Modul 4: Cupping",
-      description: "evaluasi citarasa dan aroma kopi",
-      image: "/assets/coffee.jpg",
-      moduleFile: "/assets/modul4.pdf",
-    },
-    {
-      id: 5,
-      title: "Modul 5: Latte Art",
-      description: "teknik membuat latte art dan dekorasi kopi",
-      image: "/assets/coffee.jpg",
-      moduleFile: "/assets/modul5.pdf",
-    },
-    {
-      id: 6,
-      title: "Modul 6: Manajemen Barista",
-      description: "manajemen operasional dan pelayanan pelanggan",
-      image: "/assets/coffee.jpg",
-      moduleFile: "/assets/modul6.pdf",
-    },
-  ];
+  // Fetch modules from API
+  useEffect(() => {
+    loadModules();
+  }, []);
 
-  const handleView = (module: Module) => {
-    if (module.moduleFile) {
-      window.open(module.moduleFile, "_blank", "noopener,noreferrer");
+  const loadModules = async () => {
+    try {
+      setIsLoading(true);
+      console.log("Loading modules...");
+      const data = await fetchAllModul();
+      console.log("Modules loaded:", data);
+      setModules(data);
+    } catch (error: any) {
+      console.error("Error in loadModules:", error);
+      const Swal = (await import("sweetalert2")).default;
+      await Swal.fire({
+        icon: "error",
+        title: "Gagal Memuat Data",
+        text: error.message || "Terjadi kesalahan saat memuat data modul",
+        confirmButtonColor: "#4E342E",
+        customClass: { popup: "rounded-xl" },
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleView = (module: ModulItem) => {
+    if (module.file_modul) {
+      window.open(module.file_modul, "_blank", "noopener,noreferrer");
       return;
     }
-    setSelectedModule(module); // fallback to modal if no file
+    // Convert ModulItem to Module for modal
+    const modalData: Module = {
+      id: module.id,
+      title: module.judul_modul,
+      description: module.deskripsi,
+      image: "/assets/coffee.jpg", // default image
+      moduleFile: module.file_modul,
+    };
+    setSelectedModule(modalData);
     setIsModalOpen(true);
   };
 
@@ -86,94 +79,135 @@ export default function AdminLayananModulPage() {
     });
 
     if (result.isConfirmed) {
-      // TODO: Call API to delete module
-      await Swal.fire({
-        icon: "success",
-        title: "Modul Berhasil Dihapus",
-        confirmButtonColor: "#4E342E",
-        customClass: { popup: "rounded-xl" },
-      });
-      // TODO: Refresh module list
+      try {
+        await deleteModul(id);
+        await Swal.fire({
+          icon: "success",
+          title: "Modul Berhasil Dihapus",
+          confirmButtonColor: "#4E342E",
+          customClass: { popup: "rounded-xl" },
+        });
+        // Refresh module list
+        await loadModules();
+      } catch (error: any) {
+        await Swal.fire({
+          icon: "error",
+          title: "Gagal Menghapus Modul",
+          text: error.message || "Terjadi kesalahan saat menghapus modul",
+          confirmButtonColor: "#4E342E",
+          customClass: { popup: "rounded-xl" },
+        });
+      }
     }
   };
 
   return (
-      <div className="max-w-6xl mx-auto px-4">
-        {/* Header */}
-        <LayananHeader title="Modul Sekolah Kopi Raisa" subtitle="Kelola dan Review Setiap Modul" />
-        <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3">
-          <Link href="/admin/layanan/modul/tambah">
-            <button className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium">
-              <Plus size={18} />
-              Tambah Modul
-            </button>
-          </Link>
+    <div className="max-w-6xl mx-auto px-4">
+      {/* Header */}
+      <LayananHeader
+        title="Modul Sekolah Kopi Raisa"
+        subtitle="Kelola dan Review Setiap Modul"
+      />
+
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex justify-center items-center py-20">
+          <div className="text-gray-600">Memuat data modul...</div>
         </div>
+      )}
 
-        {/* Module Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {modules.map((module) => (
-            <div
-              key={module.id}
-              className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100"
-            >
-              <div className="flex flex-col sm:flex-row">
-                {/* Image */}
-                <div className="w-full h-40 sm:w-32 sm:h-32 flex-shrink-0">
-                  <img
-                    src={module.image}
-                    alt={module.title}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
+      {/* Empty State */}
+      {!isLoading && modules.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-20">
+          <FileText size={48} className="text-gray-300 mb-4" />
+          <p className="text-gray-500 text-lg">Belum ada modul</p>
+          <p className="text-gray-400 text-sm">Tambahkan modul pertama Anda</p>
+        </div>
+      )}
+      {!isLoading && (
+        <>
+          <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3">
+            <Link href="/admin/layanan/modul/tambah">
+              <button className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium">
+                <Plus size={18} />
+                Tambah Modul
+              </button>
+            </Link>
+          </div>
 
-                {/* Content */}
-                <div className="flex-1 p-4 flex flex-col">
-                  <div className="flex items-start gap-2 mb-2">
-                    <FileText size={16} className="text-gray-500 mt-0.5" />
-                    <h3 className="font-semibold text-gray-900 text-sm">
-                      {module.title}
-                    </h3>
+          {/* Module Cards Grid */}
+          {modules.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {modules.map((module) => (
+                <div
+                  key={module.id}
+                  className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100"
+                >
+                  <div className="flex flex-col sm:flex-row">
+                    {/* Image */}
+                    <div className="w-full h-40 sm:w-32 sm:h-32 flex-shrink-0 bg-gray-100">
+                      <img
+                        src="/assets/coffee.jpg"
+                        alt={module.judul_modul}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 p-4 flex flex-col">
+                      <div className="flex items-start gap-2 mb-2">
+                        <FileText size={16} className="text-gray-500 mt-0.5" />
+                        <h3 className="font-semibold text-gray-900 text-sm">
+                          {module.judul_modul}
+                        </h3>
+                      </div>
+                      <p className="text-xs text-gray-600 mb-4 line-clamp-2">
+                        {module.deskripsi}
+                      </p>
+
+                      {/* Action Buttons */}
+                      <div className="mt-auto flex flex-wrap gap-2">
+                        <button
+                          onClick={() => handleView(module)}
+                          className="flex-1 min-w-[110px] py-2 px-3 text-xs rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all flex items-center justify-center gap-1.5 font-medium"
+                        >
+                          <Eye size={14} />
+                          Lihat
+                        </button>
+                        <Link
+                          href={`/admin/layanan/modul/edit/${module.id}`}
+                          className="flex-1 min-w-[110px]"
+                        >
+                          <button className="w-full py-2 px-3 text-xs rounded-md bg-amber-900 text-white hover:bg-amber-950 transition-all flex items-center justify-center gap-1.5 font-medium">
+                            <Pencil size={14} />
+                            Edit
+                          </button>
+                        </Link>
+                        <button
+                          onClick={() =>
+                            handleDelete(module.id, module.judul_modul)
+                          }
+                          className="flex-1 min-w-[110px] py-2 px-3 text-xs rounded-md bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 transition-all flex items-center justify-center gap-1.5 font-medium"
+                        >
+                          <Trash2 size={14} />
+                          Hapus
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  <p className="text-xs text-gray-600 mb-4 line-clamp-2">
-                    {module.description}
-                  </p>
-
-                  {/* Action Buttons */}
-                  <div className="mt-auto flex flex-wrap gap-2">
-                    <button
-                      onClick={() => handleView(module)}
-                      className="flex-1 min-w-[110px] py-2 px-3 text-xs rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all flex items-center justify-center gap-1.5 font-medium"
-                    >
-                      <Eye size={14} />
-                      Lihat
-                    </button>
-                    <Link href={`/admin/layanan/modul/edit/${module.id}`} className="flex-1 min-w-[110px]">
-                      <button className="w-full py-2 px-3 text-xs rounded-md bg-amber-900 text-white hover:bg-amber-950 transition-all flex items-center justify-center gap-1.5 font-medium">
-                        <Pencil size={14} />
-                        Edit
-                      </button>
-                    </Link>
-                    <button
-                      onClick={() => handleDelete(module.id, module.title)}
-                      className="flex-1 min-w-[110px] py-2 px-3 text-xs rounded-md bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 transition-all flex items-center justify-center gap-1.5 font-medium"
-                    >
-                      <Trash2 size={14} />
-                      Hapus
-                    </button>
-                  </div>
                 </div>
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
+          )}
+        </>
+      )}
 
       {/* Modal */}
       {selectedModule && (
         <ModuleDetailModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        module={selectedModule}
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          module={selectedModule}
         />
       )}
     </div>

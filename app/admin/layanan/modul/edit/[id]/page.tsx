@@ -3,19 +3,18 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Upload } from "lucide-react";
-import Image from "next/image";
 import Swal from "sweetalert2";
+import { fetchModulById, updateModul } from "@/app/utils/modul";
 
 export default function EditModulPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const [formData, setFormData] = useState({
-    title: "",
-    description: "",
+    judul_modul: "",
+    deskripsi: "",
   });
-  const [imageFile, setImageFile] = useState<File | null>(null);
   const [moduleFile, setModuleFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [currentFileUrl, setCurrentFileUrl] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -23,25 +22,23 @@ export default function EditModulPage() {
   useEffect(() => {
     const fetchModule = async () => {
       try {
-        // TODO: Replace with actual API call
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 500));
-
-        // Sample data - replace with API response
-        const moduleData = {
-          id: params.id,
-          title: "Modul 1: Pengenalan Kopi",
-          description: "pengetahuan dasar tentang kopi, sejarah kopi",
-          image: "/assets/coffee.jpg",
-        };
+        const moduleData = await fetchModulById(Number(params.id));
 
         setFormData({
-          title: moduleData.title,
-          description: moduleData.description,
+          judul_modul: moduleData.judul_modul,
+          deskripsi: moduleData.deskripsi,
         });
-        setImagePreview(moduleData.image);
-      } catch (error) {
+        setCurrentFileUrl(moduleData.file_modul);
+      } catch (error: any) {
         console.error("Error fetching module:", error);
+        await Swal.fire({
+          icon: "error",
+          title: "Gagal Memuat Data",
+          text: error.message || "Terjadi kesalahan saat memuat data modul",
+          confirmButtonColor: "#4E342E",
+          customClass: { popup: "rounded-xl" },
+        });
+        router.push("/admin/layanan/modul");
       } finally {
         setIsLoading(false);
       }
@@ -50,7 +47,7 @@ export default function EditModulPage() {
     if (params.id) {
       fetchModule();
     }
-  }, [params.id]);
+  }, [params.id, router]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -60,18 +57,6 @@ export default function EditModulPage() {
       ...prev,
       [name]: value,
     }));
-  };
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
   };
 
   const handleModuleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -86,9 +71,11 @@ export default function EditModulPage() {
     setIsSubmitting(true);
 
     try {
-      // TODO: Submit to API
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await updateModul(Number(params.id), {
+        judul_modul: formData.judul_modul,
+        deskripsi: formData.deskripsi,
+        file_modul: moduleFile || undefined,
+      });
 
       await Swal.fire({
         icon: "success",
@@ -98,11 +85,11 @@ export default function EditModulPage() {
       });
 
       router.push("/admin/layanan/modul");
-    } catch (error) {
+    } catch (error: any) {
       await Swal.fire({
         icon: "error",
         title: "Gagal Memperbarui Modul",
-        text: "Silakan coba lagi.",
+        text: error.message || "Silakan coba lagi.",
         confirmButtonColor: "#4E342E",
         customClass: { popup: "rounded-xl" },
       });
@@ -135,16 +122,16 @@ export default function EditModulPage() {
             {/* Judul Modul */}
             <div>
               <label
-                htmlFor="title"
+                htmlFor="judul_modul"
                 className="block text-sm font-medium text-amber-900 mb-2"
               >
                 Judul Modul
               </label>
               <input
                 type="text"
-                id="title"
-                name="title"
-                value={formData.title}
+                id="judul_modul"
+                name="judul_modul"
+                value={formData.judul_modul}
                 onChange={handleInputChange}
                 required
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition"
@@ -155,16 +142,16 @@ export default function EditModulPage() {
             {/* Deskripsi Singkat */}
             <div>
               <label
-                htmlFor="description"
+                htmlFor="deskripsi"
                 className="block text-sm font-medium text-amber-900 mb-2"
               >
                 Deskripsi Singkat
               </label>
               <input
                 type="text"
-                id="description"
-                name="description"
-                value={formData.description}
+                id="deskripsi"
+                name="deskripsi"
+                value={formData.deskripsi}
                 onChange={handleInputChange}
                 required
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition"
@@ -172,56 +159,31 @@ export default function EditModulPage() {
               />
             </div>
 
-            {/* Gambar Modul */}
-            <div>
-              <label className="block text-sm font-medium text-amber-900 mb-2">
-                Gambar Modul
-              </label>
-              {imagePreview ? (
-                <div className="relative w-full h-64 border-2 border-gray-200 rounded-lg overflow-hidden">
-                  <Image
-                    src={imagePreview}
-                    alt="Preview"
-                    fill
-                    className="object-cover"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setImagePreview(null);
-                      setImageFile(null);
-                    }}
-                    className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition"
-                  >
-                    ×
-                  </button>
-                </div>
-              ) : (
-                <label
-                  htmlFor="image-upload"
-                  className="flex flex-col items-center justify-center w-full h-40 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 transition bg-neutral-50"
-                >
-                  <div className="flex flex-col items-center justify-center py-6">
-                    <Upload className="w-10 h-10 text-gray-400 mb-2" />
-                    <p className="text-sm text-gray-500 font-medium">
-                      Unggah File
-                    </p>
-                  </div>
-                  <input
-                    id="image-upload"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleImageChange}
-                  />
+            {/* File Modul Saat Ini */}
+            {currentFileUrl && !moduleFile && (
+              <div>
+                <label className="block text-sm font-medium text-amber-900 mb-2">
+                  File Modul Saat Ini
                 </label>
-              )}
-            </div>
+                <a
+                  href={currentFileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm"
+                >
+                  <Upload size={16} />
+                  Lihat file modul saat ini
+                </a>
+              </div>
+            )}
 
             {/* Modul */}
             <div>
               <label className="block text-sm font-medium text-amber-900 mb-2">
-                Modul
+                Modul{" "}
+                {moduleFile
+                  ? "(File Baru)"
+                  : "(Opsional - Kosongkan jika tidak ingin mengubah)"}
               </label>
               <label
                 htmlFor="module-upload"
@@ -230,7 +192,9 @@ export default function EditModulPage() {
                 <div className="flex flex-col items-center justify-center py-6">
                   <Upload className="w-10 h-10 text-gray-400 mb-2" />
                   <p className="text-sm text-gray-500 font-medium">
-                    Unggah File
+                    {moduleFile
+                      ? "File Dipilih"
+                      : "Unggah File Baru (Opsional)"}
                   </p>
                   {moduleFile && (
                     <p className="text-xs text-gray-400 mt-1">
@@ -272,4 +236,3 @@ export default function EditModulPage() {
     </div>
   );
 }
-

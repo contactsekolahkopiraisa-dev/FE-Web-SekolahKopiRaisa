@@ -84,7 +84,7 @@ export default function Sidebar({ items }: { items: SidebarItemType[] }) {
           onClick={() => router.push("/")}
           className="flex items-center gap-2 hover:bg-gray-100 cursor-pointer rounded-sm p-2"
         > */}
-          <Image src="/assets/logo.png" alt="Logo" width={20} height={20} />
+        <Image src="/assets/logo.png" alt="Logo" width={20} height={20} />
         {/* </button> */}
         {isMobile ? (
           <button onClick={() => setMobileOpen(false)}>
@@ -119,7 +119,9 @@ export default function Sidebar({ items }: { items: SidebarItemType[] }) {
       <nav className="flex-1 px-4 overflow-y-auto">
         <ul className="space-y-3">
           {items.map((item) => {
-            const isOpenByPath = item.href ? pathname.startsWith(item.href) : false;
+            const isOpenByPath = item.href
+              ? pathname.startsWith(item.href)
+              : false;
             const isOpen = isOpenByPath;
             const sidebarOpen = isMobile ? true : isSidebarOpen;
 
@@ -162,7 +164,7 @@ export default function Sidebar({ items }: { items: SidebarItemType[] }) {
           }}
         >
           <Image
-            src={user?.image || "/assets/avatar.png"}
+            src={user?.image || "/assets/user.png"}
             alt="avatar"
             width={35}
             height={35}
@@ -333,7 +335,7 @@ function SidebarGroup({
                     "flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 cursor-pointer text-sm",
                     pathname === child.href
                       ? "bg-primary text-white font-medium shadow-lg"
-                      : "text-gray-700 hover:bg-gray-100 hover:text-gray-900",
+                      : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
                   )}
                 >
                   {child.icon}
