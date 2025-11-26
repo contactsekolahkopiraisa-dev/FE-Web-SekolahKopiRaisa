@@ -72,7 +72,7 @@ export default function AdminLayananPage() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className="min-h-screen">
       <LayananHeader
         title="Layanan"
         subtitle="Kelola dan Review Pengajuan dari Peserta"

@@ -128,7 +128,7 @@ export default function AdminLayananModulPage() {
         <>
           <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3">
             <Link href="/admin/layanan/modul/tambah">
-              <button className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium">
+              <button className="inline-flex items-center gap-2 px-4 py-2 bg-amber-900 text-white rounded-lg hover:bg-amber-950 transition-colors font-medium">
                 <Plus size={18} />
                 Tambah Modul
               </button>

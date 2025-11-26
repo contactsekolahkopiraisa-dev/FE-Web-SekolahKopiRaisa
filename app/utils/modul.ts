@@ -22,10 +22,13 @@ export const fetchAllModul = async (): Promise<ModulItem[]> => {
 // GET MODUL BY ID
 export const fetchModulById = async (id: number): Promise<ModulItem> => {
   try {
-    const response = await api.get(`/modul/${id}`);
+    console.log("Fetching modul by id:", id);
+    const response = await api.get(`/api/v1/modul/${id}`);
+    console.log("Modul by id response:", response.data);
     return response.data.data;
   } catch (error: any) {
     console.error("Error fetching modul by id:", error);
+    console.error("Error response:", error.response);
     throw new Error(
       error.response?.data?.message || "Gagal mengambil detail modul"
     );

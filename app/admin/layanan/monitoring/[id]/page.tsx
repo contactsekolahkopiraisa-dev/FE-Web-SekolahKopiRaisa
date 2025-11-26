@@ -2,7 +2,14 @@
 
 import React, { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Check, FileText, ShieldCheck, ClipboardList, Award, ChevronLeft } from "lucide-react";
+import {
+  Check,
+  FileText,
+  ShieldCheck,
+  ClipboardList,
+  Award,
+  ChevronLeft,
+} from "lucide-react";
 
 type StepKey = "pengajuan" | "mou" | "pelaksanaan" | "laporan" | "sertifikat";
 type StepStatus = "inactive" | "active" | "done";
@@ -19,7 +26,13 @@ export default function AdminMonitoringDetailPage() {
   });
 
   const goNext = (current: StepKey) => {
-    const order: StepKey[] = ["pengajuan", "mou", "pelaksanaan", "laporan", "sertifikat"];
+    const order: StepKey[] = [
+      "pengajuan",
+      "mou",
+      "pelaksanaan",
+      "laporan",
+      "sertifikat",
+    ];
     const idx = order.indexOf(current);
     const next = order[idx + 1];
     setSteps((prev) => ({
@@ -41,7 +54,8 @@ export default function AdminMonitoringDetailPage() {
     const descriptions: Record<StepKey, string> = {
       pengajuan: "pastikan semua data yang diajukan sudah sesuai",
       mou: "pastikan dokumen MOU yang diajukan sudah sesuai",
-      pelaksanaan: "Pastikan seluruh kegiatan telah dilaksanakan sesuai rencana",
+      pelaksanaan:
+        "Pastikan seluruh kegiatan telah dilaksanakan sesuai rencana",
       laporan: "Pastikan isi laporan akhir sudah lengkap dan valid",
       sertifikat: "Sertifikat akan dikirim ke peserta",
     };
@@ -80,10 +94,7 @@ export default function AdminMonitoringDetailPage() {
       await Swal.fire({
         icon: "success",
         title: "Pengajuan Berhasil Ditolak",
-        html:
-          (text && text.length > 0)
-            ? text
-            : "Pengajuan ditolak.",
+        html: text && text.length > 0 ? text : "Pengajuan ditolak.",
         confirmButtonColor: "#4E342E",
         customClass: { popup: "rounded-xl" },
       });
@@ -153,8 +164,10 @@ export default function AdminMonitoringDetailPage() {
           <ChevronLeft size={18} /> Kembali
         </button>
         <div className="mb-10">
-            <h1 className="text-2xl font-bold text-center">Detail Kegiatan</h1>
-            <p className="text-sm text-gray-500 text-center mt-1">Ringkasan kegiatan yang diikuti peserta di Sekolah Kopi Raisa</p>
+          <h1 className="text-2xl font-bold text-center">Detail Kegiatan</h1>
+          <p className="text-sm text-gray-500 text-center mt-1">
+            Ringkasan kegiatan yang diikuti peserta di Sekolah Kopi Raisa
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -168,22 +181,44 @@ export default function AdminMonitoringDetailPage() {
               Pantau Status Pelaksanaan Kegiatan Anda
             </p>
             <div className="space-y-3">
-              <StepItem label="Pengajuan" icon={<FileText size={16} />} status={steps.pengajuan} />
-              <StepItem label="MOU" icon={<ShieldCheck size={16} />} status={steps.mou} />
-              <StepItem label="Pelaksanaan" icon={<ClipboardList size={16} />} status={steps.pelaksanaan} />
-              <StepItem label="Laporan Akhir" icon={<FileText size={16} />} status={steps.laporan} />
-              <StepItem label="Sertifikat Kegiatan" icon={<Award size={16} />} status={steps.sertifikat} />
+              <StepItem
+                label="Pengajuan"
+                icon={<FileText size={16} />}
+                status={steps.pengajuan}
+              />
+              <StepItem
+                label="MOU"
+                icon={<ShieldCheck size={16} />}
+                status={steps.mou}
+              />
+              <StepItem
+                label="Pelaksanaan"
+                icon={<ClipboardList size={16} />}
+                status={steps.pelaksanaan}
+              />
+              <StepItem
+                label="Laporan Akhir"
+                icon={<FileText size={16} />}
+                status={steps.laporan}
+              />
+              <StepItem
+                label="Sertifikat Kegiatan"
+                icon={<Award size={16} />}
+                status={steps.sertifikat}
+              />
             </div>
           </div>
 
           {/* Pengajuan / MOU Content (always visible; actions still conditional) */}
           <div className="md:col-span-2 bg-white rounded-xl border border-gray-100 p-5">
-            <h3 className="text-lg font-semibold">Ringkasan Pengajuan & Dokumen</h3>
+            <h3 className="text-lg font-semibold">
+              Ringkasan Pengajuan & Dokumen
+            </h3>
             <p className="text-sm text-gray-600 mb-4">
               Detail Informasi dan Dokumen yang telah anda Submit
             </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-neutral-50 border border-neutral-200 rounded-lg p-4 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white border border-neutral-200 rounded-lg p-4 mb-4">
               <div>
                 <p className="text-xs text-gray-500">Jenis Kegiatan</p>
                 <p className="text-sm">Praktek Kerja Lapangan</p>
@@ -212,26 +247,43 @@ export default function AdminMonitoringDetailPage() {
 
             {/* Dokumen */}
             <div>
-              <p className="text-sm font-semibold mb-3">Dokumen yang diupload</p>
+              <p className="text-sm font-semibold mb-3">
+                Dokumen yang diupload
+              </p>
               <div className="space-y-3">
-                {([
-                  "Proposal / Surat Permohonan",
-                  "Surat Pengantar",
-                  ...(steps.mou !== "inactive" ? ["MOU"] : []),
-                ] as string[]).map((label) => (
-                  <div key={label} className="bg-neutral-50 rounded-xl border border-gray-100 p-3 flex items-center justify-between">
+                {(
+                  [
+                    "Proposal / Surat Permohonan",
+                    "Surat Pengantar",
+                    ...(steps.mou !== "inactive" ? ["MOU"] : []),
+                  ] as string[]
+                ).map((label) => (
+                  <div
+                    key={label}
+                    className="bg-white rounded-xl border border-gray-100 p-3 flex items-center justify-between"
+                  >
                     <div className="flex items-center gap-3">
                       <div className="h-8 w-8 grid place-items-center rounded-md bg-neutral-200 text-neutral-700">
-                        {label === "MOU" ? <ShieldCheck size={16} /> : <FileText size={16} />}
+                        {label === "MOU" ? (
+                          <ShieldCheck size={16} />
+                        ) : (
+                          <FileText size={16} />
+                        )}
                       </div>
                       <div>
                         <p className="text-sm font-medium">{label}</p>
-                        <p className="text-xs text-gray-500">{label.replace(/\s+/g, '')}.pdf</p>
+                        <p className="text-xs text-gray-500">
+                          {label.replace(/\s+/g, "")}.pdf
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <button className="px-3 py-1.5 text-xs rounded-md border border-gray-200 hover:bg-gray-50">Lihat</button>
-                      <button className="px-3 py-1.5 text-xs rounded-md bg-gray-100 hover:bg-gray-200">Download</button>
+                      <button className="px-3 py-1.5 text-xs rounded-md border border-gray-200 hover:bg-gray-50">
+                        Lihat
+                      </button>
+                      <button className="px-3 py-1.5 text-xs rounded-md bg-gray-100 hover:bg-gray-200">
+                        Download
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -244,7 +296,11 @@ export default function AdminMonitoringDetailPage() {
                 {/* Tolak */}
                 <button
                   className="inline-flex items-center gap-2 px-4 py-2 text-sm rounded-md bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100"
-                  onClick={() => rejectWithReason(steps.mou === "active" ? "Tolak MOU" : "Tolak Pengajuan")}
+                  onClick={() =>
+                    rejectWithReason(
+                      steps.mou === "active" ? "Tolak MOU" : "Tolak Pengajuan"
+                    )
+                  }
                 >
                   {steps.mou === "active" ? "✕ Tolak MOU" : "✕ Tolak Pengajuan"}
                 </button>
@@ -252,11 +308,14 @@ export default function AdminMonitoringDetailPage() {
                 <button
                   className="inline-flex items-center gap-2 px-4 py-2 text-sm rounded-md bg-amber-900 text-white hover:bg-amber-950"
                   onClick={() => {
-                    if (steps.pengajuan === "active") return confirmApprove("pengajuan");
+                    if (steps.pengajuan === "active")
+                      return confirmApprove("pengajuan");
                     if (steps.mou === "active") return confirmApprove("mou");
                   }}
                 >
-                  {steps.mou === "active" ? "✓ Setujui MOU" : "✓ Setujui Pengajuan"}
+                  {steps.mou === "active"
+                    ? "✓ Setujui MOU"
+                    : "✓ Setujui Pengajuan"}
                 </button>
               </div>
             )}
@@ -267,7 +326,8 @@ export default function AdminMonitoringDetailPage() {
             <div className="md:col-span-3 bg-white rounded-xl border border-gray-100 p-5">
               <h3 className="text-lg font-semibold mb-2">Link Logbook</h3>
               <p className="text-xs text-gray-600 mb-3">
-                Link Logbook adalah catatan terkait kegiatan yang dilakukan selama Praktek Kerja Lapangan
+                Link Logbook adalah catatan terkait kegiatan yang dilakukan
+                selama Praktek Kerja Lapangan
               </p>
               <div className="flex items-center gap-2">
                 <input
@@ -295,53 +355,106 @@ export default function AdminMonitoringDetailPage() {
             <div className="md:col-span-3 bg-white rounded-xl border border-gray-100 p-5">
               <div className="bg-white rounded-xl border border-gray-200">
                 <div className="p-4 border-b">
-                  <h4 className="text-sm font-semibold">Laporan Akhir Kegiatan</h4>
+                  <h4 className="text-sm font-semibold">
+                    Laporan Akhir Kegiatan
+                  </h4>
                   <p className="text-xs text-gray-600 mt-1">
-                    Lengkapi formulir Laporan Akhir untuk menyelesaikan program dan mendapatkan Sertifikat
+                    Lengkapi formulir Laporan Akhir untuk menyelesaikan program
+                    dan mendapatkan Sertifikat
                   </p>
                 </div>
                 <div className="p-4 grid grid-cols-1 gap-3">
                   <div>
                     <label className="text-xs text-gray-600">Nama P4S *</label>
-                    <input className="mt-1 w-full text-sm rounded-lg border border-gray-200 px-3 py-2 bg-neutral-50" defaultValue="Sekolah Kopi Raisa" readOnly />
+                    <input
+                      className="mt-1 w-full text-sm rounded-lg border border-gray-200 px-3 py-2 bg-white"
+                      defaultValue="Sekolah Kopi Raisa"
+                      readOnly
+                    />
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs text-gray-600">Kabupaten / Kota *</label>
-                      <input className="mt-1 w-full text-sm rounded-lg border border-gray-200 px-3 py-2 bg-neutral-50" defaultValue="Bondowoso" readOnly />
+                      <label className="text-xs text-gray-600">
+                        Kabupaten / Kota *
+                      </label>
+                      <input
+                        className="mt-1 w-full text-sm rounded-lg border border-gray-200 px-3 py-2 bg-white"
+                        defaultValue="Bondowoso"
+                        readOnly
+                      />
                     </div>
                     <div>
-                      <label className="text-xs text-gray-600">Kecamatan *</label>
-                      <input className="mt-1 w-full text-sm rounded-lg border border-gray-200 px-3 py-2 bg-neutral-50" defaultValue="" readOnly />
+                      <label className="text-xs text-gray-600">
+                        Kecamatan *
+                      </label>
+                      <input
+                        className="mt-1 w-full text-sm rounded-lg border border-gray-200 px-3 py-2 bg-white"
+                        defaultValue=""
+                        readOnly
+                      />
                     </div>
                   </div>
                   <div>
-                    <label className="text-xs text-gray-600">Jenis Kegiatan *</label>
-                    <input className="mt-1 w-full text-sm rounded-lg border border-gray-200 px-3 py-2 bg-neutral-50" defaultValue="Praktek Kerja Lapangan" readOnly />
+                    <label className="text-xs text-gray-600">
+                      Jenis Kegiatan *
+                    </label>
+                    <input
+                      className="mt-1 w-full text-sm rounded-lg border border-gray-200 px-3 py-2 bg-white"
+                      defaultValue="Praktek Kerja Lapangan"
+                      readOnly
+                    />
                   </div>
                   <div>
-                    <label className="text-xs text-gray-600">Asal Peserta / Mitra Kerjasama *</label>
-                    <input className="mt-1 w-full text-sm rounded-lg border border-gray-200 px-3 py-2 bg-neutral-50" defaultValue="Universitas Jember" readOnly />
+                    <label className="text-xs text-gray-600">
+                      Asal Peserta / Mitra Kerjasama *
+                    </label>
+                    <input
+                      className="mt-1 w-full text-sm rounded-lg border border-gray-200 px-3 py-2 bg-white"
+                      defaultValue="Universitas Jember"
+                      readOnly
+                    />
                   </div>
                   <div>
-                    <label className="text-xs text-gray-600">Jumlah Peserta *</label>
-                    <input className="mt-1 w-full text-sm rounded-lg border border-gray-200 px-3 py-2 bg-neutral-50" defaultValue="15" readOnly />
+                    <label className="text-xs text-gray-600">
+                      Jumlah Peserta *
+                    </label>
+                    <input
+                      className="mt-1 w-full text-sm rounded-lg border border-gray-200 px-3 py-2 bg-neutral-50"
+                      defaultValue="15"
+                      readOnly
+                    />
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs text-gray-600">Tanggal Pelaksanaan *</label>
-                      <input className="mt-1 w-full text-sm rounded-lg border border-gray-200 px-3 py-2 bg-neutral-50" defaultValue="02/10/2025" readOnly />
+                      <label className="text-xs text-gray-600">
+                        Tanggal Pelaksanaan *
+                      </label>
+                      <input
+                        className="mt-1 w-full text-sm rounded-lg border border-gray-200 px-3 py-2 bg-neutral-50"
+                        defaultValue="02/10/2025"
+                        readOnly
+                      />
                     </div>
                     <div>
-                      <label className="text-xs text-gray-600">Lama Pelaksanaan *</label>
-                      <input className="mt-1 w-full text-sm rounded-lg border border-gray-200 px-3 py-2 bg-neutral-50" defaultValue="4 Bulan" readOnly />
+                      <label className="text-xs text-gray-600">
+                        Lama Pelaksanaan *
+                      </label>
+                      <input
+                        className="mt-1 w-full text-sm rounded-lg border border-gray-200 px-3 py-2 bg-neutral-50"
+                        defaultValue="4 Bulan"
+                        readOnly
+                      />
                     </div>
                   </div>
                   <div>
-                    <label className="text-xs text-gray-600">Foto Kegiatan *</label>
+                    <label className="text-xs text-gray-600">
+                      Foto Kegiatan *
+                    </label>
                     <div className="mt-1 w-full text-sm rounded-lg border border-gray-200 px-3 py-2 bg-neutral-50 flex items-center justify-between">
                       <span>Dokumentasi_PKL.jpg</span>
-                      <button className="px-3 py-1 text-xs rounded-md border bg-white">Download</button>
+                      <button className="px-3 py-1 text-xs rounded-md border bg-white">
+                        Download
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -366,48 +479,54 @@ export default function AdminMonitoringDetailPage() {
 
         {/* Sertifikat Section (only when active) */}
         {steps.sertifikat === "active" && (
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
-          <div className="hidden md:block rounded-xl overflow-hidden">
-            <img
-              src="/assets/coffee.jpg"
-              alt="coffee"
-              className="h-full w-full object-cover"
-            />
-          </div>
-          <div className="bg-white rounded-xl border border-gray-100 p-8 flex flex-col items-center text-center">
-            <div className="h-12 w-12 rounded-full border-2 border-amber-900 grid place-items-center mb-4">
-              <Award className="text-amber-900" size={20} />
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+            <div className="hidden md:block rounded-xl overflow-hidden">
+              <img
+                src="/assets/coffee.jpg"
+                alt="coffee"
+                className="h-full w-full object-cover"
+              />
             </div>
-            <p className="font-semibold">Kegiatan telah diselesaikan oleh peserta</p>
-            <p className="text-sm text-gray-600">Silahkan Upload Sertifikat</p>
+            <div className="bg-white rounded-xl border border-gray-100 p-8 flex flex-col items-center text-center">
+              <div className="h-12 w-12 rounded-full border-2 border-amber-900 grid place-items-center mb-4">
+                <Award className="text-amber-900" size={20} />
+              </div>
+              <p className="font-semibold">
+                Kegiatan telah diselesaikan oleh peserta
+              </p>
+              <p className="text-sm text-gray-600">
+                Silahkan Upload Sertifikat
+              </p>
 
-            <div className="mt-6 w-full">
-              <label className="text-xs text-gray-600">Upload Sertifikat</label>
-              <div className="mt-2 w-full rounded-lg border border-dashed border-gray-300 p-6 bg-neutral-50 text-gray-500 text-sm">
-                Klik area ini untuk upload sertifikat
+              <div className="mt-6 w-full">
+                <label className="text-xs text-gray-600">
+                  Upload Sertifikat
+                </label>
+                <div className="mt-2 w-full rounded-lg border border-dashed border-gray-300 p-6 bg-neutral-50 text-gray-500 text-sm">
+                  Klik area ini untuk upload sertifikat
+                </div>
+              </div>
+
+              <div className="mt-4 w-full flex items-center gap-2">
+                <input
+                  className="flex-1 bg-white rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                  placeholder="Link Sertifikat (opsional)"
+                />
+                <button
+                  className="px-4 py-2 text-sm rounded-lg bg-amber-900 text-white hover:bg-amber-950"
+                  onClick={sendCertificateAlert}
+                >
+                  Kirim Sertifikat
+                </button>
               </div>
             </div>
-
-            <div className="mt-4 w-full flex items-center gap-2">
-              <input
-                className="flex-1 bg-white rounded-lg border border-gray-200 px-3 py-2 text-sm"
-                placeholder="Link Sertifikat (opsional)"
-              />
-              <button
-                className="px-4 py-2 text-sm rounded-lg bg-amber-900 text-white hover:bg-amber-950"
-                onClick={sendCertificateAlert}
-              >
-                Kirim Sertifikat
-              </button>
-            </div>
           </div>
-        </div>
         )}
 
-        <p className="text-center text-xs text-gray-400 mt-8">ID Pengajuan: {String(params?.id)}</p>
+        <p className="text-center text-xs text-gray-400 mt-8">
+          ID Pengajuan: {String(params?.id)}
+        </p>
       </div>
     </div>
   );
 }
-
-

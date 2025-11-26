@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Upload } from "lucide-react";
 import Swal from "sweetalert2";
@@ -19,35 +19,45 @@ export default function EditModulPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   // Fetch module data on mount
-  useEffect(() => {
-    const fetchModule = async () => {
-      try {
-        const moduleData = await fetchModulById(Number(params.id));
-
-        setFormData({
-          judul_modul: moduleData.judul_modul,
-          deskripsi: moduleData.deskripsi,
-        });
-        setCurrentFileUrl(moduleData.file_modul);
-      } catch (error: any) {
-        console.error("Error fetching module:", error);
-        await Swal.fire({
-          icon: "error",
-          title: "Gagal Memuat Data",
-          text: error.message || "Terjadi kesalahan saat memuat data modul",
-          confirmButtonColor: "#4E342E",
-          customClass: { popup: "rounded-xl" },
-        });
-        router.push("/admin/layanan/modul");
-      } finally {
-        setIsLoading(false);
+  const fetchModule = useCallback(async () => {
+    try {
+      if (!params.id) {
+        console.warn("params.id is undefined");
+        throw new Error("ID modul tidak ditemukan");
       }
-    };
+      console.log("Fetching module with ID:", params.id);
+      const moduleData = await fetchModulById(Number(params.id));
+      console.log("Module data loaded:", moduleData);
 
-    if (params.id) {
-      fetchModule();
+      setFormData({
+        judul_modul: moduleData.judul_modul,
+        deskripsi: moduleData.deskripsi,
+      });
+      setCurrentFileUrl(moduleData.file_modul);
+    } catch (error: any) {
+      console.error("Error fetching module:", error);
+      await Swal.fire({
+        icon: "error",
+        title: "Gagal Memuat Data",
+        text: error.message || "Terjadi kesalahan saat memuat data modul",
+        confirmButtonColor: "#4E342E",
+        customClass: { popup: "rounded-xl" },
+      });
+      router.push("/admin/layanan/modul");
+    } finally {
+      setIsLoading(false);
     }
   }, [params.id, router]);
+
+  useEffect(() => {
+    console.log("useEffect triggered, params.id:", params.id);
+    if (params.id) {
+      fetchModule();
+    } else {
+      console.warn("params.id is undefined in useEffect");
+      setIsLoading(false);
+    }
+  }, [params.id, fetchModule]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -68,6 +78,18 @@ export default function EditModulPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!params.id) {
+      await Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "ID modul tidak valid",
+        confirmButtonColor: "#4E342E",
+        customClass: { popup: "rounded-xl" },
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
