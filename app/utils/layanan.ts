@@ -47,19 +47,38 @@ export interface LayananItem {
     tanggal_upload?: string;
   };
   sertifikat?: {
-    id: number;
-    status: {
+    id?: number;
+    nama_status_kode?: string;
+    status?: {
       id: number;
       nama_status_kode: string;
     };
   };
   laporan?: {
-    id: number;
-    status: {
+    id?: number;
+    nama_status_kode?: string;
+    nama_p4s?: string;
+    asal_kab_kota?: string;
+    foto_kegiatan?: string;
+    statusPelaporan?: {
       id: number;
       nama_status_kode: string;
     };
+    status?: {
+      id: number;
+      nama_status_kode: string;
+    };
+    layanan?: {
+      nama_kegiatan?: string;
+      jenisLayanan?: {
+        nama_jenis_layanan: string;
+      };
+    };
   };
+  kegiatan?: Array<{
+    id: number;
+    nama_kegiatan: string;
+  }>;
   jenis_layanan?: {
     id: number;
     nama_jenis_layanan: string;
@@ -202,6 +221,59 @@ export const updateStatusLayanan = async (
       error.response?.data?.message ||
         error.message ||
         "Gagal mengupdate status layanan"
+    );
+  }
+};
+
+// POST/PUT LOGBOOK
+export interface LogbookPayload {
+  link_logbook: string;
+}
+
+export const submitLogbook = async (
+  id: number,
+  payload: LogbookPayload
+): Promise<{ success: boolean; message: string; data?: any }> => {
+  try {
+    console.log("Submitting logbook for layanan:", id, payload);
+
+    const response = await api.post(`/api/v1/layanan/${id}/logbook`, payload);
+    console.log("Submit logbook response:", response.data);
+
+    if (response.data.success) {
+      return response.data;
+    }
+    throw new Error(response.data.message || "Gagal mengirim logbook");
+  } catch (error: any) {
+    console.error("Error submitting logbook:", error);
+    throw new Error(
+      error.response?.data?.message ||
+        error.message ||
+        "Gagal mengirim logbook"
+    );
+  }
+};
+
+export const updateLogbook = async (
+  id: number,
+  payload: LogbookPayload
+): Promise<{ success: boolean; message: string; data?: any }> => {
+  try {
+    console.log("Updating logbook for layanan:", id, payload);
+
+    const response = await api.put(`/api/v1/layanan/${id}/logbook`, payload);
+    console.log("Update logbook response:", response.data);
+
+    if (response.data.success) {
+      return response.data;
+    }
+    throw new Error(response.data.message || "Gagal mengupdate logbook");
+  } catch (error: any) {
+    console.error("Error updating logbook:", error);
+    throw new Error(
+      error.response?.data?.message ||
+        error.message ||
+        "Gagal mengupdate logbook"
     );
   }
 };

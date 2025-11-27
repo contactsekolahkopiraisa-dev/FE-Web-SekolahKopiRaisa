@@ -1025,11 +1025,12 @@ export default function DetailPelaksanaanPelatihanPage() {
           </div>
         )}
 
-      <div
-        className="container mx-auto px-4 max-w-6xl mb-8"
-        id="sertifikat-section"
-      >
-        <div className="rounded-xl border border-[#E8E2DB] bg-white p-5 md:p-6">
+      {laporanSubmitted && (
+        <div
+          className="container mx-auto px-4 max-w-6xl mb-8"
+          id="sertifikat-section"
+        >
+          <div className="rounded-xl border border-[#E8E2DB] bg-white p-5 md:p-6">
           {laporanSubmitted && laporanDecision === "ditolak" && (
             <div className="rounded-lg border border-[#F0CFCF] bg-[#FFF6F6] p-4 text-center">
               <div className="mx-auto mb-2 w-10 h-10 rounded-lg border border-[#F0C3C3] bg-[#FBECEC] flex items-center justify-center">
@@ -1055,12 +1056,7 @@ export default function DetailPelaksanaanPelatihanPage() {
               </div>
             </div>
           )}
-          {!(
-            laporanSubmitted &&
-            laporanDecision === "disetujui" &&
-            sertifikatDecision === "selesai"
-          ) &&
-            !(laporanSubmitted && laporanDecision === "ditolak") && (
+          {laporanDecision === "disetujui" && sertifikatDecision !== "selesai" && (
               <div className="text-center py-8">
                 <div className="mx-auto mb-4 w-16 h-16 rounded-full border border-[#E8E2DB] bg-[#F7F4F0] flex items-center justify-center">
                   <Award size={32} className="text-[#A99F99]" />
@@ -1069,9 +1065,7 @@ export default function DetailPelaksanaanPelatihanPage() {
                   Sertifikat Belum Tersedia
                 </h3>
                 <p className="mt-2 text-[12px] text-[#6B6B6B] max-w-md mx-auto">
-                  {laporanSubmitted && laporanDecision === "disetujui"
-                    ? "Sertifikat sedang dalam proses pembuatan. Harap tunggu beberapa saat."
-                    : "Selesaikan tahapan pelaksanaan dan laporan akhir terlebih dahulu untuk mendapatkan sertifikat."}
+                  Sertifikat sedang dalam proses pembuatan. Harap tunggu beberapa saat.
                 </p>
               </div>
             )}
@@ -1115,6 +1109,7 @@ export default function DetailPelaksanaanPelatihanPage() {
             )}
         </div>
       </div>
+      )}
 
       {successOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-lg">

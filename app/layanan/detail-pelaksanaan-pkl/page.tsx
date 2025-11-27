@@ -18,29 +18,152 @@ import Image from "next/image";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Footer from "../../../components/main/Footer";
+import { fetchLayananById, LayananItem, formatDate, submitLogbook, updateLogbook } from "../../utils/layanan";
+import { fetchAllModul } from "../../utils/modul";
+import type { ModulItem } from "../../types/modulType";
+import { createLaporanLayanan } from "../../utils/laporan";
 
 export default function DetailPelaksanaanPKLPage() {
+  const searchParams = useSearchParams();
+  const layananId = searchParams.get('id');
+  
+  const [layananData, setLayananData] = useState<LayananItem | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
   const valueOrDash = (value?: string) => {
     if (typeof value !== "string") return "-";
-    return value.trim() === "" ? "-" : value;
+    const v = value.trim();
+    if (v === "" || v.toLowerCase() === "null" || v.toLowerCase() === "undefined") return "-";
+    return v;
   };
+
+  // Helper: bangun URL file absolut dari path relatif/absolut
+  const resolveFileUrl = (path?: string | null): string | null => {
+    if (!path) return null;
+    const trimmed = path.trim();
+    if (trimmed === "" || trimmed.toLowerCase() === "null" || trimmed.toLowerCase() === "undefined") return null;
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+    const base = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "");
+    const p = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+    return `${base}${p}`;
+  };
+
+  const openFile = (url: string | null) => {
+    if (!url) return;
+    if (typeof window !== "undefined") window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const downloadFile = (url: string | null, filename?: string) => {
+    if (!url || typeof document === "undefined") return;
+    const a = document.createElement("a");
+    a.href = url;
+    if (filename) a.download = filename;
+    a.target = "_blank";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  // Fetch layanan data on component mount
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!layananId) {
+        setError("ID Layanan tidak ditemukan");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        if (typeof window !== "undefined") {
+          console.log("[DetailPelaksanaanPKL] fetching layananId:", layananId);
+        }
+        const data = await fetchLayananById(Number(layananId), {
+          include_jenis: true,
+          include_peserta: true,
+          include_mou: true,
+          include_sertifikat: true,
+          include_laporan: true,
+        });
+        setLayananData(data);
+        if (typeof window !== "undefined") {
+          console.log("[DetailPelaksanaanPKL] fetched layananData.mou.file_mou:", data?.mou?.file_mou);
+          console.log("[DetailPelaksanaanPKL] fetched layananData:", data);
+        }
+        
+        // Set link logbook jika sudah ada
+        if (data.link_logbook) {
+          setLogbookLink(data.link_logbook);
+          setIsLogbookSubmitted(true);
+        }
+        
+        // Set status berdasarkan data API dengan null checks
+        if (data.pengajuan?.nama_status_kode) {
+          setPengajuanDecision(mapStatusToDecision(data.pengajuan.nama_status_kode, 'pengajuan') as typeof pengajuanDecision);
+        }
+        if (data.mou?.statusKode?.nama_status_kode) {
+          setMouDecision(mapStatusToDecision(data.mou.statusKode.nama_status_kode, 'mou') as typeof mouDecision);
+        }
+        if (data.pelaksanaan?.nama_status_kode) {
+          setPelaksanaanDecision(mapStatusToDecision(data.pelaksanaan.nama_status_kode, 'pelaksanaan') as typeof pelaksanaanDecision);
+        }
+        if (data.laporan?.nama_status_kode) {
+          setLaporanDecision(mapStatusToDecision(data.laporan.nama_status_kode, 'laporan') as typeof laporanDecision);
+        } else if (data.laporan?.statusPelaporan?.nama_status_kode) {
+          setLaporanDecision(mapStatusToDecision(data.laporan.statusPelaporan.nama_status_kode, 'laporan') as typeof laporanDecision);
+        } else if (data.laporan?.status?.nama_status_kode) {
+          setLaporanDecision(mapStatusToDecision(data.laporan.status.nama_status_kode, 'laporan') as typeof laporanDecision);
+        }
+        if (data.sertifikat?.nama_status_kode) {
+          setSertifikatDecision(mapStatusToDecision(data.sertifikat.nama_status_kode, 'sertifikat') as typeof sertifikatDecision);
+        } else if (data.sertifikat?.status?.nama_status_kode) {
+          setSertifikatDecision(mapStatusToDecision(data.sertifikat.status.nama_status_kode, 'sertifikat') as typeof sertifikatDecision);
+        }
+        
+        setError(null);
+      } catch (err: any) {
+        console.error('Error fetching layanan:', err);
+        setError(err.message || 'Gagal memuat data layanan');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [layananId]);
+
+  // Helper function to map API status to component decision states
+  const mapStatusToDecision = (statusKode: string, type: string): "menunggu" | "disetujui" | "ditolak" | "berjalan" | "selesai" => {
+    const kode = statusKode.toLowerCase();
+    if (kode.includes('disetujui') || kode.includes('diterima')) return 'disetujui';
+    if (kode.includes('ditolak')) return 'ditolak';
+    if (kode.includes('berlangsung') || kode.includes('berjalan')) return 'berjalan';
+    if (kode.includes('selesai')) return 'selesai';
+    return 'menunggu';
+  };
+
+  // Get participant info - using first peserta if available
+  const pesertaInfo = layananData?.peserta?.[0];
+  
   const infoKiri = [
-    { label: "Jenis Kegiatan", value: "Praktek Kerja Lapangan" },
-    { label: "Nama Peserta", value: "" },
-    { label: "NIM / NIS", value: "" },
-    { label: "Instansi", value: "" },
+    { label: "Jenis Kegiatan", value: layananData?.jenisLayanan?.nama_jenis_layanan || layananData?.jenis_layanan?.nama_jenis_layanan || "Praktek Kerja Lapangan" },
+    { label: "Nama Peserta", value: pesertaInfo?.nama_peserta || layananData?.pemohon?.name || "-" },
+    { label: "NIM / NIS", value: pesertaInfo?.nim || "-" },
+    { label: "Instansi", value: pesertaInfo?.instansi_asal || layananData?.instansi_asal || "-" },
   ];
 
   const infoKanan = [
-    { label: "Tanggal Mulai", value: "" },
-    { label: "Tanggal Selesai", value: "" },
-    { label: "Kegiatan yang dipilih", value: "" },
+    { label: "Tanggal Mulai", value: layananData?.tanggal_mulai ? formatDate(layananData.tanggal_mulai) : "-" },
+    { label: "Tanggal Selesai", value: layananData?.tanggal_selesai ? formatDate(layananData.tanggal_selesai) : "-" },
+    { label: "Kegiatan yang dipilih", value: layananData?.kegiatan?.map(k => k.nama_kegiatan).join(", ") || layananData?.nama_kegiatan || "-" },
   ];
 
   const dokumen = [
-    { label: "Proposal / Surat Permohonan", file: "Surat Permohonan.pdf" },
-    { label: "Surat Pengantar", file: "Surat Pengantar.pdf" },
+    { label: "Proposal / Surat Permohonan", file: layananData?.file_surat_permohonan || layananData?.file_proposal || "" },
+    { label: "Surat Pengantar", file: layananData?.file_surat_pengantar || "" },
   ];
 
   const steps = [
@@ -140,28 +263,28 @@ export default function DetailPelaksanaanPKLPage() {
   const [logbookLink, setLogbookLink] = useState<string>("");
   const [isLogbookSubmitted, setIsLogbookSubmitted] = useState<boolean>(false);
   const [isEditingLogbook, setIsEditingLogbook] = useState<boolean>(false);
-  const pelaksanaanModules = [
-    {
-      id: 1,
-      title: "Modul 1 : Pengenalan Kopi",
-      desc: "pengetahuan dasar tentang kopi, sejarah kopi",
-    },
-    {
-      id: 2,
-      title: "Modul 2 : Proses Roasting",
-      desc: "dasar-dasar roasting dan profil rasa",
-    },
-    {
-      id: 3,
-      title: "Modul 3 : Brewing",
-      desc: "metode seduh dan teknik ekstraksi",
-    },
-    {
-      id: 4,
-      title: "Modul 4 : Cupping",
-      desc: "evaluasi citarasa dan aroma kopi",
-    },
-  ];
+  const [pelaksanaanModules, setPelaksanaanModules] = useState<ModulItem[]>([]);
+  const [modulLoading, setModulLoading] = useState<boolean>(false);
+  const [modulError, setModulError] = useState<string | null>(null);
+
+  // Fetch modul saat tahapan pelaksanaan disetujui/berjalan
+  useEffect(() => {
+    const loadModuls = async () => {
+      // Hanya fetch jika pelaksanaan sudah berjalan atau selesai
+      if (pelaksanaanDecision === "menunggu") return;
+      try {
+        setModulLoading(true);
+        const moduls = await fetchAllModul();
+        setPelaksanaanModules(moduls || []);
+        setModulError(null);
+      } catch (e: any) {
+        setModulError(e.message || "Gagal memuat modul");
+      } finally {
+        setModulLoading(false);
+      }
+    };
+    loadModuls();
+  }, [pelaksanaanDecision]);
 
   const handleLogbookLinkChange: React.ChangeEventHandler<HTMLInputElement> = (
     e
@@ -207,24 +330,45 @@ export default function DetailPelaksanaanPKLPage() {
     });
 
     if (result.isConfirmed) {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      try {
+        // Call API to submit or update logbook
+        if (isLogbookSubmitted && !isEditingLogbook) {
+          // Jika sudah pernah submit, tidak perlu update lagi
+          return;
+        }
+        
+        const apiCall = isEditingLogbook ? updateLogbook : submitLogbook;
+        await apiCall(Number(layananId), { link_logbook: logbookLink });
 
-      setIsLogbookSubmitted(true);
-      setIsEditingLogbook(false);
+        setIsLogbookSubmitted(true);
+        setIsEditingLogbook(false);
 
-      await Swal.fire({
-        title: "Logbook Berhasil Dikirim",
-        text: "Link logbook Anda telah berhasil dikirim.",
-        icon: "success",
-        confirmButtonText: "OK",
-        customClass: {
-          confirmButton:
-            "swal2-confirm bg-[#5C3A1E] text-white px-6 py-2 rounded-lg",
-          popup: "rounded-xl",
-        },
-        buttonsStyling: false,
-      });
+        await Swal.fire({
+          title: "Logbook Berhasil Dikirim",
+          text: "Link logbook Anda telah berhasil dikirim.",
+          icon: "success",
+          confirmButtonText: "OK",
+          customClass: {
+            confirmButton:
+              "swal2-confirm bg-[#5C3A1E] text-white px-6 py-2 rounded-lg",
+            popup: "rounded-xl",
+          },
+          buttonsStyling: false,
+        });
+      } catch (error: any) {
+        await Swal.fire({
+          title: "Gagal Mengirim Logbook",
+          text: error.message || "Terjadi kesalahan saat mengirim logbook.",
+          icon: "error",
+          confirmButtonText: "OK",
+          customClass: {
+            confirmButton:
+              "swal2-confirm bg-[#5C3A1E] text-white px-6 py-2 rounded-lg",
+            popup: "rounded-xl",
+          },
+          buttonsStyling: false,
+        });
+      }
     }
   };
 
@@ -273,6 +417,26 @@ export default function DetailPelaksanaanPKLPage() {
     }
   };
   const handleSubmitLaporan = async () => {
+    // Validasi form
+    if (!laporanForm.namaP4s || !laporanForm.kota || !laporanForm.jenisKegiatan || 
+        !laporanForm.asalPeserta || !laporanForm.jumlahPeserta || 
+        !laporanForm.tanggalPelaksanaan || !laporanForm.lamaPelaksanaan || !fotoKegiatan) {
+      const Swal = (await import("sweetalert2")).default;
+      await Swal.fire({
+        title: "Form Tidak Lengkap",
+        text: "Mohon lengkapi semua field yang wajib diisi.",
+        icon: "warning",
+        confirmButtonText: "OK",
+        customClass: {
+          confirmButton:
+            "swal2-confirm bg-[#5C3A1E] text-white px-6 py-2 rounded-lg",
+          popup: "rounded-xl",
+        },
+        buttonsStyling: false,
+      });
+      return;
+    }
+
     const Swal = (await import("sweetalert2")).default;
     const result = await Swal.fire({
       title: "Yakin Mengirimkan Laporan Akhir ?",
@@ -292,13 +456,50 @@ export default function DetailPelaksanaanPKLPage() {
       buttonsStyling: false,
     });
     if (!result.isConfirmed) return;
+
     setSubmitting(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setSubmitting(false);
-    setSuccessOpen(true);
-    setLaporanSubmitted(true);
-    setLaporanDecision("disetujui" as typeof laporanDecision);
-    scrollToSertifikat();
+    try {
+      // Mapping jenis kegiatan ke id_jenis_layanan
+      const jenisLayananMap: Record<string, number> = {
+        pkl: 1,
+        magang: 2,
+        pelatihan: 3,
+        kunjungan: 4,
+        "undangan-narasumber": 5,
+      };
+
+      await createLaporanLayanan({
+        id_layanan: Number(layananId),
+        nama_p4s: laporanForm.namaP4s,
+        asal_kab_kota: laporanForm.kota,
+        id_jenis_layanan: jenisLayananMap[laporanForm.jenisKegiatan] || 1,
+        asal_mitra_kerjasama: laporanForm.asalPeserta,
+        jumlah_peserta: Number(laporanForm.jumlahPeserta),
+        tanggal_pelaksanaan: laporanForm.tanggalPelaksanaan,
+        lama_pelaksanaan: laporanForm.lamaPelaksanaan,
+        foto_kegiatan: fotoKegiatan,
+      });
+
+      setSubmitting(false);
+      setSuccessOpen(true);
+      setLaporanSubmitted(true);
+      setLaporanDecision("disetujui" as typeof laporanDecision);
+      scrollToSertifikat();
+    } catch (error: any) {
+      setSubmitting(false);
+      await Swal.fire({
+        title: "Gagal Mengirim Laporan",
+        text: error.message || "Terjadi kesalahan saat mengirim laporan.",
+        icon: "error",
+        confirmButtonText: "OK",
+        customClass: {
+          confirmButton:
+            "swal2-confirm bg-[#5C3A1E] text-white px-6 py-2 rounded-lg",
+          popup: "rounded-xl",
+        },
+        buttonsStyling: false,
+      });
+    }
   };
 
   const pengajuanDecisionText: Record<typeof pengajuanDecision, string> = {
@@ -324,6 +525,66 @@ export default function DetailPelaksanaanPKLPage() {
     laporanDecision,
     sertifikatDecision,
   ];
+
+  // Loading state
+  if (loading) {
+    return (
+      <>
+        <div className="min-h-screen bg-tertiary pt-24 md:pt-28">
+          <div className="container mx-auto px-4 max-w-6xl py-10">
+            <div className="mb-4">
+              <Link
+                href="/layanan"
+                className="flex items-center text-amber-600 hover:text-amber-700 transition-colors"
+              >
+                <ArrowLeft size={20} className="mr-2" />
+                <span className="font-medium">Kembali ke Layanan</span>
+              </Link>
+            </div>
+            <div className="animate-pulse space-y-4">
+              <div className="h-8 bg-gray-200 rounded w-3/4 mx-auto"></div>
+              <div className="h-64 bg-gray-200 rounded"></div>
+              <div className="h-96 bg-gray-200 rounded"></div>
+            </div>
+          </div>
+        </div>
+        <Footer />
+      </>
+    );
+  }
+
+  // Error state
+  if (error || !layananData) {
+    return (
+      <>
+        <div className="min-h-screen bg-tertiary pt-24 md:pt-28">
+          <div className="container mx-auto px-4 max-w-6xl py-10">
+            <div className="mb-4">
+              <Link
+                href="/layanan"
+                className="flex items-center text-amber-600 hover:text-amber-700 transition-colors"
+              >
+                <ArrowLeft size={20} className="mr-2" />
+                <span className="font-medium">Kembali ke Layanan</span>
+              </Link>
+            </div>
+            <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center">
+              <XCircle className="mx-auto mb-3 text-red-500" size={48} />
+              <h2 className="text-xl font-semibold text-red-800 mb-2">Gagal Memuat Data</h2>
+              <p className="text-red-600 mb-4">{error || "Data layanan tidak ditemukan"}</p>
+              <Link
+                href="/layanan"
+                className="inline-flex items-center rounded-lg bg-red-600 text-white px-4 py-2 hover:bg-red-700"
+              >
+                Kembali ke Layanan
+              </Link>
+            </div>
+          </div>
+        </div>
+        <Footer />
+      </>
+    );
+  }
 
   return (
     <>
@@ -598,35 +859,71 @@ export default function DetailPelaksanaanPKLPage() {
                         <p className="text-sm font-semibold text-[#3B3B3B]">
                           {d.label}
                         </p>
-                        <p className="text-[12px] text-[#6B6B6B]">{d.file}</p>
+                        <p className="text-[12px] text-[#6B6B6B]">{valueOrDash(d.file)}</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <button className="inline-flex items-center gap-1 rounded-lg border border-[#E8E2DB] px-3 py-2 text-[12px] text-[#3B3B3B] hover:bg-[#F5EFE8]">
-                          <Eye size={16} /> Lihat
-                        </button>
-                        <button className="inline-flex items-center gap-1 rounded-lg bg-primary text-white px-3 py-2 text-[12px] hover:opacity-90">
-                          <Download size={16} /> Download
-                        </button>
+                        {(() => {
+                          const url = resolveFileUrl(d.file);
+                          return (
+                            <>
+                              <button
+                                onClick={() => openFile(url)}
+                                disabled={!url}
+                                className="inline-flex items-center gap-1 rounded-lg border border-[#E8E2DB] px-3 py-2 text-[12px] text-[#3B3B3B] hover:bg-[#F5EFE8] disabled:opacity-40 disabled:cursor-not-allowed"
+                              >
+                                <Eye size={16} /> Lihat
+                              </button>
+                              <button
+                                onClick={() => downloadFile(url, d.file)}
+                                disabled={!url}
+                                className="inline-flex items-center gap-1 rounded-lg bg-primary text-white px-3 py-2 text-[12px] hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+                              >
+                                <Download size={16} /> Download
+                              </button>
+                            </>
+                          );
+                        })()}
                       </div>
                     </div>
                   ))}
 
-                {/* Dokumen MOU - Muncul ketika MOU disetujui */}
-                {mouDecision === "disetujui" && (
+                {/* Dokumen MOU - Tampilkan jika file MOU tersedia (apapun statusnya) */}
+                {(() => {
+                  const resolved = resolveFileUrl(layananData?.mou?.file_mou);
+                  if (typeof window !== "undefined") {
+                    console.log("[DetailPelaksanaanPKL] render MOU, raw:", layananData?.mou?.file_mou, "resolved:", resolved);
+                  }
+                  return !!resolved;
+                })() && (
                   <div className="flex items-center justify-between rounded-lg border border-[#E8E2DB] bg-white p-3">
                     <div>
                       <p className="text-sm font-semibold text-[#3B3B3B]">
                         Memorandum of Understanding
                       </p>
-                      <p className="text-[12px] text-[#6B6B6B]">MOU.pdf</p>
+                      <p className="text-[12px] text-[#6B6B6B]">{valueOrDash(layananData?.mou?.file_mou || "")}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <button className="inline-flex items-center gap-1 rounded-lg border border-[#E8E2DB] px-3 py-2 text-[12px] text-[#3B3B3B] hover:bg-[#F5EFE8]">
-                        <Eye size={16} /> Lihat
-                      </button>
-                      <button className="inline-flex items-center gap-1 rounded-lg bg-primary text-white px-3 py-2 text-[12px] hover:opacity-90">
-                        <Download size={16} /> Download
-                      </button>
+                      {(() => {
+                        const url = resolveFileUrl(layananData?.mou?.file_mou);
+                        return (
+                          <>
+                            <button
+                              onClick={() => openFile(url)}
+                              disabled={!url}
+                              className="inline-flex items-center gap-1 rounded-lg border border-[#E8E2DB] px-3 py-2 text-[12px] text-[#3B3B3B] hover:bg-[#F5EFE8] disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                              <Eye size={16} /> Lihat
+                            </button>
+                            <button
+                              onClick={() => downloadFile(url, "MOU.pdf")}
+                              disabled={!url}
+                              className="inline-flex items-center gap-1 rounded-lg bg-primary text-white px-3 py-2 text-[12px] hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                              <Download size={16} /> Download
+                            </button>
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
                 )}
@@ -837,6 +1134,15 @@ export default function DetailPelaksanaanPKLPage() {
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {modulLoading && (
+                  <div className="col-span-1 md:col-span-2 text-center text-[12px] text-[#6B6B6B]">Memuat modul…</div>
+                )}
+                {modulError && (
+                  <div className="col-span-1 md:col-span-2 text-center text-[12px] text-red-600">{modulError}</div>
+                )}
+                {!modulLoading && !modulError && pelaksanaanModules.length === 0 && (
+                  <div className="col-span-1 md:col-span-2 text-center text-[12px] text-[#6B6B6B]">Belum ada modul tersedia.</div>
+                )}
                 {pelaksanaanModules.map((m) => (
                   <div
                     key={m.id}
@@ -845,16 +1151,32 @@ export default function DetailPelaksanaanPKLPage() {
                     <div className="w-20 h-20 rounded-md bg-[#F3EFEB] border border-dashed border-[#B9B1A9]" />
                     <div className="flex-1">
                       <p className="text-[13px] font-semibold text-[#3B3B3B]">
-                        {m.title}
+                        {m.judul_modul}
                       </p>
-                      <p className="text-[12px] text-[#675e5e]">{m.desc}</p>
+                      <p className="text-[12px] text-[#675e5e]">{m.deskripsi}</p>
                       <div className="mt-2 flex items-center gap-2">
-                        <button className="inline-flex items-center rounded-lg bg-[#5C3A1E] text-white px-3 py-1.5 text-[12px] hover:opacity-90">
-                          Akses Modul
-                        </button>
-                        <button className="inline-flex items-center rounded-lg border border-[#E8E2DB] px-3 py-1.5 text-[12px] text-[#3B3B3B] hover:bg[#F5EFE8]">
-                          Download Pdf
-                        </button>
+                        {m.file_modul && (
+                          <>
+                            <a
+                              href={m.file_modul}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center rounded-lg bg-[#5C3A1E] text-white px-3 py-1.5 text-[12px] hover:opacity-90"
+                            >
+                              Akses Modul
+                            </a>
+                            <a
+                              href={m.file_modul}
+                              download
+                              className="inline-flex items-center rounded-lg border border-[#E8E2DB] px-3 py-1.5 text-[12px] text-[#3B3B3B] hover:bg-[#F5EFE8]"
+                            >
+                              Download PDF
+                            </a>
+                          </>
+                        )}
+                        {!m.file_modul && (
+                          <span className="text-[12px] text-[#9A948E]">File modul belum tersedia</span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1172,11 +1494,12 @@ export default function DetailPelaksanaanPKLPage() {
           </div>
         )}
 
-      <div
-        className="container mx-auto px-4 max-w-6xl mb-8"
-        id="sertifikat-section"
-      >
-        <div className="rounded-xl border border-[#E8E2DB] bg-white p-5 md:p-6">
+      {laporanSubmitted && (
+        <div
+          className="container mx-auto px-4 max-w-6xl mb-8"
+          id="sertifikat-section"
+        >
+          <div className="rounded-xl border border-[#E8E2DB] bg-white p-5 md:p-6">
           {/* Jika Laporan Ditolak */}
           {laporanSubmitted && laporanDecision === "ditolak" && (
             <div className="rounded-lg border border-[#F0CFCF] bg-[#FFF6F6] p-4 text-center">
@@ -1204,13 +1527,8 @@ export default function DetailPelaksanaanPKLPage() {
             </div>
           )}
 
-          {/* Jika Laporan Belum Disetujui atau Sertifikat Masih Menunggu */}
-          {!(
-            laporanSubmitted &&
-            laporanDecision === "disetujui" &&
-            sertifikatDecision === "selesai"
-          ) &&
-            !(laporanSubmitted && laporanDecision === "ditolak") && (
+          {/* Jika Laporan Disetujui tapi Sertifikat Belum Selesai */}
+          {laporanDecision === "disetujui" && sertifikatDecision !== "selesai" && (
               <div className="text-center py-8">
                 <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-[#F7F4F0] border border-[#E8E2DB] flex items-center justify-center">
                   <Award size={32} className="text-[#A99F99]" />
@@ -1219,9 +1537,7 @@ export default function DetailPelaksanaanPKLPage() {
                   Sertifikat Belum Tersedia
                 </h3>
                 <p className="text-[12px] text-[#6B6B6B] max-w-md mx-auto">
-                  {laporanSubmitted && laporanDecision === "disetujui"
-                    ? "Sertifikat sedang dalam proses pembuatan. Harap tunggu beberapa saat."
-                    : "Selesaikan tahapan pelaksanaan dan laporan akhir terlebih dahulu untuk mendapatkan sertifikat."}
+                  Sertifikat sedang dalam proses pembuatan. Harap tunggu beberapa saat.
                 </p>
               </div>
             )}
@@ -1265,8 +1581,9 @@ export default function DetailPelaksanaanPKLPage() {
                 </div>
               </div>
             )}
+          </div>
         </div>
-      </div>
+      )}
 
       {successOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-lg">
