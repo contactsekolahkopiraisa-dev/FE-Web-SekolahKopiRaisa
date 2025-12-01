@@ -52,7 +52,7 @@ export default function UmkmAdmin() {
       const response = await getAllUMKM({
         page: currentPage,
         limit: itemsPerPage,
-        search: searchTerm || undefined,
+        search: searchTerm || undefined
       });
 
       if (response && response.data) {
@@ -121,13 +121,13 @@ export default function UmkmAdmin() {
           const response = await fetch(`/api/admin/umkm/${id}/approve`, {
             method: "POST",
             headers: {
-              "Content-Type": "application/json",
+              "Content-Type": "application/json"
             },
             body: JSON.stringify({
               alasan: alasan || "UMKM Anda telah disetujui.",
               email: umkm.User?.email,
-              nama_umkm: umkm.nama_umkm,
-            }),
+              nama_umkm: umkm.nama_umkm
+            })
           });
 
           if (!response.ok) {
@@ -140,7 +140,7 @@ export default function UmkmAdmin() {
           Swal.showValidationMessage(`Error: ${error.message}`);
         }
       },
-      allowOutsideClick: () => !Swal.isLoading(),
+      allowOutsideClick: () => !Swal.isLoading()
     });
 
     if (result.isConfirmed) {
@@ -149,7 +149,7 @@ export default function UmkmAdmin() {
         title: "Berhasil!",
         text: `UMKM ${umkm.nama_umkm} telah disetujui dan email notifikasi telah dikirim.`,
         icon: "success",
-        confirmButtonColor: "#10b981",
+        confirmButtonColor: "#10b981"
       });
     }
   };
@@ -191,13 +191,13 @@ export default function UmkmAdmin() {
           const response = await fetch(`/api/admin/umkm/${id}/reject`, {
             method: "POST",
             headers: {
-              "Content-Type": "application/json",
+              "Content-Type": "application/json"
             },
             body: JSON.stringify({
               alasan: alasan,
               email: umkm.User?.email,
-              nama_umkm: umkm.nama_umkm,
-            }),
+              nama_umkm: umkm.nama_umkm
+            })
           });
 
           if (!response.ok) {
@@ -210,7 +210,7 @@ export default function UmkmAdmin() {
           Swal.showValidationMessage(`Error: ${error.message}`);
         }
       },
-      allowOutsideClick: () => !Swal.isLoading(),
+      allowOutsideClick: () => !Swal.isLoading()
     });
 
     if (result.isConfirmed) {
@@ -219,7 +219,7 @@ export default function UmkmAdmin() {
         title: "Berhasil!",
         text: `UMKM ${umkm.nama_umkm} telah ditolak dan email notifikasi telah dikirim.`,
         icon: "success",
-        confirmButtonColor: "#10b981",
+        confirmButtonColor: "#10b981"
       });
     }
   };
@@ -325,7 +325,10 @@ export default function UmkmAdmin() {
                   Nama UMKM
                 </th>
                 <th className="px-2 sm:px-4 py-3 text-left font-medium whitespace-nowrap">
-                  KTP
+                  Nama Pemilik
+                </th>
+                <th className="px-2 sm:px-4 py-3 text-left font-medium whitespace-nowrap">
+                  NIK
                 </th>
                 <th className="px-2 sm:px-4 py-3 text-left font-medium whitespace-nowrap">
                   Sertifikat Halal
@@ -361,6 +364,9 @@ export default function UmkmAdmin() {
                       {item.nama_umkm}
                     </td>
                     <td className="px-2 sm:px-4 py-3 whitespace-nowrap">
+                      {item.User?.name}
+                    </td>
+                    <td className="px-2 sm:px-4 py-3 whitespace-nowrap">
                       {item.ktp}
                     </td>
                     <td className="px-2 sm:px-4 py-3 whitespace-nowrap">
@@ -374,7 +380,9 @@ export default function UmkmAdmin() {
                           File Sertifikat
                         </a>
                       ) : (
-                        <span className="text-gray-400">-</span>
+                        <span className="text-gray-500 italic">
+                          File Sertifikat tidak tersedia
+                        </span>
                       )}
                     </td>
                     <td
