@@ -12,10 +12,138 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { fetchLayananById, LayananItem, formatDate } from "../../utils/layanan";
+import { createLaporanLayanan } from "../../utils/laporan";
 
 export default function DetailPelaksanaanKunjunganPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const layananId = searchParams.get('id');
+  
+  const [layananData, setLayananData] = useState<LayananItem | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const valueOrDash = (value?: string) => {
+    if (typeof value !== "string") return "-";
+    const v = value.trim();
+    if (v === "" || v.toLowerCase() === "null" || v.toLowerCase() === "undefined") return "-";
+    return v;
+  };
+
+  const resolveFileUrl = (path?: string | null): string | null => {
+    if (!path) return null;
+    const trimmed = path.trim();
+    if (trimmed === "" || trimmed.toLowerCase() === "null" || trimmed.toLowerCase() === "undefined") return null;
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+    const base = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "");
+    return `${base}${trimmed.startsWith("/") ? trimmed : "/" + trimmed}`;
+  };
+
+  const openFile = (url: string | null) => {
+    if (!url) return;
+    if (typeof window !== "undefined") window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const downloadFile = (url: string | null, filename?: string) => {
+    if (!url || typeof document === "undefined") return;
+    
+    fetch(url)
+      .then(response => {
+        if (!response.ok) throw new Error('Network response was not ok');
+        return response.blob();
+      })
+      .then(blob => {
+        const blobUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.download = filename || "download.pdf";
+        a.style.display = "none";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(blobUrl);
+      })
+      .catch(error => {
+        console.error("Download error:", error);
+        window.open(url, "_blank");
+      });
+  };
+
+  // Fetch layanan data on component mount
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!layananId) {
+        setError("ID Layanan tidak ditemukan");
+        setLoading(false);
+        return;
+      }
+      try {
+        setLoading(true);
+        const data = await fetchLayananById(Number(layananId), {
+          include_jenis: true,
+          include_peserta: true,
+          include_laporan: true,
+        });
+        setLayananData(data);
+
+        // Set decision states from API data
+        if (data.status_pengajuan_kode) {
+          const statusPengajuan = data.status_pengajuan_kode.toLowerCase();
+          if (statusPengajuan.includes('disetujui') || statusPengajuan.includes('diterima')) {
+            setPengajuanDecision('disetujui');
+          } else if (statusPengajuan.includes('ditolak')) {
+            setPengajuanDecision('ditolak');
+          }
+        }
+
+        // Check if laporan exists and set states (handle array or single object)
+        const laporanList = Array.isArray(data.laporan) ? data.laporan : data.laporan ? [data.laporan] : [];
+        if (laporanList.length > 0 && laporanList[0]) {
+          setLaporanSubmitted(true);
+          const laporan: any = laporanList[0];
+          setLaporanForm({
+            namaP4s: laporan.nama_p4s || "",
+            kota: laporan.asal_kab_kota || "",
+            jenisKegiatan: "Kunjungan",
+            asalPeserta: "",
+            jumlahPeserta: "",
+            tanggalPelaksanaan: "",
+            lamaPelaksanaan: "",
+          });
+        }
+
+        setError(null);
+      } catch (e: any) {
+        console.error("Error fetching layanan:", e);
+        setError(e.message || "Gagal memuat data layanan");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [layananId]);
+
+  // Get participant info
+  const pesertaInfo = layananData?.peserta?.[0];
+  
+  const infoKiri = [
+    { label: "Jenis Kegiatan", value: layananData?.jenisLayanan?.nama_jenis_layanan || layananData?.jenis_layanan?.nama_jenis_layanan || "Kunjungan" },
+    { label: "Nama Kegiatan", value: layananData?.nama_kegiatan || "-" },
+  ];
+
+  const infoKanan = [
+    { label: "Tanggal Kegiatan", value: layananData?.tanggal_mulai ? formatDate(layananData.tanggal_mulai) : "-" },
+    { label: "Tempat Kegiatan", value: layananData?.tempat_kegiatan || "-" },
+  ];
+
+  const dokumen = [
+    { label: "Proposal / Surat Permohonan", file: layananData?.file_surat_permohonan || layananData?.file_proposal || "" },
+    { label: "Surat Pengantar", file: layananData?.file_surat_pengantar || "" },
+  ];
 
   const steps = [
     { name: "Pengajuan", desc: "Menunggu Persetujuan", icon: FileText },
@@ -25,6 +153,8 @@ export default function DetailPelaksanaanKunjunganPage() {
   const [pengajuanDecision, setPengajuanDecision] = useState<
     "menunggu" | "disetujui" | "ditolak"
   >("menunggu");
+
+  const [laporanSubmitted, setLaporanSubmitted] = useState<boolean>(false);
 
   const [laporanForm, setLaporanForm] = useState({
     namaP4s: "",
@@ -64,6 +194,23 @@ export default function DetailPelaksanaanKunjunganPage() {
 
   const handleSubmitLaporan = async () => {
     const Swal = (await import("sweetalert2")).default;
+
+    // Validasi form
+    if (!laporanForm.namaP4s.trim() || !laporanForm.kota.trim() || !fotoKegiatan) {
+      await Swal.fire({
+        title: "Form Tidak Lengkap",
+        text: "Mohon lengkapi Nama P4S, Asal Kab/Kota, dan upload Foto Kegiatan",
+        icon: "warning",
+        confirmButtonText: "OK",
+        customClass: {
+          confirmButton: "swal2-confirm bg-[#5C3A1E] text-white px-6 py-2 rounded-lg",
+          popup: "rounded-xl",
+        },
+        buttonsStyling: false,
+      });
+      return;
+    }
+
     const result = await Swal.fire({
       title: "Yakin Mengirimkan Laporan Akhir?",
       icon: "question",
@@ -83,13 +230,55 @@ export default function DetailPelaksanaanKunjunganPage() {
 
     if (!result.isConfirmed) return;
 
-    await new Promise((r) => setTimeout(r, 800));
-    setSuccessOpen(true);
+    setSubmitting(true);
 
-    // Redirect ke halaman layanan setelah delay singkat
-    setTimeout(() => {
-      router.push("/layanan");
-    }, 2000);
+    try {
+      if (!layananId) {
+        throw new Error("ID Layanan tidak ditemukan");
+      }
+
+      const payload = {
+        id_layanan: Number(layananId),
+        nama_p4s: laporanForm.namaP4s,
+        asal_kab_kota: laporanForm.kota,
+        foto_kegiatan: fotoKegiatan,
+      };
+
+      await createLaporanLayanan(payload);
+
+      setLaporanSubmitted(true);
+
+      await Swal.fire({
+        title: "Laporan Berhasil Dikirim!",
+        text: "Terima kasih telah menyelesaikan kegiatan Kunjungan.",
+        icon: "success",
+        confirmButtonText: "OK",
+        customClass: {
+          confirmButton: "swal2-confirm bg-[#5C3A1E] text-white px-6 py-2 rounded-lg",
+          popup: "rounded-xl",
+        },
+        buttonsStyling: false,
+      });
+
+      setTimeout(() => {
+        router.push("/layanan");
+      }, 2000);
+    } catch (error: any) {
+      console.error("Error submitting laporan:", error);
+      await Swal.fire({
+        title: "Gagal Mengirim Laporan",
+        text: error.message || "Terjadi kesalahan saat mengirim laporan",
+        icon: "error",
+        confirmButtonText: "OK",
+        customClass: {
+          confirmButton: "swal2-confirm bg-[#5C3A1E] text-white px-6 py-2 rounded-lg",
+          popup: "rounded-xl",
+        },
+        buttonsStyling: false,
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const pengajuanDecisionText: Record<typeof pengajuanDecision, string> = {
@@ -99,14 +288,51 @@ export default function DetailPelaksanaanKunjunganPage() {
   };
 
   const decisionTextMap = {
-    menunggu: "Belum Terlaksana",
+    pending: "Belum Terlaksana",
     disetujui: "Disetujui",
   } as const;
 
-  const stepStatuses: Array<"menunggu" | "disetujui"> = [
-    pengajuanDecision === "disetujui" ? "disetujui" : "menunggu",
-    "menunggu",
+  const stepStatuses: Array<"pending" | "disetujui"> = [
+    pengajuanDecision === "disetujui" ? "disetujui" : "pending",
+    laporanSubmitted ? "disetujui" : "pending",
   ];
+
+  // Show loading state
+  if (loading) {
+    return (
+      <>
+        <div className="min-h-screen bg-[#FCFBF7] pt-24 md:pt-28 flex items-center justify-center">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#5C3A1E]"></div>
+            <p className="mt-4 text-[#3B3B3B]">Memuat data layanan...</p>
+          </div>
+        </div>
+        <Footer />
+      </>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <>
+        <div className="min-h-screen bg-[#FCFBF7] pt-24 md:pt-28 flex items-center justify-center">
+          <div className="text-center max-w-md mx-auto px-4">
+            <div className="text-red-500 text-5xl mb-4">⚠️</div>
+            <h2 className="text-xl font-bold text-[#3B3B3B] mb-2">Gagal Memuat Data</h2>
+            <p className="text-[#6B6B6B] mb-6">{error}</p>
+            <button
+              onClick={() => router.push('/layanan')}
+              className="px-6 py-2 bg-[#5C3A1E] text-white rounded-lg hover:bg-[#4A2F18] transition-colors"
+            >
+              Kembali ke Layanan
+            </button>
+          </div>
+        </div>
+        <Footer />
+      </>
+    );
+  }
 
   return (
     <>
@@ -517,3 +743,13 @@ function LaporanAkhirForm({
     </div>
   );
 }
+function setLaporanSubmitted(arg0: boolean) {
+  throw new Error("Function not implemented.");
+}
+
+
+
+function setSubmitting(arg0: boolean) {
+  throw new Error("Function not implemented.");
+}
+

@@ -10,12 +10,142 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Footer from "@/components/main/Footer";
 import { useRouter } from "next/navigation";
+import { fetchLayananById, LayananItem, formatDate } from "../../utils/layanan";
+import { createLaporanLayanan } from "../../utils/laporan";
 
 export default function DetailPelaksanaanUndanganNarasumberPage() {
-  const router = useRouter(); // ✅ gunakan useRouter di sini
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const layananId = searchParams.get('id');
+  
+  const [layananData, setLayananData] = useState<LayananItem | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const valueOrDash = (value?: string) => {
+    if (typeof value !== "string") return "-";
+    const v = value.trim();
+    if (v === "" || v.toLowerCase() === "null" || v.toLowerCase() === "undefined") return "-";
+    return v;
+  };
+
+  const resolveFileUrl = (path?: string | null): string | null => {
+    if (!path) return null;
+    const trimmed = path.trim();
+    if (trimmed === "" || trimmed.toLowerCase() === "null" || trimmed.toLowerCase() === "undefined") return null;
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+    const base = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "");
+    return `${base}${trimmed.startsWith("/") ? trimmed : "/" + trimmed}`;
+  };
+
+  const openFile = (url: string | null) => {
+    if (!url) return;
+    if (typeof window !== "undefined") window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const downloadFile = (url: string | null, filename?: string) => {
+    if (!url || typeof document === "undefined") return;
+    
+    fetch(url)
+      .then(response => {
+        if (!response.ok) throw new Error('Network response was not ok');
+        return response.blob();
+      })
+      .then(blob => {
+        const blobUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.download = filename || "download.pdf";
+        a.style.display = "none";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(blobUrl);
+      })
+      .catch(error => {
+        console.error("Download error:", error);
+        window.open(url, "_blank");
+      });
+  };
+
+  // Fetch layanan data on component mount
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!layananId) {
+        setError("ID Layanan tidak ditemukan");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const data = await fetchLayananById(Number(layananId), {
+          include_jenis: true,
+          include_peserta: true,
+          include_laporan: true,
+        });
+        setLayananData(data);
+        
+        // Set decision states from API data
+        if (data.status_pengajuan_kode) {
+          const statusPengajuan = data.status_pengajuan_kode.toLowerCase();
+          if (statusPengajuan.includes('disetujui') || statusPengajuan.includes('diterima')) {
+            setPengajuanDecision('disetujui');
+          } else if (statusPengajuan.includes('ditolak')) {
+            setPengajuanDecision('ditolak');
+          }
+        }
+
+        // Check if laporan exists and set states (handle array or single object)
+        const laporanList = Array.isArray(data.laporan) ? data.laporan : data.laporan ? [data.laporan] : [];
+        if (laporanList.length > 0 && laporanList[0]) {
+          setLaporanSubmitted(true);
+          const laporan: any = laporanList[0];
+          // Set form with existing data
+          setLaporanForm({
+            namaP4s: laporan.nama_p4s || "",
+            kota: laporan.asal_kab_kota || "",
+            jenisKegiatan: "Undangan Narasumber",
+            asalPeserta: "",
+            jumlahPeserta: "",
+            tanggalPelaksanaan: "",
+            lamaPelaksanaan: "",
+          });
+        }
+
+        setError(null);
+      } catch (e: any) {
+        console.error("Error fetching layanan:", e);
+        setError(e.message || "Gagal memuat data layanan");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [layananId]);
+
+  // Get participant info
+  const pesertaInfo = layananData?.peserta?.[0];
+  
+  const infoKiri = [
+    { label: "Jenis Kegiatan", value: layananData?.jenisLayanan?.nama_jenis_layanan || layananData?.jenis_layanan?.nama_jenis_layanan || "Undangan Narasumber" },
+    { label: "Nama Kegiatan", value: layananData?.nama_kegiatan || "-" },
+  ];
+
+  const infoKanan = [
+    { label: "Tanggal Kegiatan", value: layananData?.tanggal_mulai ? formatDate(layananData.tanggal_mulai) : "-" },
+    { label: "Tempat Kegiatan", value: layananData?.tempat_kegiatan || "-" },
+  ];
+
+  const dokumen = [
+    { label: "Proposal / Surat Permohonan", file: layananData?.file_surat_permohonan || layananData?.file_proposal || "" },
+    { label: "Surat Pengantar", file: layananData?.file_surat_pengantar || "" },
+  ];
 
   const steps = [
     { name: "Pengajuan", desc: "Menunggu Persetujuan", icon: FileText },
@@ -25,6 +155,9 @@ export default function DetailPelaksanaanUndanganNarasumberPage() {
   const [pengajuanDecision, setPengajuanDecision] = useState<
     "menunggu" | "disetujui" | "ditolak"
   >("menunggu");
+  
+  const [laporanSubmitted, setLaporanSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const [laporanForm, setLaporanForm] = useState({
     namaP4s: "",
@@ -62,10 +195,31 @@ export default function DetailPelaksanaanUndanganNarasumberPage() {
   };
 
   const handleSubmitLaporan = async () => {
+    // Validasi form
+    if (!laporanForm.namaP4s || !laporanForm.kota || !laporanForm.jenisKegiatan || 
+        !laporanForm.asalPeserta || !laporanForm.jumlahPeserta || 
+        !laporanForm.tanggalPelaksanaan || !laporanForm.lamaPelaksanaan || !fotoKegiatan) {
+      const Swal = (await import("sweetalert2")).default;
+      await Swal.fire({
+        title: "Form Tidak Lengkap",
+        text: "Mohon lengkapi semua field yang wajib diisi.",
+        icon: "warning",
+        confirmButtonText: "OK",
+        customClass: {
+          confirmButton:
+            "swal2-confirm bg-[#5C3A1E] text-white px-6 py-2 rounded-lg",
+          popup: "rounded-xl",
+        },
+        buttonsStyling: false,
+      });
+      return;
+    }
+
     const Swal = (await import("sweetalert2")).default;
 
     const result = await Swal.fire({
       title: "Yakin Mengirimkan Laporan Akhir?",
+      text: "Apakah Anda yakin ingin mengirimkan laporan akhir kegiatan ini?",
       icon: "question",
       showCancelButton: true,
       confirmButtonText: "Ya, Submit",
@@ -83,24 +237,49 @@ export default function DetailPelaksanaanUndanganNarasumberPage() {
 
     if (!result.isConfirmed) return;
 
-    await new Promise((r) => setTimeout(r, 800));
+    setSubmitting(true);
+    try {
+      await createLaporanLayanan({
+        id_layanan: Number(layananId),
+        nama_p4s: laporanForm.namaP4s,
+        asal_kab_kota: laporanForm.kota,
+        foto_kegiatan: fotoKegiatan,
+      });
 
-    // Success modal
-    await Swal.fire({
-      title: "Laporan Akhir Terkirim",
-      text: "Laporan Anda sudah berhasil dikirim. Tim kami akan memverifikasi terlebih dahulu.",
-      icon: "success",
-      confirmButtonText: "Kembali ke Layanan",
-      customClass: {
-        confirmButton:
-          "swal2-confirm bg-[#5C3A1E] text-white px-6 py-2 rounded-lg",
-        popup: "rounded-xl",
-      },
-      buttonsStyling: false,
-    });
+      setSubmitting(false);
+      setLaporanSubmitted(true);
+      
+      // Success modal
+      await Swal.fire({
+        title: "Laporan Akhir Terkirim",
+        text: "Laporan Anda sudah berhasil dikirim. Tim kami akan memverifikasi terlebih dahulu.",
+        icon: "success",
+        confirmButtonText: "Kembali ke Layanan",
+        customClass: {
+          confirmButton:
+            "swal2-confirm bg-[#5C3A1E] text-white px-6 py-2 rounded-lg",
+          popup: "rounded-xl",
+        },
+        buttonsStyling: false,
+      });
 
-    // ✅ Redirect ke halaman layanan
-    router.push("/layanan");
+      // Redirect ke halaman layanan
+      router.push("/layanan");
+    } catch (error: any) {
+      setSubmitting(false);
+      await Swal.fire({
+        title: "Gagal Mengirim Laporan",
+        text: error.message || "Terjadi kesalahan saat mengirim laporan.",
+        icon: "error",
+        confirmButtonText: "OK",
+        customClass: {
+          confirmButton:
+            "swal2-confirm bg-[#5C3A1E] text-white px-6 py-2 rounded-lg",
+          popup: "rounded-xl",
+        },
+        buttonsStyling: false,
+      });
+    }
   };
 
   const pengajuanDecisionText: Record<typeof pengajuanDecision, string> = {
@@ -119,6 +298,65 @@ export default function DetailPelaksanaanUndanganNarasumberPage() {
     "menunggu",
   ];
 
+  // Loading state
+  if (loading) {
+    return (
+      <>
+        <div className="min-h-screen bg-tertiary pt-24 md:pt-28">
+          <div className="container mx-auto px-4 max-w-6xl py-10">
+            <div className="mb-4">
+              <Link
+                href="/layanan"
+                className="flex items-center text-amber-600 hover:text-amber-700 transition-colors"
+              >
+                <ArrowLeft size={20} className="mr-2" />
+                <span className="font-medium">Kembali ke Layanan</span>
+              </Link>
+            </div>
+            <div className="rounded-xl border border-[#E8E2DB] bg-white p-6 text-center">
+              <div className="animate-spin mx-auto mb-4 w-12 h-12 border-4 border-primary border-t-transparent rounded-full"></div>
+              <p className="text-[12px] text-[#6B6B6B]">Memuat data layanan...</p>
+            </div>
+          </div>
+        </div>
+        <Footer />
+      </>
+    );
+  }
+
+  // Error state
+  if (error || !layananData) {
+    return (
+      <>
+        <div className="min-h-screen bg-tertiary pt-24 md:pt-28">
+          <div className="container mx-auto px-4 max-w-6xl py-10">
+            <div className="mb-4">
+              <Link
+                href="/layanan"
+                className="flex items-center text-amber-600 hover:text-amber-700 transition-colors"
+              >
+                <ArrowLeft size={20} className="mr-2" />
+                <span className="font-medium">Kembali ke Layanan</span>
+              </Link>
+            </div>
+            <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center">
+              <XCircle className="mx-auto mb-3 text-red-500" size={48} />
+              <h2 className="text-xl font-semibold text-red-800 mb-2">Gagal Memuat Data</h2>
+              <p className="text-red-600 mb-4">{error || "Data layanan tidak ditemukan"}</p>
+              <Link
+                href="/layanan"
+                className="inline-flex items-center rounded-lg bg-red-600 text-white px-4 py-2 hover:bg-red-700"
+              >
+                Kembali ke Layanan
+              </Link>
+            </div>
+          </div>
+        </div>
+        <Footer />
+      </>
+    );
+  }
+
   return (
     <>
       <div className="min-h-screen bg-[#FCFBF7] pt-24 md:pt-28">
@@ -131,37 +369,6 @@ export default function DetailPelaksanaanUndanganNarasumberPage() {
               <ArrowLeft size={20} className="mr-2" />
               <span className="font-medium">Kembali ke Layanan</span>
             </Link>
-          </div>
-
-          {/* Decision Test */}
-          <div className="mb-4 rounded-lg border border-[#E8E2DB] bg-white p-3 text-[12px] text-[#3B3B3B]">
-            <p className="font-semibold mb-2">Decision Test</p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <label className="flex items-center gap-2">
-                <span className="w-28">Pengajuan</span>
-                <select
-                  className="flex-1 rounded-md border border-[#E8E2DB] px-2 py-1"
-                  value={pengajuanDecision}
-                  onChange={(e) =>
-                    setPengajuanDecision(
-                      e.target.value as typeof pengajuanDecision
-                    )
-                  }
-                >
-                  <option value="menunggu">menunggu</option>
-                  <option value="disetujui">disetujui</option>
-                  <option value="ditolak">ditolak</option>
-                </select>
-              </label>
-              <div className="flex items-center gap-2">
-                <button
-                  className="rounded-md border border-[#E8E2DB] px-3 py-1"
-                  onClick={scrollToLaporan}
-                >
-                  scroll to laporan
-                </button>
-              </div>
-            </div>
           </div>
 
           <h1 className="text-center text-2xl md:text-[22px] font-semibold text-[#3B3B3B]">

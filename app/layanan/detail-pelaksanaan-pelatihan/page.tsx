@@ -10,33 +10,178 @@ import {
   FileCheck,
   Award,
   XCircle,
+  CheckCircle2,
   Upload,
   Info,
-  ArrowLeft,
 } from "lucide-react";
 import Image from "next/image";
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Footer from "../../../components/main/Footer";
+import { fetchLayananById, LayananItem, formatDate, submitLogbook, updateLogbook, updateStatusPelaksanaan } from "../../utils/layanan";
+import { fetchAllModul } from "../../utils/modul";
+import type { ModulItem } from "../../types/modulType";
+import { createLaporanLayanan } from "../../utils/laporan";
+import { fetchSertifikatById, type SertifikatItem } from "../../utils/sertifikat";
 
 export default function DetailPelaksanaanPelatihanPage() {
+  const searchParams = useSearchParams();
+  const layananId = searchParams.get('id');
+  
+  const [layananData, setLayananData] = useState<LayananItem | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
   const valueOrDash = (value?: string) => {
     if (typeof value !== "string") return "-";
-    return value.trim() === "" ? "-" : value;
+    const v = value.trim();
+    if (v === "" || v.toLowerCase() === "null" || v.toLowerCase() === "undefined") return "-";
+    return v;
   };
+
+  // Helper: bangun URL file absolut dari path relatif/absolut
+  const resolveFileUrl = (path?: string | null): string | null => {
+    if (!path) return null;
+    const trimmed = path.trim();
+    if (trimmed === "" || trimmed.toLowerCase() === "null" || trimmed.toLowerCase() === "undefined") return null;
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+    const base = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "");
+    const p = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+    return `${base}${p}`;
+  };
+
+  const openFile = (url: string | null) => {
+    if (!url) return;
+    if (typeof window !== "undefined") window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const downloadFile = (url: string | null, filename?: string) => {
+    if (!url || typeof document === "undefined") return;
+    
+    // Fetch file as blob then trigger download
+    fetch(url)
+      .then(response => {
+        if (!response.ok) throw new Error('Network response was not ok');
+        return response.blob();
+      })
+      .then(blob => {
+        const blobUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.download = filename || "download.pdf";
+        a.style.display = "none";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(blobUrl);
+      })
+      .catch(error => {
+        console.error("Download error:", error);
+        // Fallback: open in new tab if fetch fails
+        window.open(url, "_blank");
+      });
+  };
+
+  // Fetch layanan data on component mount
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!layananId) {
+        setError("ID Layanan tidak ditemukan");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        if (typeof window !== "undefined") {
+          console.log("[DetailPelaksanaanPelatihan] fetching layananId:", layananId);
+        }
+        const data = await fetchLayananById(Number(layananId), {
+          include_jenis: true,
+          include_peserta: true,
+          include_mou: true,
+          include_sertifikat: true,
+          include_laporan: true,
+        });
+        setLayananData(data);
+        if (typeof window !== "undefined") {
+          console.log("[DetailPelaksanaanPelatihan] fetched layananData.mou.file_mou:", data?.mou?.file_mou);
+          console.log("[DetailPelaksanaanPelatihan] fetched layananData:", data);
+        }
+        
+        // Set link logbook jika sudah ada
+        if (data.link_logbook) {
+          setLogbookLink(data.link_logbook);
+          setIsLogbookSubmitted(true);
+        }
+        
+        // Set status berdasarkan data API dengan null checks
+        if (data.pengajuan?.nama_status_kode) {
+          setPengajuanDecision(mapStatusToDecision(data.pengajuan.nama_status_kode, 'pengajuan') as typeof pengajuanDecision);
+        }
+        if (data.mou?.statusKode?.nama_status_kode) {
+          setMouDecision(mapStatusToDecision(data.mou.statusKode.nama_status_kode, 'mou') as typeof mouDecision);
+        }
+        if (data.pelaksanaan?.nama_status_kode) {
+          setPelaksanaanDecision(mapStatusToDecision(data.pelaksanaan.nama_status_kode, 'pelaksanaan') as typeof pelaksanaanDecision);
+        }
+        if (data.laporan?.nama_status_kode) {
+          setLaporanDecision(mapStatusToDecision(data.laporan.nama_status_kode, 'laporan') as typeof laporanDecision);
+        } else if (data.laporan?.statusPelaporan?.nama_status_kode) {
+          setLaporanDecision(mapStatusToDecision(data.laporan.statusPelaporan.nama_status_kode, 'laporan') as typeof laporanDecision);
+        } else if (data.laporan?.status?.nama_status_kode) {
+          setLaporanDecision(mapStatusToDecision(data.laporan.status.nama_status_kode, 'laporan') as typeof laporanDecision);
+        }
+        if (data.sertifikat?.nama_status_kode) {
+          setSertifikatDecision(mapStatusToDecision(data.sertifikat.nama_status_kode, 'sertifikat') as typeof sertifikatDecision);
+        } else if (data.sertifikat?.status?.nama_status_kode) {
+          setSertifikatDecision(mapStatusToDecision(data.sertifikat.status.nama_status_kode, 'sertifikat') as typeof sertifikatDecision);
+        }
+        
+        setError(null);
+      } catch (err: any) {
+        console.error('Error fetching layanan:', err);
+        setError(err.message || 'Gagal memuat data layanan');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [layananId]);
+
+  // Helper function to map API status to component decision states
+  const mapStatusToDecision = (statusKode: string, type: string): "menunggu" | "disetujui" | "ditolak" | "berjalan" | "selesai" => {
+    const kode = statusKode.toLowerCase();
+    if (kode.includes('disetujui') || kode.includes('diterima')) return 'disetujui';
+    if (kode.includes('ditolak')) return 'ditolak';
+    if (kode.includes('berlangsung') || kode.includes('berjalan')) return 'berjalan';
+    if (kode.includes('selesai')) return 'selesai';
+    return 'menunggu';
+  };
+
+  // Get participant info - using first peserta if available
+  const pesertaInfo = layananData?.peserta?.[0];
+  
   const infoKiri = [
-    { label: "Jenis Kegiatan", value: "Pelatihan Kopi" },
-    { label: "Nama Peserta", value: "" },
-    { label: "Instansi", value: "" },
+    { label: "Jenis Kegiatan", value: layananData?.jenisLayanan?.nama_jenis_layanan || layananData?.jenis_layanan?.nama_jenis_layanan || "Pelatihan Kopi" },
+    { label: "Nama Peserta", value: pesertaInfo?.nama_peserta || layananData?.pemohon?.name || "-" },
+    { label: "NIM / NIS", value: pesertaInfo?.nim || "-" },
+    { label: "Instansi", value: pesertaInfo?.instansi_asal || layananData?.instansi_asal || "-" },
   ];
 
   const infoKanan = [
-    { label: "Tanggal Mulai", value: "" },
-    { label: "Tanggal Selesai", value: "" },
-    { label: "Kegiatan yang dipilih", value: "" },
+    { label: "Tanggal Mulai", value: layananData?.tanggal_mulai ? formatDate(layananData.tanggal_mulai) : "-" },
+    { label: "Tanggal Selesai", value: layananData?.tanggal_selesai ? formatDate(layananData.tanggal_selesai) : "-" },
+    { label: "Kegiatan yang dipilih", value: layananData?.kegiatan?.map(k => k.nama_kegiatan).join(", ") || layananData?.nama_kegiatan || "-" },
   ];
 
-  const dokumen = [{ label: "Surat Permohonan", file: "Surat Permohonan.pdf" }];
+  const dokumen = [
+    { label: "Proposal / Surat Permohonan", file: layananData?.file_surat_permohonan || layananData?.file_proposal || "" },
+    { label: "Surat Pengantar", file: layananData?.file_surat_pengantar || "" },
+  ];
 
   const steps = [
     { name: "Pengajuan", desc: "Menunggu Persetujuan", icon: FileText },
@@ -132,33 +277,171 @@ export default function DetailPelaksanaanPelatihanPage() {
   };
 
   const [pelaksanaanAgree, setPelaksanaanAgree] = useState<boolean>(false);
-  const pelaksanaanModules = [
-    {
-      id: 1,
-      title: "Modul 1 : Pengenalan Kopi",
-      desc: "pengetahuan dasar tentang kopi, sejarah kopi",
-    },
-    {
-      id: 2,
-      title: "Modul 2 : Proses Roasting",
-      desc: "dasar-dasar roasting dan profil rasa",
-    },
-    {
-      id: 3,
-      title: "Modul 3 : Brewing",
-      desc: "metode seduh dan teknik ekstraksi",
-    },
-    {
-      id: 4,
-      title: "Modul 4 : Cupping",
-      desc: "evaluasi citarasa dan aroma kopi",
-    },
-  ];
+  const [logbookLink, setLogbookLink] = useState<string>("");
+  const [isLogbookSubmitted, setIsLogbookSubmitted] = useState<boolean>(false);
+  const [isEditingLogbook, setIsEditingLogbook] = useState<boolean>(false);
+  const [pelaksanaanModules, setPelaksanaanModules] = useState<ModulItem[]>([]);
+  const [modulLoading, setModulLoading] = useState<boolean>(false);
+  const [modulError, setModulError] = useState<string | null>(null);
+
+  // Fetch modul saat tahapan pelaksanaan disetujui/berjalan
+  useEffect(() => {
+    const loadModuls = async () => {
+      // Hanya fetch jika pelaksanaan sudah berjalan atau selesai
+      if (pelaksanaanDecision === "menunggu") return;
+      try {
+        setModulLoading(true);
+        const moduls = await fetchAllModul();
+        setPelaksanaanModules(moduls || []);
+        setModulError(null);
+      } catch (e: any) {
+        setModulError(e.message || "Gagal memuat modul");
+      } finally {
+        setModulLoading(false);
+      }
+    };
+    loadModuls();
+  }, [pelaksanaanDecision]);
+
+  // Fetch sertifikat saat laporan disetujui (cek apakah sertifikat sudah tersedia)
+  useEffect(() => {
+    const loadSertifikat = async () => {
+      // Validasi: hanya fetch jika laporan disetujui dan layananId ada
+      if (laporanDecision !== "disetujui" || !layananId) {
+        return;
+      }
+      
+      try {
+        setSertifikatLoading(true);
+        const sertifikat = await fetchSertifikatById(Number(layananId));
+        if (sertifikat && sertifikat.file_sertifikat) {
+          setSertifikatData(sertifikat);
+          setSertifikatDecision("selesai");
+        }
+        setSertifikatError(null);
+      } catch (e: any) {
+        console.error("Error loading sertifikat:", e);
+        // Jika sertifikat belum ada (404 atau 500), tidak perlu set error
+        const status = e.response?.status;
+        if (status !== 404 && status !== 500) {
+          setSertifikatError(e.message || "Gagal memuat sertifikat");
+        }
+        // Status 404 atau 500 berarti sertifikat belum diupload, ini normal
+      } finally {
+        setSertifikatLoading(false);
+      }
+    };
+    
+    loadSertifikat();
+    
+    // Poll untuk cek sertifikat setiap 30 detik jika laporan disetujui tapi sertifikat belum selesai
+    let pollInterval: NodeJS.Timeout | null = null;
+    if (laporanDecision === "disetujui" && sertifikatDecision !== "selesai") {
+      pollInterval = setInterval(loadSertifikat, 30000);
+    }
+    
+    return () => {
+      if (pollInterval) clearInterval(pollInterval);
+    };
+  }, [laporanDecision, sertifikatDecision, layananId]);
+
+  const handleLogbookLinkChange: React.ChangeEventHandler<HTMLInputElement> = (
+    e
+  ) => {
+    setLogbookLink(e.target.value);
+  };
+
+  const handleSubmitLogbook = async () => {
+    if (!logbookLink.trim()) {
+      const Swal = (await import("sweetalert2")).default;
+      await Swal.fire({
+        title: "Link Logbook Kosong",
+        text: "Silakan masukkan link logbook terlebih dahulu.",
+        icon: "warning",
+        confirmButtonText: "OK",
+        customClass: {
+          confirmButton:
+            "swal2-confirm bg-[#5C3A1E] text-white px-6 py-2 rounded-lg",
+          popup: "rounded-xl",
+        },
+        buttonsStyling: false,
+      });
+      return;
+    }
+
+    const Swal = (await import("sweetalert2")).default;
+    const result = await Swal.fire({
+      title: "Kirim Link Logbook?",
+      text: "Apakah Anda yakin ingin mengirim link logbook ini?",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Ya, Kirim",
+      cancelButtonText: "Batal",
+      reverseButtons: true,
+      customClass: {
+        confirmButton:
+          "swal2-confirm bg-[#5C3A1E] text-white px-6 py-2 rounded-lg",
+        cancelButton:
+          "swal2-cancel border border-[#E8E2DB] text-[#3B3B3B] px-6 py-2 rounded-lg",
+        popup: "rounded-xl",
+      },
+      buttonsStyling: false,
+    });
+
+    if (result.isConfirmed) {
+      try {
+        // Call API to submit or update logbook (both use PUT)
+        if (isLogbookSubmitted && !isEditingLogbook) {
+          // Jika sudah pernah submit, tidak perlu update lagi
+          return;
+        }
+        
+        // Both create and update use the same PUT endpoint
+        await submitLogbook(Number(layananId), { 
+          id_layanan: Number(layananId),
+          link_logbook: logbookLink 
+        });
+
+        setIsLogbookSubmitted(true);
+        setIsEditingLogbook(false);
+
+        await Swal.fire({
+          title: "Logbook Berhasil Dikirim",
+          text: "Link logbook Anda telah berhasil dikirim.",
+          icon: "success",
+          confirmButtonText: "OK",
+          customClass: {
+            confirmButton:
+              "swal2-confirm bg-[#5C3A1E] text-white px-6 py-2 rounded-lg",
+            popup: "rounded-xl",
+          },
+          buttonsStyling: false,
+        });
+      } catch (error: any) {
+        await Swal.fire({
+          title: "Gagal Mengirim Logbook",
+          text: error.message || "Terjadi kesalahan saat mengirim logbook.",
+          icon: "error",
+          confirmButtonText: "OK",
+          customClass: {
+            confirmButton:
+              "swal2-confirm bg-[#5C3A1E] text-white px-6 py-2 rounded-lg",
+            popup: "rounded-xl",
+          },
+          buttonsStyling: false,
+        });
+      }
+    }
+  };
+
+  const handleEditLogbook = () => {
+    setIsEditingLogbook(true);
+  };
 
   const [laporanForm, setLaporanForm] = useState({
     namaP4s: "",
     kota: "",
-    jenisKegiatan: "Pelatihan",
+    jenisKegiatan: "pelatihan",
     asalPeserta: "",
     jumlahPeserta: "",
     tanggalPelaksanaan: "",
@@ -181,6 +464,9 @@ export default function DetailPelaksanaanPelatihanPage() {
   const [successOpen, setSuccessOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [laporanSubmitted, setLaporanSubmitted] = useState(false);
+  const [sertifikatData, setSertifikatData] = useState<SertifikatItem | null>(null);
+  const [sertifikatLoading, setSertifikatLoading] = useState<boolean>(false);
+  const [sertifikatError, setSertifikatError] = useState<string | null>(null);
   const scrollToSertifikat = () => {
     if (typeof window !== "undefined") {
       document
@@ -196,6 +482,26 @@ export default function DetailPelaksanaanPelatihanPage() {
     }
   };
   const handleSubmitLaporan = async () => {
+    // Validasi form
+    if (!laporanForm.namaP4s || !laporanForm.kota || !laporanForm.jenisKegiatan || 
+        !laporanForm.asalPeserta || !laporanForm.jumlahPeserta || 
+        !laporanForm.tanggalPelaksanaan || !laporanForm.lamaPelaksanaan || !fotoKegiatan) {
+      const Swal = (await import("sweetalert2")).default;
+      await Swal.fire({
+        title: "Form Tidak Lengkap",
+        text: "Mohon lengkapi semua field yang wajib diisi.",
+        icon: "warning",
+        confirmButtonText: "OK",
+        customClass: {
+          confirmButton:
+            "swal2-confirm bg-[#5C3A1E] text-white px-6 py-2 rounded-lg",
+          popup: "rounded-xl",
+        },
+        buttonsStyling: false,
+      });
+      return;
+    }
+
     const Swal = (await import("sweetalert2")).default;
     const result = await Swal.fire({
       title: "Yakin Mengirimkan Laporan Akhir ?",
@@ -215,13 +521,36 @@ export default function DetailPelaksanaanPelatihanPage() {
       buttonsStyling: false,
     });
     if (!result.isConfirmed) return;
+
     setSubmitting(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setSubmitting(false);
-    setSuccessOpen(true);
-    setLaporanSubmitted(true);
-    setLaporanDecision("disetujui" as typeof laporanDecision);
-    scrollToSertifikat();
+    try {
+      await createLaporanLayanan({
+        id_layanan: Number(layananId),
+        nama_p4s: laporanForm.namaP4s,
+        asal_kab_kota: laporanForm.kota,
+        foto_kegiatan: fotoKegiatan,
+      });
+
+      setSubmitting(false);
+      setSuccessOpen(true);
+      setLaporanSubmitted(true);
+      setLaporanDecision("disetujui" as typeof laporanDecision); // Auto-approve laporan
+      scrollToSertifikat();
+    } catch (error: any) {
+      setSubmitting(false);
+      await Swal.fire({
+        title: "Gagal Mengirim Laporan",
+        text: error.message || "Terjadi kesalahan saat mengirim laporan.",
+        icon: "error",
+        confirmButtonText: "OK",
+        customClass: {
+          confirmButton:
+            "swal2-confirm bg-[#5C3A1E] text-white px-6 py-2 rounded-lg",
+          popup: "rounded-xl",
+        },
+        buttonsStyling: false,
+      });
+    }
   };
 
   const pengajuanDecisionText: Record<typeof pengajuanDecision, string> = {
@@ -247,6 +576,66 @@ export default function DetailPelaksanaanPelatihanPage() {
     laporanDecision,
     sertifikatDecision,
   ];
+
+  // Loading state
+  if (loading) {
+    return (
+      <>
+        <div className="min-h-screen bg-tertiary pt-24 md:pt-28">
+          <div className="container mx-auto px-4 max-w-6xl py-10">
+            <div className="mb-4">
+              <Link
+                href="/layanan"
+                className="flex items-center text-amber-600 hover:text-amber-700 transition-colors"
+              >
+                <ArrowLeft size={20} className="mr-2" />
+                <span className="font-medium">Kembali ke Layanan</span>
+              </Link>
+            </div>
+            <div className="animate-pulse space-y-4">
+              <div className="h-8 bg-gray-200 rounded w-3/4 mx-auto"></div>
+              <div className="h-64 bg-gray-200 rounded"></div>
+              <div className="h-96 bg-gray-200 rounded"></div>
+            </div>
+          </div>
+        </div>
+        <Footer />
+      </>
+    );
+  }
+
+  // Error state
+  if (error || !layananData) {
+    return (
+      <>
+        <div className="min-h-screen bg-tertiary pt-24 md:pt-28">
+          <div className="container mx-auto px-4 max-w-6xl py-10">
+            <div className="mb-4">
+              <Link
+                href="/layanan"
+                className="flex items-center text-amber-600 hover:text-amber-700 transition-colors"
+              >
+                <ArrowLeft size={20} className="mr-2" />
+                <span className="font-medium">Kembali ke Layanan</span>
+              </Link>
+            </div>
+            <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center">
+              <XCircle className="mx-auto mb-3 text-red-500" size={48} />
+              <h2 className="text-xl font-semibold text-red-800 mb-2">Gagal Memuat Data</h2>
+              <p className="text-red-600 mb-4">{error || "Data layanan tidak ditemukan"}</p>
+              <Link
+                href="/layanan"
+                className="inline-flex items-center rounded-lg bg-red-600 text-white px-4 py-2 hover:bg-red-700"
+              >
+                Kembali ke Layanan
+              </Link>
+            </div>
+          </div>
+        </div>
+        <Footer />
+      </>
+    );
+  }
 
   return (
     <>
@@ -360,7 +749,7 @@ export default function DetailPelaksanaanPelatihanPage() {
             </div>
           </div>
           <h1 className="text-center text-2xl md:text-[22px] font-semibold text-[#3B3B3B]">
-            Detail Pelaksanaan Pelatihan
+            Detail Pelaksanaan Pelatihan Kopi
           </h1>
 
           <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -426,8 +815,14 @@ export default function DetailPelaksanaanPelatihanPage() {
                     : "text-[#6B6B6B]";
 
                   const descColorClass =
-                    stepStatuses[idx] === "disetujui" ||
-                    stepStatuses[idx] === "selesai"
+                    s.name === "Pengajuan"
+                      ? pengajuanDecision === "disetujui"
+                        ? "text-[#2F8A57]"
+                        : pengajuanDecision === "ditolak"
+                        ? "text-[#CD0300]"
+                        : "text-[#6B6B6B]"
+                      : stepStatuses[idx] === "disetujui" ||
+                        stepStatuses[idx] === "selesai"
                       ? "text-[#2F8A57]"
                       : stepStatuses[idx] === "ditolak"
                       ? "text-[#CD0300]"
@@ -515,35 +910,71 @@ export default function DetailPelaksanaanPelatihanPage() {
                         <p className="text-sm font-semibold text-[#3B3B3B]">
                           {d.label}
                         </p>
-                        <p className="text-[12px] text-[#6B6B6B]">{d.file}</p>
+                        <p className="text-[12px] text-[#6B6B6B]">{valueOrDash(d.file)}</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <button className="inline-flex items-center gap-1 rounded-lg border border-[#E8E2DB] px-3 py-2 text-[12px] text-[#3B3B3B] hover:bg-[#F5EFE8]">
-                          <Eye size={16} /> Lihat
-                        </button>
-                        <button className="inline-flex items-center gap-1 rounded-lg bg-primary text-white px-3 py-2 text-[12px] hover:opacity-90">
-                          <Download size={16} /> Download
-                        </button>
+                        {(() => {
+                          const url = resolveFileUrl(d.file);
+                          return (
+                            <>
+                              <button
+                                onClick={() => openFile(url)}
+                                disabled={!url}
+                                className="inline-flex items-center gap-1 rounded-lg border border-[#E8E2DB] px-3 py-2 text-[12px] text-[#3B3B3B] hover:bg-[#F5EFE8] disabled:opacity-40 disabled:cursor-not-allowed"
+                              >
+                                <Eye size={16} /> Lihat
+                              </button>
+                              <button
+                                onClick={() => downloadFile(url, d.file)}
+                                disabled={!url}
+                                className="inline-flex items-center gap-1 rounded-lg bg-primary text-white px-3 py-2 text-[12px] hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+                              >
+                                <Download size={16} /> Download
+                              </button>
+                            </>
+                          );
+                        })()}
                       </div>
                     </div>
                   ))}
 
-                {/* Dokumen MOU - Muncul ketika MOU disetujui */}
-                {mouDecision === "disetujui" && (
+                {/* Dokumen MOU - Tampilkan jika file MOU tersedia (apapun statusnya) */}
+                {(() => {
+                  const resolved = resolveFileUrl(layananData?.mou?.file_mou);
+                  if (typeof window !== "undefined") {
+                    console.log("[DetailPelaksanaanPelatihan] render MOU, raw:", layananData?.mou?.file_mou, "resolved:", resolved);
+                  }
+                  return !!resolved;
+                })() && (
                   <div className="flex items-center justify-between rounded-lg border border-[#E8E2DB] bg-white p-3">
                     <div>
                       <p className="text-sm font-semibold text-[#3B3B3B]">
                         Memorandum of Understanding
                       </p>
-                      <p className="text-[12px] text-[#6B6B6B]">MOU.pdf</p>
+                      <p className="text-[12px] text-[#6B6B6B]">{valueOrDash(layananData?.mou?.file_mou || "")}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <button className="inline-flex items-center gap-1 rounded-lg border border-[#E8E2DB] px-3 py-2 text-[12px] text-[#3B3B3B] hover:bg-[#F5EFE8]">
-                        <Eye size={16} /> Lihat
-                      </button>
-                      <button className="inline-flex items-center gap-1 rounded-lg bg-primary text-white px-3 py-2 text-[12px] hover:opacity-90">
-                        <Download size={16} /> Download
-                      </button>
+                      {(() => {
+                        const url = resolveFileUrl(layananData?.mou?.file_mou);
+                        return (
+                          <>
+                            <button
+                              onClick={() => openFile(url)}
+                              disabled={!url}
+                              className="inline-flex items-center gap-1 rounded-lg border border-[#E8E2DB] px-3 py-2 text-[12px] text-[#3B3B3B] hover:bg-[#F5EFE8] disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                              <Eye size={16} /> Lihat
+                            </button>
+                            <button
+                              onClick={() => downloadFile(url, "MOU.pdf")}
+                              disabled={!url}
+                              className="inline-flex items-center gap-1 rounded-lg bg-primary text-white px-3 py-2 text-[12px] hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                              <Download size={16} /> Download
+                            </button>
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
                 )}
@@ -552,7 +983,6 @@ export default function DetailPelaksanaanPelatihanPage() {
           </div>
         </div>
       </div>
-
       {pengajuanDecision === "ditolak" && (
         <div className="container mx-auto px-4 max-w-6xl mt-6 mb-8">
           <div className="rounded-xl border border-[#F0CFCF] bg-[#FFF6F6] p-6 text-center shadow-sm">
@@ -578,7 +1008,6 @@ export default function DetailPelaksanaanPelatihanPage() {
           </div>
         </div>
       )}
-
       {pengajuanDecision === "disetujui" &&
         mouDecision !== ("disetujui" as typeof mouDecision) && (
           <div className="container mx-auto px-4 max-w-6xl mb-8">
@@ -691,7 +1120,7 @@ export default function DetailPelaksanaanPelatihanPage() {
                   <p className="text-sm font-semibold text-[#3B3B3B]">
                     Upload MOU
                   </p>
-                  <p className="text-[12px] text-[#6B6B6B] mb-3">
+                  <p className="text:[12px] text-[#6B6B6B] mb-3">
                     Unggah Dokumen MOU yang sudah dilengkapi sesuai dengan
                     pengajuan layanan yang dipilih
                   </p>
@@ -756,6 +1185,15 @@ export default function DetailPelaksanaanPelatihanPage() {
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {modulLoading && (
+                  <div className="col-span-1 md:col-span-2 text-center text-[12px] text-[#6B6B6B]">Memuat modul…</div>
+                )}
+                {modulError && (
+                  <div className="col-span-1 md:col-span-2 text-center text-[12px] text-red-600">{modulError}</div>
+                )}
+                {!modulLoading && !modulError && pelaksanaanModules.length === 0 && (
+                  <div className="col-span-1 md:col-span-2 text-center text-[12px] text-[#6B6B6B]">Belum ada modul tersedia.</div>
+                )}
                 {pelaksanaanModules.map((m) => (
                   <div
                     key={m.id}
@@ -764,21 +1202,103 @@ export default function DetailPelaksanaanPelatihanPage() {
                     <div className="w-20 h-20 rounded-md bg-[#F3EFEB] border border-dashed border-[#B9B1A9]" />
                     <div className="flex-1">
                       <p className="text-[13px] font-semibold text-[#3B3B3B]">
-                        {m.title}
+                        {m.judul_modul}
                       </p>
-                      <p className="text-[12px] text-[#675e5e]">{m.desc}</p>
+                      <p className="text-[12px] text-[#675e5e]">{m.deskripsi}</p>
                       <div className="mt-2 flex items-center gap-2">
-                        <button className="inline-flex items-center rounded-lg bg-[#5C3A1E] text-white px-3 py-1.5 text-[12px] hover:opacity-90">
-                          Akses Modul
-                        </button>
-                        <button className="inline-flex items-center rounded-lg border border-[#E8E2DB] px-3 py-1.5 text-[12px] text-[#3B3B3B] hover:bg-[#F5EFE8]">
-                          Download Pdf
-                        </button>
+                        {m.file_modul && (
+                          <>
+                            <a
+                              href={m.file_modul}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center rounded-lg bg-[#5C3A1E] text-white px-3 py-1.5 text-[12px] hover:opacity-90"
+                            >
+                              Akses Modul
+                            </a>
+                            <a
+                              href={m.file_modul}
+                              download
+                              className="inline-flex items-center rounded-lg border border-[#E8E2DB] px-3 py-1.5 text-[12px] text-[#3B3B3B] hover:bg-[#F5EFE8]"
+                            >
+                              Download PDF
+                            </a>
+                          </>
+                        )}
+                        {!m.file_modul && (
+                          <span className="text-[12px] text-[#9A948E]">File modul belum tersedia</span>
+                        )}
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
+
+              {/* Input link logbook */}
+            <div className="mt-6 rounded-lg border border-[#F0EAE3] bg-[#FBF9F7] p-4">
+              <h3 className="text-sm font-semibold text-[#3B3B3B] mb-3">Link Logbook</h3>
+              <p className="text-[12px] text-[#6B6B6B] mb-4">Masukkan link logbook</p>
+              
+              {isLogbookSubmitted && !isEditingLogbook ? (
+                <div className="space-y-3">
+                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="text-sm text-green-800 font-medium">Link Logbook Terkirim</p>
+                    <p className="text-xs text-green-600 mt-1">Status: Logbook telah dikirim</p>
+                  </div>
+                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                    <p className="text-xs text-gray-600 mb-2">Link yang dikirim:</p>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="url"
+                        value={logbookLink}
+                        readOnly
+                        className="flex-1 rounded-lg border border-[#E8E2DB] bg-white px-3 py-2 text-[12px] text-[#3B3B3B] focus:outline-none"
+                      />
+                      <button
+                        onClick={() => window.open(logbookLink, '_blank')}
+                        className="inline-flex items-center rounded-lg bg-[#5C3A1E] text-white px-3 py-2 text-[12px] hover:opacity-90"
+                      >
+                        Buka Link
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleEditLogbook}
+                      className="inline-flex items-center rounded-lg border border-[#E8E2DB] px-3 py-2 text-[12px] text-[#3B3B3B] hover:bg-[#F5EFE8]"
+                    >
+                      Edit
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <input
+                    type="url"
+                    value={logbookLink}
+                    onChange={handleLogbookLinkChange}
+                    placeholder="Masukkan link logbook (contoh: https://drive.google.com/...)"
+                    className="w-full rounded-lg border border-[#E8E2DB] bg-white px-3 py-2 text-[12px] text-[#3B3B3B] focus:outline-none focus:ring-2 focus:ring-[#5C3A1E] focus:border-transparent"
+                  />
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleSubmitLogbook}
+                      className="inline-flex items-center rounded-lg bg-[#5C3A1E] text-white px-4 py-2 text-[12px] hover:opacity-90"
+                    >
+                      Kirim
+                    </button>
+                    {isEditingLogbook && (
+                      <button
+                        onClick={() => setIsEditingLogbook(false)}
+                        className="inline-flex items-center rounded-lg border border-[#E8E2DB] px-3 py-2 text-[12px] text-[#3B3B3B] hover:bg-[#F5EFE8]"
+                      >
+                        Batal
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
 
               <div
                 className={`mt-5 rounded-xl border p-6 text-center ${
@@ -833,7 +1353,7 @@ export default function DetailPelaksanaanPelatihanPage() {
                       const Swal = (await import("sweetalert2")).default;
                       const result = await Swal.fire({
                         title: "Konfirmasi Selesaikan Program",
-                        text: "Apakah Anda yakin telah menyelesaikan semua kegiatan program Pelatihan?",
+                        text: "Apakah Anda yakin telah menyelesaikan semua kegiatan Program Pelatihan?",
                         icon: "question",
                         showCancelButton: true,
                         confirmButtonText: "Ya, Selesaikan",
@@ -849,7 +1369,47 @@ export default function DetailPelaksanaanPelatihanPage() {
                         buttonsStyling: false,
                       });
                       if (result.isConfirmed) {
-                        setPelaksanaanDecision("selesai");
+                        try {
+                          // Update status pelaksanaan di backend
+                          await updateStatusPelaksanaan(Number(layananId), "SELESAI");
+                          
+                          // Re-fetch layanan data to get updated status
+                          const updatedData = await fetchLayananById(Number(layananId), {
+                            include_jenis: true,
+                            include_peserta: true,
+                            include_mou: true,
+                            include_sertifikat: true,
+                            include_laporan: true,
+                          });
+                          setLayananData(updatedData);
+                          
+                          setPelaksanaanDecision("selesai");
+                          await Swal.fire({
+                            title: "Kegiatan Berhasil Diselesaikan",
+                            text: "Status pelaksanaan telah diupdate. Silakan lanjutkan dengan mengisi laporan akhir.",
+                            icon: "success",
+                            confirmButtonText: "OK",
+                            customClass: {
+                              confirmButton:
+                                "swal2-confirm bg-[#5C3A1E] text-white px-6 py-2 rounded-lg",
+                              popup: "rounded-xl",
+                            },
+                            buttonsStyling: false,
+                          });
+                        } catch (error: any) {
+                          await Swal.fire({
+                            title: "Gagal Menyelesaikan Kegiatan",
+                            text: error.message || "Terjadi kesalahan saat mengupdate status.",
+                            icon: "error",
+                            confirmButtonText: "OK",
+                            customClass: {
+                              confirmButton:
+                                "swal2-confirm bg-[#5C3A1E] text-white px-6 py-2 rounded-lg",
+                              popup: "rounded-xl",
+                            },
+                            buttonsStyling: false,
+                          });
+                        }
                       }
                     }}
                   >
@@ -919,8 +1479,8 @@ export default function DetailPelaksanaanPelatihanPage() {
                     >
                       <option value="">Pilih Jenis Kegiatan</option>
                       <option value="pkl">PKL</option>
-                      <option value="Magang">Magang</option>
-                      <option value="pelatihan">Pelatihan Kopi</option>
+                      <option value="magang">Magang</option>
+                      <option value="pelatihan">Pelatihan</option>
                     </select>
                   </div>
                   <div>
@@ -1031,6 +1591,7 @@ export default function DetailPelaksanaanPelatihanPage() {
           id="sertifikat-section"
         >
           <div className="rounded-xl border border-[#E8E2DB] bg-white p-5 md:p-6">
+          {/* Jika Laporan Ditolak */}
           {laporanSubmitted && laporanDecision === "ditolak" && (
             <div className="rounded-lg border border-[#F0CFCF] bg-[#FFF6F6] p-4 text-center">
               <div className="mx-auto mb-2 w-10 h-10 rounded-lg border border-[#F0C3C3] bg-[#FBECEC] flex items-center justify-center">
@@ -1056,59 +1617,119 @@ export default function DetailPelaksanaanPelatihanPage() {
               </div>
             </div>
           )}
+
+          {/* Jika Laporan Disetujui tapi Sertifikat Belum Selesai */}
           {laporanDecision === "disetujui" && sertifikatDecision !== "selesai" && (
               <div className="text-center py-8">
-                <div className="mx-auto mb-4 w-16 h-16 rounded-full border border-[#E8E2DB] bg-[#F7F4F0] flex items-center justify-center">
+                <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-[#F7F4F0] border border-[#E8E2DB] flex items-center justify-center">
                   <Award size={32} className="text-[#A99F99]" />
                 </div>
-                <h3 className="text-base font-semibold text-[#3B3B3B]">
+                <h3 className="text-base font-semibold text-[#3B3B3B] mb-2">
                   Sertifikat Belum Tersedia
                 </h3>
-                <p className="mt-2 text-[12px] text-[#6B6B6B] max-w-md mx-auto">
+                <p className="text-[12px] text-[#6B6B6B] max-w-md mx-auto">
                   Sertifikat sedang dalam proses pembuatan. Harap tunggu beberapa saat.
                 </p>
               </div>
             )}
+
+          {/* Jika Sertifikat Selesai (Bisa Didownload) */}
           {laporanSubmitted &&
             laporanDecision === "disetujui" &&
             sertifikatDecision === "selesai" && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-                <div className="relative w-full h-56 md:h-64 rounded-xl overflow-hidden border border-[#E8E2DB] shadow-sm">
-                  <Image
-                    src="/assets/product.png"
-                    alt="Preview Sertifikat"
-                    fill
-                    className="object-cover"
-                  />
-                  <div className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full bg-white/90 border border-[#E8E2DB] px-3 py-1 text-[11px] text-[#3B3B3B] shadow-xs">
-                    Sertifikat Preview
+              <div>
+                {sertifikatLoading ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin mx-auto mb-4 w-12 h-12 border-4 border-primary border-t-transparent rounded-full"></div>
+                    <p className="text-[12px] text-[#6B6B6B]">Memuat sertifikat...</p>
                   </div>
-                </div>
-                <div className="text-center">
-                  <div className="mx-auto mb-3 w-14 h-14 rounded-full border border-[#CBE6D7] bg-[#E9F7F0] flex items-center justify-center shadow-sm">
-                    <Award size={28} className="text-[#2F8A57]" />
+                ) : sertifikatError ? (
+                  <div className="text-center py-8">
+                    <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-red-50 border border-red-200 flex items-center justify-center">
+                      <XCircle size={32} className="text-red-500" />
+                    </div>
+                    <h3 className="text-base font-semibold text-red-800 mb-2">
+                      Gagal Memuat Sertifikat
+                    </h3>
+                    <p className="text-[12px] text-red-600 max-w-md mx-auto">
+                      {sertifikatError}
+                    </p>
                   </div>
-                  <h3 className="text-base md:text-lg font-semibold text-[#3B3B3B]">
-                    Selamat, Program Pelatihan Kopi Anda telah selesai!
-                  </h3>
-                  <p className="mt-1 text-[12px] text-[#6B6B6B]">
-                    Anda telah menyelesaikan program dan berhak mendapatkan
-                    sertifikat resmi dari Sekolah Kopi Raisa.
-                  </p>
+                ) : sertifikatData ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                    <div className="relative w-full h-56 md:h-64 rounded-xl overflow-hidden border border-[#E8E2DB] shadow-sm bg-gray-100 flex items-center justify-center">
+                      {sertifikatData.file_sertifikat ? (
+                        <>
+                          <iframe
+                            src={resolveFileUrl(sertifikatData.file_sertifikat) || ""}
+                            className="w-full h-full"
+                            title="Preview Sertifikat"
+                          />
+                          <div className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full bg-white/90 border border-[#E8E2DB] px-3 py-1 text-[11px] text-[#3B3B3B] shadow-xs">
+                            Sertifikat Preview
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-center">
+                          <Award size={48} className="mx-auto mb-2 text-gray-400" />
+                          <p className="text-[12px] text-gray-500">Preview tidak tersedia</p>
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-center">
+                      <div className="mx-auto mb-3 w-14 h-14 rounded-full border border-[#CBE6D7] bg-[#E9F7F0] flex items-center justify-center shadow-sm">
+                        <Award size={28} className="text-[#2F8A57]" />
+                      </div>
+                      <h3 className="text-base md:text-lg font-semibold text-[#3B3B3B]">
+                        Selamat, Program Pelatihan Anda telah selesai!
+                      </h3>
+                      <p className="mt-1 text-[12px] text-[#6B6B6B]">
+                        Anda telah menyelesaikan program dan berhak mendapatkan
+                        sertifikat resmi dari Sekolah Kopi Raisa.
+                      </p>
+                      {sertifikatData.created_at && (
+                        <p className="mt-2 text-[11px] text-[#6B6B6B]">
+                          Tanggal Terbit: {formatDate(sertifikatData.created_at)}
+                        </p>
+                      )}
 
-                  <div className="mt-4 justify-center flex flex-wrap items-center gap-2">
-                    <button className="inline-flex items-center gap-1 rounded-lg border border-[#E8E2DB] px-3 py-2 text-[12px] text-[#3B3B3B] hover:bg-[#F5EFE8]">
-                      <Eye size={16} /> Preview Sertifikat
-                    </button>
-                    <button className="inline-flex justify-center items-center gap-1 rounded-lg bg-[#5C3A1E] text-white px-3 py-2 text-[12px] hover:opacity-90">
-                      <Download size={16} /> Download Sertifikat PDF
-                    </button>
+                      <div className="mt-4 justify-center flex flex-wrap items-center gap-2">
+                        {sertifikatData.file_sertifikat && (
+                          <>
+                            <button
+                              onClick={() => openFile(resolveFileUrl(sertifikatData.file_sertifikat))}
+                              className="inline-flex items-center gap-1 rounded-lg border border-[#E8E2DB] px-3 py-2 text-[12px] text-[#3B3B3B] hover:bg-[#F5EFE8]"
+                            >
+                              <Eye size={16} /> Preview Sertifikat
+                            </button>
+                            <button
+                              onClick={() => downloadFile(resolveFileUrl(sertifikatData.file_sertifikat), "Sertifikat_Pelatihan.pdf")}
+                              className="inline-flex justify-center items-center gap-1 rounded-lg bg-[#5C3A1E] text-white px-3 py-2 text-[12px] hover:opacity-90"
+                            >
+                              <Download size={16} /> Download Sertifikat PDF
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-[#F7F4F0] border border-[#E8E2DB] flex items-center justify-center">
+                      <Award size={32} className="text-[#A99F99]" />
+                    </div>
+                    <h3 className="text-base font-semibold text-[#3B3B3B] mb-2">
+                      Sertifikat Belum Tersedia
+                    </h3>
+                    <p className="text-[12px] text-[#6B6B6B] max-w-md mx-auto">
+                      Sertifikat sedang dalam proses pembuatan. Harap tunggu beberapa saat.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
+          </div>
         </div>
-      </div>
       )}
 
       {successOpen && (
@@ -1138,3 +1759,4 @@ export default function DetailPelaksanaanPelatihanPage() {
     </>
   );
 }
+

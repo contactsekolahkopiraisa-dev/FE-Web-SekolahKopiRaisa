@@ -38,7 +38,6 @@ export default function KunjunganForm({
             type="text"
             value={formData.jumlahPeserta}
             onChange={onInputChange}
-            readOnly={true}
           />
 
           <FormField

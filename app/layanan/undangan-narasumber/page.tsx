@@ -5,6 +5,8 @@ import UndanganHeader from "../../../components/layanan/undangan-narasumber/Unda
 import UndanganForm from "../../../components/layanan/undangan-narasumber/UndanganForm";
 import Swal from "sweetalert2";
 import { useRouter } from "next/navigation";
+import { createLayanan } from "../../utils/layanan";
+import { fetchAllJenisLayanan } from "../../utils/jenisLayanan";
 
 export default function UndanganNarasumberFormPage() {
   const router = useRouter();
@@ -35,6 +37,29 @@ export default function UndanganNarasumberFormPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Validasi ukuran file (max 5MB per file)
+    const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+    if (formData.proposalFile && formData.proposalFile.size > MAX_FILE_SIZE) {
+      await Swal.fire({
+        title: "File Terlalu Besar",
+        text: "Ukuran file Proposal maksimal 5MB",
+        icon: "error",
+        confirmButtonText: "Tutup",
+        confirmButtonColor: "#401E12",
+      });
+      return;
+    }
+    if (formData.suratUndaganNarasumberFile && formData.suratUndaganNarasumberFile.size > MAX_FILE_SIZE) {
+      await Swal.fire({
+        title: "File Terlalu Besar",
+        text: "Ukuran file Surat Undangan maksimal 5MB",
+        icon: "error",
+        confirmButtonText: "Tutup",
+        confirmButtonColor: "#401E12",
+      });
+      return;
+    }
+
     const result = await Swal.fire({
       title: "Konfirmasi Pengajuan",
       html: `Apakah Anda yakin ingin mengajukan layanan <b>Undangan Narasumber</b>?<br/>Pastikan semua data yang diisi sudah benar. Karena Data tidak dapat diubah setelah di submit.`,
@@ -51,17 +76,44 @@ export default function UndanganNarasumberFormPage() {
     });
 
     if (result.isConfirmed) {
-      // TODO: submit to API here
-      await Swal.fire({
-        title: "Pengajuan Terkirim",
-        text: "Mohon menunggu persetujuan admin",
-        icon: "success",
-        confirmButtonText: "Lihat Progres Pengajuan",
-        confirmButtonColor: "#401E12",
-        allowOutsideClick: false,
-      });
+      try {
+        const jenisList = await fetchAllJenisLayanan();
+        const jenis = jenisList.find(j => j.nama_jenis_layanan.toLowerCase().includes("undangan"));
+        if (!jenis) throw new Error("Jenis layanan 'Undangan Narasumber' tidak ditemukan");
 
-      router.push("/layanan/detail-pelaksanaan-undangan-narasumber");
+        const data = new FormData();
+        data.append("id_jenis_layanan", String(jenis.id));
+        data.append("nama_kegiatan", formData.namaKegiatan || ""); // ISI untuk Undangan
+        data.append("tempat_kegiatan", formData.tempatKegiatan || ""); // ISI untuk Undangan
+        data.append("instansi_asal", formData.instansi || "");
+        data.append("tanggal_mulai", formData.tanggalKegiatan || "");
+        data.append("tanggal_selesai", formData.tanggalKegiatan || "");
+        data.append("jumlah_peserta", "0");
+        // File dengan nama field yang benar
+        if (formData.proposalFile) data.append("file_proposal", formData.proposalFile);
+        if (formData.suratUndaganNarasumberFile) data.append("file_surat_undangan", formData.suratUndaganNarasumberFile);
+
+        const created = await createLayanan(data);
+
+        await Swal.fire({
+          title: "Pengajuan Terkirim",
+          text: "Mohon menunggu persetujuan admin",
+          icon: "success",
+          confirmButtonText: "Lihat Progres Pengajuan",
+          confirmButtonColor: "#401E12",
+          allowOutsideClick: false,
+        });
+
+        router.push(`/layanan/detail-pelaksanaan-undangan-narasumber?id=${created.id}`);
+      } catch (err: any) {
+        await Swal.fire({
+          title: "Gagal Mengajukan",
+          text: err?.message || "Terjadi kesalahan saat mengirim pengajuan",
+          icon: "error",
+          confirmButtonText: "Tutup",
+          confirmButtonColor: "#401E12",
+        });
+      }
     }
   };
 

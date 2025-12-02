@@ -2,6 +2,7 @@ import api from "./api";
 
 // Types untuk Layanan
 export interface LayananItem {
+  status_pengajuan_kode: any;
   id: number;
   nama_kegiatan: string;
   tempat_kegiatan: string;
@@ -55,6 +56,7 @@ export interface LayananItem {
     };
   };
   laporan?: {
+    length: number;
     id?: number;
     nama_status_kode?: string;
     nama_p4s?: string;
@@ -173,13 +175,15 @@ export const createLayanan = async (
   formData: FormData
 ): Promise<LayananItem> => {
   try {
-    console.log("Creating layanan with data:", formData);
-
-    const response = await api.post("/api/v1/layanan", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
+    // Debug isi FormData
+    const debugEntries: Record<string, any> = {};
+    formData.forEach((v, k) => {
+      debugEntries[k] = v instanceof File ? `File(name=${v.name}, size=${v.size})` : v;
     });
+    console.log("Creating layanan with data:", debugEntries);
+
+    // Biarkan axios/browser set Content-Type + boundary otomatis
+    const response = await api.post("/api/v1/layanan", formData);
     console.log("Create layanan response:", response.data);
 
     if (response.data.success) {
@@ -188,9 +192,11 @@ export const createLayanan = async (
     throw new Error(response.data.message || "Gagal membuat layanan");
   } catch (error: any) {
     console.error("Error creating layanan:", error);
-    throw new Error(
-      error.response?.data?.message || error.message || "Gagal membuat layanan"
-    );
+    console.error("Response status:", error?.response?.status);
+    console.error("Response data:", error?.response?.data);
+    console.error("Response headers:", error?.response?.headers);
+    const serverMsg = error?.response?.data?.message || error?.response?.data?.error || JSON.stringify(error?.response?.data);
+    throw new Error(serverMsg || error.message || "Gagal membuat layanan");
   }
 };
 
@@ -227,6 +233,7 @@ export const updateStatusLayanan = async (
 
 // POST/PUT LOGBOOK
 export interface LogbookPayload {
+  id_layanan: number;
   link_logbook: string;
 }
 
@@ -236,18 +243,29 @@ export const submitLogbook = async (
 ): Promise<{ success: boolean; message: string; data?: any }> => {
   try {
     console.log("Submitting logbook for layanan:", id, payload);
+    console.log("API URL:", `/api/v1/layanan/${id}/logbook`);
 
-    const response = await api.post(`/api/v1/layanan/${id}/logbook`, payload);
+    // Backend uses PUT for both create and update logbook
+    const response = await api.put(`/api/v1/layanan/${id}/logbook`, payload);
     console.log("Submit logbook response:", response.data);
 
-    if (response.data.success) {
-      return response.data;
+    // Handle different response formats
+    if (response.data && (response.data.success || response.status === 200 || response.status === 201)) {
+      return {
+        success: true,
+        message: response.data.message || "Logbook berhasil dikirim",
+        data: response.data.data || response.data
+      };
     }
-    throw new Error(response.data.message || "Gagal mengirim logbook");
+    throw new Error(response.data?.message || "Gagal mengirim logbook");
   } catch (error: any) {
     console.error("Error submitting logbook:", error);
+    console.error("Error response:", error.response);
+    console.error("Error status:", error.response?.status);
+    console.error("Error data:", error.response?.data);
     throw new Error(
       error.response?.data?.message ||
+        error.response?.data?.error ||
         error.message ||
         "Gagal mengirim logbook"
     );
@@ -260,20 +278,64 @@ export const updateLogbook = async (
 ): Promise<{ success: boolean; message: string; data?: any }> => {
   try {
     console.log("Updating logbook for layanan:", id, payload);
+    console.log("API URL:", `/api/v1/layanan/${id}/logbook`);
 
     const response = await api.put(`/api/v1/layanan/${id}/logbook`, payload);
     console.log("Update logbook response:", response.data);
 
-    if (response.data.success) {
-      return response.data;
+    // Handle different response formats
+    if (response.data && (response.data.success || response.status === 200)) {
+      return {
+        success: true,
+        message: response.data.message || "Logbook berhasil diupdate",
+        data: response.data.data || response.data
+      };
     }
-    throw new Error(response.data.message || "Gagal mengupdate logbook");
+    throw new Error(response.data?.message || "Gagal mengupdate logbook");
   } catch (error: any) {
     console.error("Error updating logbook:", error);
+    console.error("Error response:", error.response);
+    console.error("Error status:", error.response?.status);
+    console.error("Error data:", error.response?.data);
     throw new Error(
       error.response?.data?.message ||
+        error.response?.data?.error ||
         error.message ||
         "Gagal mengupdate logbook"
+    );
+  }
+};
+
+// UPDATE STATUS PELAKSANAAN
+export const updateStatusPelaksanaan = async (
+  id: number,
+  status: "SELESAI" | "BERLANGSUNG"
+): Promise<{ success: boolean; message: string; data?: any }> => {
+  try {
+    console.log("Finishing pelaksanaan for layanan:", id);
+    console.log("API URL:", `/api/v1/layanan/${id}/finish-pelaksanaan`);
+
+    const response = await api.put(`/api/v1/layanan/${id}/finish-pelaksanaan`);
+    console.log("Finish pelaksanaan response:", response.data);
+
+    if (response.data && (response.data.success || response.status === 200 || response.status === 201)) {
+      return {
+        success: true,
+        message: response.data.message || "Status pelaksanaan berhasil diupdate",
+        data: response.data.data || response.data
+      };
+    }
+    throw new Error(response.data?.message || "Gagal mengupdate status pelaksanaan");
+  } catch (error: any) {
+    console.error("Error finishing pelaksanaan:", error);
+    console.error("Error response:", error.response);
+    console.error("Error status:", error.response?.status);
+    console.error("Error data:", error.response?.data);
+    throw new Error(
+      error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
+        "Gagal mengupdate status pelaksanaan"
     );
   }
 };

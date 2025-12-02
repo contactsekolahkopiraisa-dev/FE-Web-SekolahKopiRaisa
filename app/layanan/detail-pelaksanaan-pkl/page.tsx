@@ -20,10 +20,11 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Footer from "../../../components/main/Footer";
-import { fetchLayananById, LayananItem, formatDate, submitLogbook, updateLogbook } from "../../utils/layanan";
+import { fetchLayananById, LayananItem, formatDate, submitLogbook, updateLogbook, updateStatusPelaksanaan } from "../../utils/layanan";
 import { fetchAllModul } from "../../utils/modul";
 import type { ModulItem } from "../../types/modulType";
 import { createLaporanLayanan } from "../../utils/laporan";
+import { fetchSertifikatById, type SertifikatItem } from "../../utils/sertifikat";
 
 export default function DetailPelaksanaanPKLPage() {
   const searchParams = useSearchParams();
@@ -58,13 +59,29 @@ export default function DetailPelaksanaanPKLPage() {
 
   const downloadFile = (url: string | null, filename?: string) => {
     if (!url || typeof document === "undefined") return;
-    const a = document.createElement("a");
-    a.href = url;
-    if (filename) a.download = filename;
-    a.target = "_blank";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    
+    // Fetch file as blob then trigger download
+    fetch(url)
+      .then(response => {
+        if (!response.ok) throw new Error('Network response was not ok');
+        return response.blob();
+      })
+      .then(blob => {
+        const blobUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.download = filename || "download.pdf";
+        a.style.display = "none";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(blobUrl);
+      })
+      .catch(error => {
+        console.error("Download error:", error);
+        // Fallback: open in new tab if fetch fails
+        window.open(url, "_blank");
+      });
   };
 
   // Fetch layanan data on component mount
@@ -286,6 +303,48 @@ export default function DetailPelaksanaanPKLPage() {
     loadModuls();
   }, [pelaksanaanDecision]);
 
+  // Fetch sertifikat saat laporan disetujui (cek apakah sertifikat sudah tersedia)
+  useEffect(() => {
+    const loadSertifikat = async () => {
+      // Validasi: hanya fetch jika laporan disetujui dan layananId ada
+      if (laporanDecision !== "disetujui" || !layananId) {
+        return;
+      }
+      
+      try {
+        setSertifikatLoading(true);
+        const sertifikat = await fetchSertifikatById(Number(layananId));
+        if (sertifikat && sertifikat.file_sertifikat) {
+          setSertifikatData(sertifikat);
+          setSertifikatDecision("selesai");
+        }
+        setSertifikatError(null);
+      } catch (e: any) {
+        console.error("Error loading sertifikat:", e);
+        // Jika sertifikat belum ada (404 atau 500), tidak perlu set error
+        const status = e.response?.status;
+        if (status !== 404 && status !== 500) {
+          setSertifikatError(e.message || "Gagal memuat sertifikat");
+        }
+        // Status 404 atau 500 berarti sertifikat belum diupload, ini normal
+      } finally {
+        setSertifikatLoading(false);
+      }
+    };
+    
+    loadSertifikat();
+    
+    // Poll untuk cek sertifikat setiap 30 detik jika laporan disetujui tapi sertifikat belum selesai
+    let pollInterval: NodeJS.Timeout | null = null;
+    if (laporanDecision === "disetujui" && sertifikatDecision !== "selesai") {
+      pollInterval = setInterval(loadSertifikat, 30000);
+    }
+    
+    return () => {
+      if (pollInterval) clearInterval(pollInterval);
+    };
+  }, [laporanDecision, sertifikatDecision, layananId]);
+
   const handleLogbookLinkChange: React.ChangeEventHandler<HTMLInputElement> = (
     e
   ) => {
@@ -331,14 +390,17 @@ export default function DetailPelaksanaanPKLPage() {
 
     if (result.isConfirmed) {
       try {
-        // Call API to submit or update logbook
+        // Call API to submit or update logbook (both use PUT)
         if (isLogbookSubmitted && !isEditingLogbook) {
           // Jika sudah pernah submit, tidak perlu update lagi
           return;
         }
         
-        const apiCall = isEditingLogbook ? updateLogbook : submitLogbook;
-        await apiCall(Number(layananId), { link_logbook: logbookLink });
+        // Both create and update use the same PUT endpoint
+        await submitLogbook(Number(layananId), { 
+          id_layanan: Number(layananId),
+          link_logbook: logbookLink 
+        });
 
         setIsLogbookSubmitted(true);
         setIsEditingLogbook(false);
@@ -402,6 +464,9 @@ export default function DetailPelaksanaanPKLPage() {
   const [successOpen, setSuccessOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [laporanSubmitted, setLaporanSubmitted] = useState(false);
+  const [sertifikatData, setSertifikatData] = useState<SertifikatItem | null>(null);
+  const [sertifikatLoading, setSertifikatLoading] = useState<boolean>(false);
+  const [sertifikatError, setSertifikatError] = useState<string | null>(null);
   const scrollToSertifikat = () => {
     if (typeof window !== "undefined") {
       document
@@ -459,31 +524,17 @@ export default function DetailPelaksanaanPKLPage() {
 
     setSubmitting(true);
     try {
-      // Mapping jenis kegiatan ke id_jenis_layanan
-      const jenisLayananMap: Record<string, number> = {
-        pkl: 1,
-        magang: 2,
-        pelatihan: 3,
-        kunjungan: 4,
-        "undangan-narasumber": 5,
-      };
-
       await createLaporanLayanan({
         id_layanan: Number(layananId),
         nama_p4s: laporanForm.namaP4s,
         asal_kab_kota: laporanForm.kota,
-        id_jenis_layanan: jenisLayananMap[laporanForm.jenisKegiatan] || 1,
-        asal_mitra_kerjasama: laporanForm.asalPeserta,
-        jumlah_peserta: Number(laporanForm.jumlahPeserta),
-        tanggal_pelaksanaan: laporanForm.tanggalPelaksanaan,
-        lama_pelaksanaan: laporanForm.lamaPelaksanaan,
         foto_kegiatan: fotoKegiatan,
       });
 
       setSubmitting(false);
       setSuccessOpen(true);
       setLaporanSubmitted(true);
-      setLaporanDecision("disetujui" as typeof laporanDecision);
+      setLaporanDecision("disetujui" as typeof laporanDecision); // Auto-approve laporan
       scrollToSertifikat();
     } catch (error: any) {
       setSubmitting(false);
@@ -598,104 +649,6 @@ export default function DetailPelaksanaanPKLPage() {
               <ArrowLeft size={20} className="mr-2" />
               <span className="font-medium">Kembali ke Layanan</span>
             </Link>
-          </div>
-          {/* Decision Test */}
-          <div className="mb-4 rounded-lg border border-[#E8E2DB] bg-white p-3 text-[12px] text-[#3B3B3B]">
-            <p className="font-semibold mb-2">Decision Test</p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <label className="flex items-center gap-2">
-                <span className="w-28">Pengajuan</span>
-                <select
-                  className="flex-1 rounded-md border border-[#E8E2DB] px-2 py-1"
-                  value={pengajuanDecision}
-                  onChange={(e) =>
-                    setPengajuanDecision(
-                      e.target.value as typeof pengajuanDecision
-                    )
-                  }
-                >
-                  <option value="menunggu">menunggu</option>
-                  <option value="disetujui">disetujui</option>
-                  <option value="ditolak">ditolak</option>
-                </select>
-              </label>
-              <label className="flex items-center gap-2">
-                <span className="w-28">MOU</span>
-                <select
-                  className="flex-1 rounded-md border border-[#E8E2DB] px-2 py-1"
-                  value={mouDecision}
-                  onChange={(e) =>
-                    setMouDecision(e.target.value as typeof mouDecision)
-                  }
-                >
-                  <option value="menunggu">menunggu</option>
-                  <option value="disetujui">disetujui</option>
-                  <option value="ditolak">ditolak</option>
-                </select>
-              </label>
-              <label className="flex items-center gap-2">
-                <span className="w-28">Pelaksanaan</span>
-                <select
-                  className="flex-1 rounded-md border border-[#E8E2DB] px-2 py-1"
-                  value={pelaksanaanDecision}
-                  onChange={(e) =>
-                    setPelaksanaanDecision(
-                      e.target.value as typeof pelaksanaanDecision
-                    )
-                  }
-                >
-                  <option value="menunggu">menunggu</option>
-                  <option value="berjalan">berjalan</option>
-                  <option value="selesai">selesai</option>
-                </select>
-              </label>
-              <label className="flex items-center gap-2">
-                <span className="w-28">Laporan</span>
-                <select
-                  className="flex-1 rounded-md border border-[#E8E2DB] px-2 py-1"
-                  value={laporanDecision}
-                  onChange={(e) =>
-                    setLaporanDecision(e.target.value as typeof laporanDecision)
-                  }
-                >
-                  <option value="menunggu">menunggu</option>
-                  <option value="disetujui">disetujui</option>
-                  <option value="ditolak">ditolak</option>
-                </select>
-              </label>
-              <label className="flex items-center gap-2">
-                <span className="w-28">Sertifikat</span>
-                <select
-                  className="flex-1 rounded-md border border-[#E8E2DB] px-2 py-1"
-                  value={sertifikatDecision}
-                  onChange={(e) =>
-                    setSertifikatDecision(
-                      e.target.value as typeof sertifikatDecision
-                    )
-                  }
-                >
-                  <option value="menunggu">menunggu</option>
-                  <option value="selesai">selesai</option>
-                  <option value="ditolak">ditolak</option>
-                </select>
-              </label>
-              <div className="flex items-center gap-2">
-                <button
-                  className="rounded-md border border-[#E8E2DB] px-3 py-1"
-                  onClick={() => setLaporanSubmitted((v) => !v)}
-                >
-                  toggle laporanSubmitted ({laporanSubmitted ? "true" : "false"}
-                  )
-                </button>
-                <button
-                  className="rounded-md border border-[#E8E2DB] px-3 py-1"
-                  onClick={() => setPelaksanaanAgree((v) => !v)}
-                >
-                  toggle pelaksanaanAgree ({pelaksanaanAgree ? "true" : "false"}
-                  )
-                </button>
-              </div>
-            </div>
           </div>
           <h1 className="text-center text-2xl md:text-[22px] font-semibold text-[#3B3B3B]">
             Detail Pelaksanaan Praktek Kerja Lapangan
@@ -1318,7 +1271,47 @@ export default function DetailPelaksanaanPKLPage() {
                         buttonsStyling: false,
                       });
                       if (result.isConfirmed) {
-                        setPelaksanaanDecision("selesai");
+                        try {
+                          // Update status pelaksanaan di backend
+                          await updateStatusPelaksanaan(Number(layananId), "SELESAI");
+                          
+                          // Re-fetch layanan data to get updated status
+                          const updatedData = await fetchLayananById(Number(layananId), {
+                            include_jenis: true,
+                            include_peserta: true,
+                            include_mou: true,
+                            include_sertifikat: true,
+                            include_laporan: true,
+                          });
+                          setLayananData(updatedData);
+                          
+                          setPelaksanaanDecision("selesai");
+                          await Swal.fire({
+                            title: "Kegiatan Berhasil Diselesaikan",
+                            text: "Status pelaksanaan telah diupdate. Silakan lanjutkan dengan mengisi laporan akhir.",
+                            icon: "success",
+                            confirmButtonText: "OK",
+                            customClass: {
+                              confirmButton:
+                                "swal2-confirm bg-[#5C3A1E] text-white px-6 py-2 rounded-lg",
+                              popup: "rounded-xl",
+                            },
+                            buttonsStyling: false,
+                          });
+                        } catch (error: any) {
+                          await Swal.fire({
+                            title: "Gagal Menyelesaikan Kegiatan",
+                            text: error.message || "Terjadi kesalahan saat mengupdate status.",
+                            icon: "error",
+                            confirmButtonText: "OK",
+                            customClass: {
+                              confirmButton:
+                                "swal2-confirm bg-[#5C3A1E] text-white px-6 py-2 rounded-lg",
+                              popup: "rounded-xl",
+                            },
+                            buttonsStyling: false,
+                          });
+                        }
                       }
                     }}
                   >
@@ -1546,39 +1539,95 @@ export default function DetailPelaksanaanPKLPage() {
           {laporanSubmitted &&
             laporanDecision === "disetujui" &&
             sertifikatDecision === "selesai" && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-                <div className="relative w-full h-56 md:h-64 rounded-xl overflow-hidden border border-[#E8E2DB] shadow-sm">
-                  <Image
-                    src="/assets/product.png"
-                    alt="Preview Sertifikat"
-                    fill
-                    className="object-cover"
-                  />
-                  <div className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full bg-white/90 border border-[#E8E2DB] px-3 py-1 text-[11px] text-[#3B3B3B] shadow-xs">
-                    Sertifikat Preview
+              <div>
+                {sertifikatLoading ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin mx-auto mb-4 w-12 h-12 border-4 border-primary border-t-transparent rounded-full"></div>
+                    <p className="text-[12px] text-[#6B6B6B]">Memuat sertifikat...</p>
                   </div>
-                </div>
-                <div className="text-center">
-                  <div className="mx-auto mb-3 w-14 h-14 rounded-full border border-[#CBE6D7] bg-[#E9F7F0] flex items-center justify-center shadow-sm">
-                    <Award size={28} className="text-[#2F8A57]" />
+                ) : sertifikatError ? (
+                  <div className="text-center py-8">
+                    <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-red-50 border border-red-200 flex items-center justify-center">
+                      <XCircle size={32} className="text-red-500" />
+                    </div>
+                    <h3 className="text-base font-semibold text-red-800 mb-2">
+                      Gagal Memuat Sertifikat
+                    </h3>
+                    <p className="text-[12px] text-red-600 max-w-md mx-auto">
+                      {sertifikatError}
+                    </p>
                   </div>
-                  <h3 className="text-base md:text-lg font-semibold text-[#3B3B3B]">
-                    Selamat, Program PKL Anda telah selesai!
-                  </h3>
-                  <p className="mt-1 text-[12px] text-[#6B6B6B]">
-                    Anda telah menyelesaikan program dan berhak mendapatkan
-                    sertifikat resmi dari Sekolah Kopi Raisa.
-                  </p>
+                ) : sertifikatData && sertifikatData.file_sertifikat ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                    <div className="relative w-full h-56 md:h-64 rounded-xl overflow-hidden border border-[#E8E2DB] shadow-sm bg-gray-100 flex items-center justify-center">
+                      {sertifikatData.file_sertifikat ? (
+                        <>
+                          <iframe
+                            src={resolveFileUrl(sertifikatData.file_sertifikat) || ""}
+                            className="w-full h-full"
+                            title="Preview Sertifikat"
+                          />
+                          <div className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full bg-white/90 border border-[#E8E2DB] px-3 py-1 text-[11px] text-[#3B3B3B] shadow-xs">
+                            Sertifikat Preview
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-center">
+                          <Award size={48} className="mx-auto mb-2 text-gray-400" />
+                          <p className="text-[12px] text-gray-500">Preview tidak tersedia</p>
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-center">
+                      <div className="mx-auto mb-3 w-14 h-14 rounded-full border border-[#CBE6D7] bg-[#E9F7F0] flex items-center justify-center shadow-sm">
+                        <Award size={28} className="text-[#2F8A57]" />
+                      </div>
+                      <h3 className="text-base md:text-lg font-semibold text-[#3B3B3B]">
+                        Selamat, Program PKL Anda telah selesai!
+                      </h3>
+                      <p className="mt-1 text-[12px] text-[#6B6B6B]">
+                        Anda telah menyelesaikan program dan berhak mendapatkan
+                        sertifikat resmi dari Sekolah Kopi Raisa.
+                      </p>
+                      {sertifikatData.created_at && (
+                        <p className="mt-2 text-[11px] text-[#6B6B6B]">
+                          Tanggal Terbit: {formatDate(sertifikatData.created_at)}
+                        </p>
+                      )}
 
-                  <div className="mt-4 justify-center flex flex-wrap items-center gap-2">
-                    <button className="inline-flex items-center gap-1 rounded-lg border border-[#E8E2DB] px-3 py-2 text-[12px] text-[#3B3B3B] hover:bg-[#F5EFE8]">
-                      <Eye size={16} /> Preview Sertifikat
-                    </button>
-                    <button className="inline-flex justify-center items-center gap-1 rounded-lg bg-[#5C3A1E] text-white px-3 py-2 text-[12px] hover:opacity-90">
-                      <Download size={16} /> Download Sertifikat PDF
-                    </button>
+                      <div className="mt-4 justify-center flex flex-wrap items-center gap-2">
+                        {sertifikatData.file_sertifikat && (
+                          <>
+                            <button
+                              onClick={() => openFile(resolveFileUrl(sertifikatData.file_sertifikat))}
+                              className="inline-flex items-center gap-1 rounded-lg border border-[#E8E2DB] px-3 py-2 text-[12px] text-[#3B3B3B] hover:bg-[#F5EFE8]"
+                            >
+                              <Eye size={16} /> Preview Sertifikat
+                            </button>
+                            <button
+                              onClick={() => downloadFile(resolveFileUrl(sertifikatData.file_sertifikat), "Sertifikat_PKL.pdf")}
+                              className="inline-flex justify-center items-center gap-1 rounded-lg bg-[#5C3A1E] text-white px-3 py-2 text-[12px] hover:opacity-90"
+                            >
+                              <Download size={16} /> Download Sertifikat PDF
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-[#F7F4F0] border border-[#E8E2DB] flex items-center justify-center">
+                      <Award size={32} className="text-[#A99F99]" />
+                    </div>
+                    <h3 className="text-base font-semibold text-[#3B3B3B] mb-2">
+                      Sertifikat Belum Tersedia
+                    </h3>
+                    <p className="text-[12px] text-[#6B6B6B] max-w-md mx-auto">
+                      Sertifikat sedang dalam proses pembuatan. Harap tunggu beberapa saat.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </div>
