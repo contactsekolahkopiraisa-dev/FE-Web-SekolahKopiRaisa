@@ -309,59 +309,59 @@ const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
   // Reset error
   setErrors((prev) => ({ ...prev, sertifikasiHalal: "" }));
 
-  // Validasi: pastikan hanya 1 file
   if (!files || files.length === 0) {
     setForm({ ...form, sertifikasiHalal: null });
     return;
   }
 
+  // ✅ Validasi: HARUS tepat 1 file
   if (files.length > 1) {
     setErrors((prev) => ({
       ...prev,
       sertifikasiHalal: "Hanya boleh upload 1 file",
     }));
-    e.target.value = "";
-    setForm({ ...form, sertifikasiHalal: null }); // ✅ Reset form state
+    e.target.value = ""; // Reset input
+    setForm({ ...form, sertifikasiHalal: null });
     return;
   }
 
   const file = files[0];
 
-  // Validasi ukuran file (max 5MB)
-  const maxSize = 5 * 1024 * 1024;
-  if (file.size > maxSize) {
+  // Validasi ukuran (max 5MB)
+  if (file.size > 5 * 1024 * 1024) {
     setErrors((prev) => ({
       ...prev,
-      sertifikasiHalal: `Ukuran file terlalu besar (${(
+      sertifikasiHalal: `File terlalu besar (${(
         file.size /
         1024 /
         1024
-      ).toFixed(2)} MB). Maksimal 5MB`,
+      ).toFixed(2)} MB). Max 5MB`,
     }));
     e.target.value = "";
     setForm({ ...form, sertifikasiHalal: null });
     return;
   }
 
-  // Validasi format file
+  // Validasi format
   const allowedTypes = [
     "application/pdf",
     "image/jpeg",
     "image/jpg",
     "image/png",
   ];
-
   if (!allowedTypes.includes(file.type)) {
     setErrors((prev) => ({
       ...prev,
-      sertifikasiHalal: `Format tidak didukung (${file.type}). Gunakan PDF, JPG, atau PNG`,
+      sertifikasiHalal: "Format tidak didukung. Gunakan PDF, JPG, atau PNG",
     }));
     e.target.value = "";
     setForm({ ...form, sertifikasiHalal: null });
     return;
   }
 
+  // ✅ SET FILE - pastikan hanya sekali
   setForm({ ...form, sertifikasiHalal: file });
+  console.log("✅ File berhasil di-set:", file.name);
 };
 
   // ✅ PERBAIKAN: Handler hapus file
@@ -443,6 +443,23 @@ const handleSubmit = async (e: React.FormEvent) => {
   setIsSubmitting(true);
 
   try {
+    console.log("🎯 === FORM SUBMISSION DEBUG ===");
+    console.log("📋 Current form state:", {
+      name: form.name,
+      email: form.email,
+      namaUmkm: form.umkm_name,
+      ktp: form.nik,
+      hasFile: !!form.sertifikasiHalal,
+      fileInfo: form.sertifikasiHalal
+        ? {
+            name: form.sertifikasiHalal.name,
+            type: form.sertifikasiHalal.type,
+            size: form.sertifikasiHalal.size,
+            instanceof: form.sertifikasiHalal instanceof File,
+          }
+        : null,
+    });
+
     const submitData = {
       name: form.name.trim(),
       email: form.email.trim(),
@@ -450,13 +467,20 @@ const handleSubmit = async (e: React.FormEvent) => {
       phone_number: form.phone_number,
       namaUmkm: form.umkm_name.trim(),
       ktp: form.nik,
-      sertifikasiHalal: form.sertifikasiHalal || undefined,
+      sertifikasiHalal: form.sertifikasiHalal || undefined, // ✅ undefined bukan null
       addresses: form.addresses.map((addr) => ({
         id_desa: parseInt(addr.id_desa),
         alamat: addr.alamat.trim(),
         kode_pos: addr.kode_pos,
       })),
     };
+
+    console.log("📤 Data yang akan dikirim:", {
+      ...submitData,
+      sertifikasiHalal: submitData.sertifikasiHalal
+        ? "FILE PRESENT"
+        : "NO FILE",
+    });
 
     const response = await registerUMKM(submitData);
 
@@ -471,6 +495,7 @@ const handleSubmit = async (e: React.FormEvent) => {
       router.push("/signup/umkm/verification");
     }
   } catch (error: any) {
+    console.error("❌ Submit error:", error);
     if (error.type === "validation") {
       setErrors(error.errors || {});
       setMessage(error.message || "Validasi gagal");

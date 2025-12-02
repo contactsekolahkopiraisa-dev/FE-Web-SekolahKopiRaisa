@@ -129,6 +129,21 @@ export const registerUser = async (formData: RegisterUserData) => {
 export const registerUMKM = async (formData: RegisterUMKMData) => {
   try {
     console.log("🔧 Membangun FormData...");
+    console.log("📋 Raw formData input:", {
+      name: formData.name,
+      email: formData.email,
+      namaUmkm: formData.namaUmkm,
+      ktp: formData.ktp,
+      hasFile: !!formData.sertifikasiHalal,
+      fileDetails: formData.sertifikasiHalal
+        ? {
+            name: formData.sertifikasiHalal.name,
+            type: formData.sertifikasiHalal.type,
+            size: formData.sertifikasiHalal.size,
+          }
+        : null,
+      addresses: formData.addresses,
+    });
 
     const data = new FormData();
 
@@ -140,40 +155,39 @@ export const registerUMKM = async (formData: RegisterUMKMData) => {
     data.append("namaUmkm", formData.namaUmkm);
     data.append("ktp", formData.ktp);
 
-    // ✅ HANYA APPEND FILE JIKA ADA DAN VALID
+    // ✅ CRITICAL FIX: Append file HANYA jika ada dan valid
     if (
       formData.sertifikasiHalal &&
       formData.sertifikasiHalal instanceof File
     ) {
-      console.log("📎 File akan dikirim:", {
-        name: formData.sertifikasiHalal.name,
-        type: formData.sertifikasiHalal.type,
-        size: `${(formData.sertifikasiHalal.size / 1024).toFixed(2)} KB`,
-      });
-
-      // PASTIKAN HANYA APPEND SEKALI
+      console.log("📎 Appending file:", formData.sertifikasiHalal.name);
       data.append("sertifikasiHalal", formData.sertifikasiHalal);
     } else {
-      console.log("ℹ️ Tidak ada file sertifikat");
+      console.log("ℹ️ NO FILE - skipping sertifikasiHalal");
     }
 
-    // Append addresses as JSON string
+    // Append addresses
     data.append("addresses", JSON.stringify(formData.addresses));
 
-    // ✅ LOG SEMUA ENTRIES DALAM FORMDATA
-    console.log("📦 FormData entries:");
-    let fileCount = 0;
-    for (let [key, value] of data.entries()) {
+    // ✅ DETAILED DEBUG: Count all entries
+    console.log("📦 === FORMDATA INSPECTION ===");
+    const allEntries: Array<[string, any]> = [];
+    const fileCounts: Record<string, number> = {};
+
+    for (let pair of data.entries()) {
+      const [key, value] = pair;
+      allEntries.push([key, value]);
+
       if (value instanceof File) {
-        fileCount++;
-        console.log(`  ${key} [FILE #${fileCount}]:`, {
+        fileCounts[key] = (fileCounts[key] || 0) + 1;
+        console.log(`  📄 ${key} [FILE #${fileCounts[key]}]:`, {
           name: value.name,
           type: value.type,
           size: `${(value.size / 1024).toFixed(2)} KB`,
         });
       } else {
         console.log(
-          `  ${key}:`,
+          `  📝 ${key}:`,
           typeof value === "string" && value.length > 50
             ? value.substring(0, 50) + "..."
             : value
@@ -181,11 +195,24 @@ export const registerUMKM = async (formData: RegisterUMKMData) => {
       }
     }
 
-    if (fileCount > 1) {
-      console.error("⚠️ WARNING: FormData contains multiple files!");
+    console.log("📊 Summary:");
+    console.log("  Total entries:", allEntries.length);
+    console.log("  File fields:", fileCounts);
+
+    // ❌ CRITICAL CHECK: Detect duplicates
+    const sertifikasiHalalCount = fileCounts["sertifikasiHalal"] || 0;
+    if (sertifikasiHalalCount > 1) {
+      console.error(
+        "❌ CRITICAL ERROR: Multiple sertifikasiHalal files detected!"
+      );
+      console.error("   Count:", sertifikasiHalalCount);
+      throw new Error(
+        `DUPLICATE FILES DETECTED: ${sertifikasiHalalCount} files with key 'sertifikasiHalal'`
+      );
     }
 
-    console.log("🚀 Mengirim request ke backend...");
+    console.log("✅ FormData validation passed");
+    console.log("🚀 Sending request to backend...");
 
     const res = await api.post("/api/v1/auth/umkm", data, {
       headers: {
@@ -203,7 +230,6 @@ export const registerUMKM = async (formData: RegisterUMKMData) => {
       console.error("  Status:", status, statusText);
       console.error("  Response data:", data);
 
-      // Handle validation errors
       if (
         data.errors &&
         typeof data.errors === "object" &&
@@ -216,7 +242,6 @@ export const registerUMKM = async (formData: RegisterUMKMData) => {
         } as ErrorResponse;
       }
 
-      // Handle general errors
       if (data.errors) {
         throw {
           type: "general",
@@ -227,14 +252,12 @@ export const registerUMKM = async (formData: RegisterUMKMData) => {
         } as ErrorResponse;
       }
 
-      // Fallback error
       throw {
         type: "general",
         message: data.message || `Error ${status}: ${statusText}`,
       } as ErrorResponse;
     }
 
-    // Network error
     if (error.request) {
       console.error("  Network error - no response received");
       throw {
@@ -244,7 +267,6 @@ export const registerUMKM = async (formData: RegisterUMKMData) => {
       } as ErrorResponse;
     }
 
-    // Unknown error
     console.error("  Unknown error:", error.message);
     throw {
       type: "unknown",
