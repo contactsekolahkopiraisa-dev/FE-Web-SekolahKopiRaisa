@@ -67,7 +67,7 @@ const handleApiError = (error: any): never => {
       throw {
         type: "validation",
         message: data.message || "Validasi gagal!",
-        errors: data.errors,
+        errors: data.errors
       } as ErrorResponse;
     }
 
@@ -78,21 +78,21 @@ const handleApiError = (error: any): never => {
         message:
           typeof data.errors === "string"
             ? data.errors
-            : data.message || "Terjadi kesalahan!",
+            : data.message || "Terjadi kesalahan!"
       } as ErrorResponse;
     }
 
     // Fallback error
     throw {
       type: "general",
-      message: data.message || "Terjadi kesalahan!",
+      message: data.message || "Terjadi kesalahan!"
     } as ErrorResponse;
   }
 
   // Network error
   throw {
     type: "network",
-    message: "Tidak dapat terhubung ke server. Coba lagi nanti.",
+    message: "Tidak dapat terhubung ke server. Coba lagi nanti."
   } as ErrorResponse;
 };
 
@@ -104,7 +104,7 @@ export const loginWithGoogle = () => {
 export const facebookLogin = async (accessToken: string) => {
   try {
     const response = await api.post("/api/v1/auth/facebook/link", {
-      accessToken,
+      accessToken
     });
     return response.data;
   } catch (error: any) {
@@ -148,7 +148,7 @@ export const registerUMKM = async (formData: RegisterUMKMData) => {
       console.log("📎 File akan dikirim:", {
         name: formData.sertifikasiHalal.name,
         type: formData.sertifikasiHalal.type,
-        size: `${(formData.sertifikasiHalal.size / 1024).toFixed(2)} KB`,
+        size: `${(formData.sertifikasiHalal.size / 1024).toFixed(2)} KB`
       });
 
       // PASTIKAN HANYA APPEND SEKALI
@@ -169,7 +169,7 @@ export const registerUMKM = async (formData: RegisterUMKMData) => {
         console.log(`  ${key} [FILE #${fileCount}]:`, {
           name: value.name,
           type: value.type,
-          size: `${(value.size / 1024).toFixed(2)} KB`,
+          size: `${(value.size / 1024).toFixed(2)} KB`
         });
       } else {
         console.log(
@@ -189,8 +189,8 @@ export const registerUMKM = async (formData: RegisterUMKMData) => {
 
     const res = await api.post("/api/v1/auth/umkm", data, {
       headers: {
-        "Content-Type": "multipart/form-data",
-      },
+        "Content-Type": "multipart/form-data"
+      }
     });
 
     console.log("✅ Response berhasil:", res.data);
@@ -212,7 +212,7 @@ export const registerUMKM = async (formData: RegisterUMKMData) => {
         throw {
           type: "validation",
           message: data.message || "Validasi gagal!",
-          errors: data.errors,
+          errors: data.errors
         } as ErrorResponse;
       }
 
@@ -223,14 +223,14 @@ export const registerUMKM = async (formData: RegisterUMKMData) => {
           message:
             typeof data.errors === "string"
               ? data.errors
-              : data.message || "Terjadi kesalahan",
+              : data.message || "Terjadi kesalahan"
         } as ErrorResponse;
       }
 
       // Fallback error
       throw {
         type: "general",
-        message: data.message || `Error ${status}: ${statusText}`,
+        message: data.message || `Error ${status}: ${statusText}`
       } as ErrorResponse;
     }
 
@@ -240,7 +240,7 @@ export const registerUMKM = async (formData: RegisterUMKMData) => {
       throw {
         type: "network",
         message:
-          "Tidak dapat terhubung ke server. Periksa koneksi internet Anda.",
+          "Tidak dapat terhubung ke server. Periksa koneksi internet Anda."
       } as ErrorResponse;
     }
 
@@ -248,7 +248,7 @@ export const registerUMKM = async (formData: RegisterUMKMData) => {
     console.error("  Unknown error:", error.message);
     throw {
       type: "unknown",
-      message: error.message || "Terjadi kesalahan yang tidak diketahui",
+      message: error.message || "Terjadi kesalahan yang tidak diketahui"
     } as ErrorResponse;
   }
 };
@@ -278,7 +278,7 @@ export const logout = async () => {
 export const resetPasswordRequest = async (email: string) => {
   try {
     const res = await api.post("/api/v1/auth/reset-password-request", {
-      email,
+      email
     });
     return res.data;
   } catch (error: any) {
@@ -292,7 +292,7 @@ export const resetPasswordRequest = async (email: string) => {
 
 export const resetPassword = async ({
   token,
-  newPassword,
+  newPassword
 }: {
   token: string;
   newPassword: string;
@@ -300,7 +300,7 @@ export const resetPassword = async ({
   try {
     const res = await api.put("/api/v1/auth/reset-password", {
       token,
-      newPassword,
+      newPassword
     });
     return res.data;
   } catch (error: any) {
@@ -325,7 +325,7 @@ export const getAllUMKM = async (params?: {
     if (params?.page) queryParams.append("page", params.page.toString());
     if (params?.limit) queryParams.append("limit", params.limit.toString());
     if (params?.search) queryParams.append("search", params.search);
-    
+
     const url = `/api/v1/auth/umkm${
       queryParams.toString() ? `?${queryParams.toString()}` : ""
     }`;
@@ -346,6 +346,33 @@ export const getUMKMById = async (id: string | number) => {
   } catch (error: any) {
     const message =
       error.response?.data?.message || "Gagal mengambil detail UMKM";
+    throw new Error(message);
+  }
+};
+
+// ==================== UMKM VERIFICATION ====================
+export const verifyUMKM = async (id: number, reason?: string) => {
+  try {
+    const res = await api.post(`/api/v1/auth/umkm/${id}/verify`, {
+      approved: true,
+      reason: reason || "UMKM Anda telah disetujui."
+    });
+    return res.data;
+  } catch (error: any) {
+    const message = error.response?.data?.message || "Gagal menyetujui UMKM";
+    throw new Error(message);
+  }
+};
+
+export const rejectUMKM = async (id: number, reason: string) => {
+  try {
+    const res = await api.post(`/api/v1/auth/umkm/${id}/reject`, {
+      approved: false,
+      reason
+    });
+    return res.data;
+  } catch (error: any) {
+    const message = error.response?.data?.message || "Gagal menolak UMKM";
     throw new Error(message);
   }
 };

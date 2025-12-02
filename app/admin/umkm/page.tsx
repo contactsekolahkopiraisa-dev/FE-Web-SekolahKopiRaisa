@@ -2,7 +2,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Popup from "@/components/Popup";
-import { getAllUMKM } from "@/app/utils/auth";
+import { getAllUMKM, verifyUMKM, rejectUMKM } from "@/app/utils/auth";
 import Swal from "sweetalert2";
 
 interface UMKM {
@@ -105,7 +105,7 @@ export default function UmkmAdmin() {
         </div>
       `,
       input: "textarea",
-      inputPlaceholder: "Masukkan alasan persetujuan (opsional)...",
+      inputPlaceholder: "Masukkan alasan persetujuan, harus 5 - 1000 huruf (opsional)...",
       inputAttributes: {
         style: "min-height: 100px; resize: vertical;"
       },
@@ -115,27 +115,10 @@ export default function UmkmAdmin() {
       confirmButtonColor: "#10b981",
       cancelButtonColor: "#6b7280",
       showLoaderOnConfirm: true,
-      preConfirm: async (alasan) => {
+      preConfirm: async (reason) => {
         try {
-          // Call API to approve UMKM
-          const response = await fetch(`/api/admin/umkm/${id}/approve`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              alasan: alasan || "UMKM Anda telah disetujui.",
-              email: umkm.User?.email,
-              nama_umkm: umkm.nama_umkm
-            })
-          });
-
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || "Gagal menyetujui UMKM");
-          }
-
-          return await response.json();
+          const response = await verifyUMKM(id, reason);
+          return response;
         } catch (error: any) {
           Swal.showValidationMessage(`Error: ${error.message}`);
         }
@@ -185,27 +168,10 @@ export default function UmkmAdmin() {
       confirmButtonColor: "#dc2626",
       cancelButtonColor: "#6b7280",
       showLoaderOnConfirm: true,
-      preConfirm: async (alasan) => {
+      preConfirm: async (reason) => {
         try {
-          // Call API to reject UMKM
-          const response = await fetch(`/api/admin/umkm/${id}/reject`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              alasan: alasan,
-              email: umkm.User?.email,
-              nama_umkm: umkm.nama_umkm
-            })
-          });
-
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || "Gagal menolak UMKM");
-          }
-
-          return await response.json();
+          const response = await rejectUMKM(id, reason);
+          return response;
         } catch (error: any) {
           Swal.showValidationMessage(`Error: ${error.message}`);
         }
@@ -345,7 +311,7 @@ export default function UmkmAdmin() {
               {loading ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={7}
                     className="px-4 py-8 text-center text-gray-500"
                   >
                     <div className="flex items-center justify-center gap-2">
@@ -420,7 +386,7 @@ export default function UmkmAdmin() {
               ) : (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={7}
                     className="px-4 py-8 text-center text-gray-500"
                   >
                     {searchTerm
