@@ -9,12 +9,13 @@ export function middleware(request: NextRequest) {
   
   const isAdminRoute = request.nextUrl.pathname.startsWith('/admin');
   const isLayananRoute = request.nextUrl.pathname.startsWith('/layanan');
+  const isUmkmRoute = request.nextUrl.pathname.startsWith("/umkm");
 
   // If no token, block protected routes (/admin and /layanan) and redirect to login
   if (!token) {
-    if (isAdminRoute || isLayananRoute) {
-      console.log('No token found, redirecting to login for protected route');
-      return NextResponse.redirect(new URL('/login', request.url));
+    if (isAdminRoute || isLayananRoute || isUmkmRoute) {
+      console.log("No token found, redirecting to login for protected route");
+      return NextResponse.redirect(new URL("/login", request.url));
     }
     console.log('No token found, allowing public access');
     return NextResponse.next();

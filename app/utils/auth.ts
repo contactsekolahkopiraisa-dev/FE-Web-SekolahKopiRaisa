@@ -53,6 +53,33 @@ export const removeToken = () => {
   }
 };
 
+// ==================== JWT DECODER ====================
+/**
+ * Decode JWT token untuk mendapatkan payload
+ * @param token JWT token string
+ * @returns decoded payload atau null jika gagal
+ */
+const decodeJWT = (token: string): any | null => {
+  try {
+    // JWT format: header.payload.signature
+    const base64Url = token.split(".")[1];
+    if (!base64Url) return null;
+
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    );
+
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    console.error("❌ Error decoding JWT:", error);
+    return null;
+  }
+};
+
 // ==================== ERROR HANDLER ====================
 const handleApiError = (error: any): never => {
   if (error.response) {
@@ -67,7 +94,7 @@ const handleApiError = (error: any): never => {
       throw {
         type: "validation",
         message: data.message || "Validasi gagal!",
-        errors: data.errors
+        errors: data.errors,
       } as ErrorResponse;
     }
 
@@ -78,21 +105,21 @@ const handleApiError = (error: any): never => {
         message:
           typeof data.errors === "string"
             ? data.errors
-            : data.message || "Terjadi kesalahan!"
+            : data.message || "Terjadi kesalahan!",
       } as ErrorResponse;
     }
 
     // Fallback error
     throw {
       type: "general",
-      message: data.message || "Terjadi kesalahan!"
+      message: data.message || "Terjadi kesalahan!",
     } as ErrorResponse;
   }
 
   // Network error
   throw {
     type: "network",
-    message: "Tidak dapat terhubung ke server. Coba lagi nanti."
+    message: "Tidak dapat terhubung ke server. Coba lagi nanti.",
   } as ErrorResponse;
 };
 
@@ -104,7 +131,7 @@ export const loginWithGoogle = () => {
 export const facebookLogin = async (accessToken: string) => {
   try {
     const response = await api.post("/api/v1/auth/facebook/link", {
-      accessToken
+      accessToken,
     });
     return response.data;
   } catch (error: any) {
@@ -163,7 +190,7 @@ export const registerUMKM = async (formData: RegisterUMKMData) => {
       console.log("📎 File akan dikirim:", {
         name: formData.sertifikasiHalal.name,
         type: formData.sertifikasiHalal.type,
-        size: `${(formData.sertifikasiHalal.size / 1024).toFixed(2)} KB`
+        size: `${(formData.sertifikasiHalal.size / 1024).toFixed(2)} KB`,
       });
 
       // PASTIKAN HANYA APPEND SEKALI
@@ -189,7 +216,7 @@ export const registerUMKM = async (formData: RegisterUMKMData) => {
         console.log(`  📄 ${key} [FILE #${fileCounts[key]}]:`, {
           name: value.name,
           type: value.type,
-          size: `${(value.size / 1024).toFixed(2)} KB`
+          size: `${(value.size / 1024).toFixed(2)} KB`,
         });
       } else {
         console.log(
@@ -222,8 +249,8 @@ export const registerUMKM = async (formData: RegisterUMKMData) => {
 
     const res = await api.post("/api/v1/auth/umkm", data, {
       headers: {
-        "Content-Type": "multipart/form-data"
-      }
+        "Content-Type": "multipart/form-data",
+      },
     });
 
     console.log("✅ Response berhasil:", res.data);
@@ -244,7 +271,7 @@ export const registerUMKM = async (formData: RegisterUMKMData) => {
         throw {
           type: "validation",
           message: data.message || "Validasi gagal!",
-          errors: data.errors
+          errors: data.errors,
         } as ErrorResponse;
       }
 
@@ -254,13 +281,13 @@ export const registerUMKM = async (formData: RegisterUMKMData) => {
           message:
             typeof data.errors === "string"
               ? data.errors
-              : data.message || "Terjadi kesalahan"
+              : data.message || "Terjadi kesalahan",
         } as ErrorResponse;
       }
 
       throw {
         type: "general",
-        message: data.message || `Error ${status}: ${statusText}`
+        message: data.message || `Error ${status}: ${statusText}`,
       } as ErrorResponse;
     }
 
@@ -269,14 +296,14 @@ export const registerUMKM = async (formData: RegisterUMKMData) => {
       throw {
         type: "network",
         message:
-          "Tidak dapat terhubung ke server. Periksa koneksi internet Anda."
+          "Tidak dapat terhubung ke server. Periksa koneksi internet Anda.",
       } as ErrorResponse;
     }
 
     console.error("  Unknown error:", error.message);
     throw {
       type: "unknown",
-      message: error.message || "Terjadi kesalahan yang tidak diketahui"
+      message: error.message || "Terjadi kesalahan yang tidak diketahui",
     } as ErrorResponse;
   }
 };
@@ -306,7 +333,7 @@ export const logout = async () => {
 export const resetPasswordRequest = async (email: string) => {
   try {
     const res = await api.post("/api/v1/auth/reset-password-request", {
-      email
+      email,
     });
     return res.data;
   } catch (error: any) {
@@ -320,7 +347,7 @@ export const resetPasswordRequest = async (email: string) => {
 
 export const resetPassword = async ({
   token,
-  newPassword
+  newPassword,
 }: {
   token: string;
   newPassword: string;
@@ -328,7 +355,7 @@ export const resetPassword = async ({
   try {
     const res = await api.put("/api/v1/auth/reset-password", {
       token,
-      newPassword
+      newPassword,
     });
     return res.data;
   } catch (error: any) {
@@ -383,7 +410,7 @@ export const verifyUMKM = async (id: number, reason?: string) => {
   try {
     const res = await api.post(`/api/v1/auth/umkm/${id}/verify`, {
       approved: true,
-      reason: reason || "UMKM Anda telah disetujui."
+      reason: reason || "UMKM Anda telah disetujui.",
     });
     return res.data;
   } catch (error: any) {
@@ -396,11 +423,144 @@ export const rejectUMKM = async (id: number, reason: string) => {
   try {
     const res = await api.post(`/api/v1/auth/umkm/${id}/reject`, {
       approved: false,
-      reason
+      reason,
     });
     return res.data;
   } catch (error: any) {
     const message = error.response?.data?.message || "Gagal menolak UMKM";
     throw new Error(message);
+  }
+};
+
+// ==================== USER DATA HELPER ====================
+/**
+ * Mendapatkan user_id dari user yang sedang login
+ * @returns user_id atau null jika tidak ditemukan
+ */
+export const getUserId = (): number | null => {
+  console.log("=== DEBUG getUserId ===");
+
+  try {
+    // Coba ambil dari localStorage dengan key 'user'
+    const userString = localStorage.getItem("user");
+    console.log('localStorage.getItem("user"):', userString);
+
+    if (userString) {
+      const user = JSON.parse(userString);
+      console.log("Parsed user from localStorage:", user);
+      console.log("user.user_id or user.id:", user.user_id || user.id);
+
+      if (user.user_id || user.id) {
+        const userId = user.user_id || user.id;
+        console.log("✅ User ID found in localStorage:", userId);
+        return userId;
+      }
+    }
+
+    // Coba ambil dari sessionStorage sebagai fallback
+    const sessionUser = sessionStorage.getItem("user");
+    console.log('sessionStorage.getItem("user"):', sessionUser);
+
+    if (sessionUser) {
+      const user = JSON.parse(sessionUser);
+      console.log("Parsed user from sessionStorage:", user);
+      console.log("user.user_id or user.id:", user.user_id || user.id);
+
+      if (user.user_id || user.id) {
+        const userId = user.user_id || user.id;
+        console.log("✅ User ID found in sessionStorage:", userId);
+        return userId;
+      }
+    }
+
+    // Jika menggunakan nama key yang berbeda, sesuaikan di sini
+    // Contoh: 'authUser', 'currentUser', dll
+    const authUserString = localStorage.getItem("authUser");
+    console.log('localStorage.getItem("authUser"):', authUserString);
+
+    if (authUserString) {
+      const user = JSON.parse(authUserString);
+      console.log("Parsed user from authUser:", user);
+      console.log("user.user_id or user.id:", user.user_id || user.id);
+
+      if (user.user_id || user.id) {
+        const userId = user.user_id || user.id;
+        console.log("✅ User ID found in authUser:", userId);
+        return userId;
+      }
+    }
+
+    // === DECODE JWT TOKEN ===
+    const token =
+      localStorage.getItem("token") || sessionStorage.getItem("token");
+    console.log(
+      "Token found:",
+      token ? "Yes (" + token.substring(0, 30) + "...)" : "No"
+    );
+
+    if (token) {
+      console.log("🔓 Attempting to decode JWT token...");
+      const decodedToken = decodeJWT(token);
+      console.log("📋 Decoded token payload:", decodedToken);
+
+      if (decodedToken) {
+        // Cek berbagai kemungkinan nama field untuk user_id
+        const userId =
+          decodedToken.user_id ||
+          decodedToken.userId ||
+          decodedToken.id ||
+          decodedToken.sub || // 'sub' adalah standard JWT claim untuk user identifier
+          decodedToken.user?.id ||
+          decodedToken.user?.user_id ||
+          decodedToken.data?.user_id ||
+          decodedToken.data?.id ||
+          decodedToken.payload?.user_id ||
+          decodedToken.payload?.id;
+
+        console.log("🔍 Extracted user_id from token:", userId);
+
+        if (userId) {
+          const numericUserId =
+            typeof userId === "number" ? userId : parseInt(userId);
+          console.log("✅ User ID found in JWT token:", numericUserId);
+          return numericUserId;
+        }
+
+        console.log(
+          "⚠️ Token decoded successfully but user_id not found in any expected field"
+        );
+        console.log("Available token fields:", Object.keys(decodedToken));
+      }
+    }
+
+    // Log semua keys di localStorage untuk debugging
+    console.log("📦 All localStorage keys:", Object.keys(localStorage));
+    console.log("📦 All sessionStorage keys:", Object.keys(sessionStorage));
+
+    console.log("❌ User ID not found in any storage or token");
+    return null;
+  } catch (error) {
+    console.error("❌ Error getting user_id:", error);
+    return null;
+  } finally {
+    console.log("=== END DEBUG getUserId ===");
+  }
+};
+
+/**
+ * Mendapatkan data user lengkap yang sedang login
+ * @returns user object atau null jika tidak ditemukan
+ */
+export const getCurrentUser = (): any | null => {
+  try {
+    const userString =
+      localStorage.getItem("user") || sessionStorage.getItem("user");
+    if (userString) {
+      return JSON.parse(userString);
+    }
+    return null;
+  } catch (error) {
+    console.error("Error getting current user:", error);
+    return null;
   }
 };

@@ -5,6 +5,7 @@ import {
   Wallet,
   Package,
   NotepadText,
+  FileText,
 } from "lucide-react";
 
 export default function UmkmLayout({ children }: { children: ReactNode }) {
@@ -12,8 +13,13 @@ export default function UmkmLayout({ children }: { children: ReactNode }) {
     { icon: <LayoutDashboard size={20} />, text: "Dashboard", href: "/umkm" },
     {
       icon: <Package size={20} />,
-      text: "Marketplace",
-      href: "/umkm/marketplace",
+      text: "Produk",
+      href: "/umkm/produk",
+    },
+    {
+      icon: <FileText size={20} />,
+      text: "Order",
+      href: "/umkm/order",
     },
     {
       icon: <Wallet size={20} />,

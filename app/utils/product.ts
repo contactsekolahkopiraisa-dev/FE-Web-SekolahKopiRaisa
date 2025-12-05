@@ -1,3 +1,4 @@
+// app\utils\product.ts
 import api from "./api";
 
 export const fetchAllProduct = async () => {
