@@ -45,6 +45,9 @@ export default function AdminLayananMonitoringPage() {
         include_mou: true,
         include_sertifikat: true,
         include_laporan: true,
+        include_rejection: true,
+        include_pengajuan: true,
+        include_pelaksanaan: true,
       });
       console.log("Layanan data loaded:", data);
       setLayananList(data);
@@ -157,16 +160,23 @@ export default function AdminLayananMonitoringPage() {
       const q = query.toLowerCase();
       // Search: nama pemohon, instansi, jenis kegiatan
       const pemohonNama = item.pemohon?.name || "";
-      const jenisNama = item.jenis_layanan?.nama_jenis_layanan || "";
+      const jenisNama =
+        item.jenis_layanan?.nama_jenis_layanan ||
+        item.jenisLayanan?.nama_jenis_layanan ||
+        "";
+      const namaKegiatan = item.nama_kegiatan || "";
+      const instansiAsal = item.instansi_asal || "";
+
       const matchQ =
-        item.nama_kegiatan.toLowerCase().includes(q) ||
-        item.instansi_asal.toLowerCase().includes(q) ||
+        namaKegiatan.toLowerCase().includes(q) ||
+        instansiAsal.toLowerCase().includes(q) ||
         jenisNama.toLowerCase().includes(q) ||
         pemohonNama.toLowerCase().includes(q);
 
       // Filter MOU status
-      const mouStatus =
-        item.mou?.statusKode?.nama_status_kode?.toLowerCase() || "menunggu";
+      const mouStatus = (
+        item.mou?.statusKode?.nama_status_kode || "menunggu"
+      ).toLowerCase();
       const matchMou =
         filterMou === "semua" ||
         (filterMou === "disetujui" && mouStatus.includes("disetujui")) ||
@@ -174,8 +184,9 @@ export default function AdminLayananMonitoringPage() {
         (filterMou === "ditolak" && mouStatus.includes("ditolak"));
 
       // Filter Pengajuan status
-      const pengajuanStatus =
-        item.pengajuan?.nama_status_kode?.toLowerCase() || "menunggu";
+      const pengajuanStatus = (
+        item.pengajuan?.nama_status_kode || "menunggu"
+      ).toLowerCase();
       const matchPengajuan =
         filterPengajuan === "semua" ||
         (filterPengajuan === "disetujui" &&
@@ -185,8 +196,9 @@ export default function AdminLayananMonitoringPage() {
         (filterPengajuan === "ditolak" && pengajuanStatus.includes("ditolak"));
 
       // Filter Pelaksanaan status
-      const pelaksanaanStatus =
-        item.pelaksanaan?.nama_status_kode?.toLowerCase() || "menunggu";
+      const pelaksanaanStatus = (
+        item.pelaksanaan?.nama_status_kode || "menunggu"
+      ).toLowerCase();
       const matchPas =
         filterPas === "semua" ||
         (filterPas === "selesai" && pelaksanaanStatus.includes("selesai")) ||

@@ -21,16 +21,16 @@ export default function UndanganNarasumberFormPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleFileUpload = (field: string, file: File | null) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: file
+      [field]: file,
     }));
   };
 
@@ -49,7 +49,10 @@ export default function UndanganNarasumberFormPage() {
       });
       return;
     }
-    if (formData.suratUndaganNarasumberFile && formData.suratUndaganNarasumberFile.size > MAX_FILE_SIZE) {
+    if (
+      formData.suratUndaganNarasumberFile &&
+      formData.suratUndaganNarasumberFile.size > MAX_FILE_SIZE
+    ) {
       await Swal.fire({
         title: "File Terlalu Besar",
         text: "Ukuran file Surat Undangan maksimal 5MB",
@@ -78,20 +81,59 @@ export default function UndanganNarasumberFormPage() {
     if (result.isConfirmed) {
       try {
         const jenisList = await fetchAllJenisLayanan();
-        const jenis = jenisList.find(j => j.nama_jenis_layanan.toLowerCase().includes("undangan"));
-        if (!jenis) throw new Error("Jenis layanan 'Undangan Narasumber' tidak ditemukan");
+        const jenis = jenisList.find((j) =>
+          j.nama_jenis_layanan.toLowerCase().includes("undangan")
+        );
+        if (!jenis)
+          throw new Error(
+            "Jenis layanan 'Undangan Narasumber' tidak ditemukan"
+          );
 
         const data = new FormData();
         data.append("id_jenis_layanan", String(jenis.id));
-        data.append("nama_kegiatan", formData.namaKegiatan || ""); // ISI untuk Undangan
-        data.append("tempat_kegiatan", formData.tempatKegiatan || ""); // ISI untuk Undangan
-        data.append("instansi_asal", formData.instansi || "");
-        data.append("tanggal_mulai", formData.tanggalKegiatan || "");
-        data.append("tanggal_selesai", formData.tanggalKegiatan || "");
+        // Untuk Undangan Narasumber, field khusus yang wajib diisi
+        if (formData.namaKegiatan) {
+          data.append("nama_kegiatan", formData.namaKegiatan);
+        }
+        if (formData.tempatKegiatan) {
+          data.append("tempat_kegiatan", formData.tempatKegiatan);
+        }
+        if (formData.instansi) {
+          data.append("instansi_asal", formData.instansi);
+        }
+        // Convert date to ISO-8601 DateTime format
+        if (formData.tanggalKegiatan) {
+          const tanggalKegiatanISO = new Date(
+            formData.tanggalKegiatan
+          ).toISOString();
+          data.append("tanggal_mulai", tanggalKegiatanISO);
+          data.append("tanggal_selesai", tanggalKegiatanISO);
+        }
         data.append("jumlah_peserta", "0");
+        // Backend butuh field ini bahkan untuk undangan narasumber
+        // Kirim format minimal yang valid - array dengan objek kosong untuk id_kegiatan
+        data.append(
+          "isi_konfigurasi_layanan",
+          JSON.stringify([{ id_kegiatan: [] }])
+        );
+        data.append("pesertas", JSON.stringify([]));
         // File dengan nama field yang benar
-        if (formData.proposalFile) data.append("file_proposal", formData.proposalFile);
-        if (formData.suratUndaganNarasumberFile) data.append("file_surat_undangan", formData.suratUndaganNarasumberFile);
+        if (formData.proposalFile)
+          data.append("file_proposal", formData.proposalFile);
+        if (formData.suratUndaganNarasumberFile)
+          data.append(
+            "file_surat_undangan",
+            formData.suratUndaganNarasumberFile
+          );
+
+        // Debug: Log data yang akan dikirim
+        console.log("=== DEBUG UNDANGAN NARASUMBER ===");
+        const debugData: Record<string, any> = {};
+        data.forEach((value, key) => {
+          debugData[key] =
+            value instanceof File ? `File(${value.name})` : value;
+        });
+        console.log("Data yang dikirim:", debugData);
 
         const created = await createLayanan(data);
 
@@ -104,7 +146,9 @@ export default function UndanganNarasumberFormPage() {
           allowOutsideClick: false,
         });
 
-        router.push(`/layanan/detail-pelaksanaan-undangan-narasumber?id=${created.id}`);
+        router.push(
+          `/layanan/detail-pelaksanaan-undangan-narasumber?id=${created.id}`
+        );
       } catch (err: any) {
         await Swal.fire({
           title: "Gagal Mengajukan",
@@ -124,7 +168,6 @@ export default function UndanganNarasumberFormPage() {
         <UndanganForm
           formData={formData}
           onInputChange={handleInputChange}
-
           onFileUpload={handleFileUpload}
           onSubmit={handleSubmit}
         />
@@ -132,5 +175,3 @@ export default function UndanganNarasumberFormPage() {
     </>
   );
 }
-
-

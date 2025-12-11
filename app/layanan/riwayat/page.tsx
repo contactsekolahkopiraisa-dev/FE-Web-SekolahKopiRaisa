@@ -52,6 +52,34 @@ export default function RiwayatKegiatanPage() {
     checkAuth();
   }, [router]);
 
+  // Add effect to refresh data when page becomes visible
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && authorized) {
+        console.log("Page became visible, refreshing data...");
+        loadLayananHistory();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [authorized]);
+
+  // Add periodic refresh for real-time status updates
+  useEffect(() => {
+    if (!authorized) return;
+
+    // Refresh every 30 seconds to catch status changes
+    const intervalId = setInterval(() => {
+      console.log("Auto-refreshing layanan data for status updates...");
+      loadLayananHistory();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(intervalId);
+  }, [authorized]);
+
   const loadStatusKode = async () => {
     try {
       console.log("Loading status kode...");
@@ -84,12 +112,10 @@ export default function RiwayatKegiatanPage() {
         include_peserta: true,
         include_mou: true,
         include_laporan: true,
+        include_pengajuan: true,
+        include_pelaksanaan: true,
       });
       console.log("Layanan history loaded:", data);
-
-      // Debug: cek semua keys dari item pertama
-      if (data.length > 0) {
-      }
 
       setLayananList(data);
     } catch (error: any) {
@@ -143,6 +169,15 @@ export default function RiwayatKegiatanPage() {
     return true;
   });
 
+  // Check if any layanan in the list has MOU workflow
+  const hasAnyMouWorkflow = layananList.some((item) => {
+    const jenisLayanan =
+      item.jenis_layanan?.nama_jenis_layanan || item.nama_kegiatan || "";
+    return (
+      jenisLayanan !== "Undangan Narasumber" && jenisLayanan !== "Kunjungan"
+    );
+  });
+
   const getKategoriLabel = () => {
     if (filterKategori === "all") return "Semua Kategori";
     if (filterKategori === "pengajuan") return "Status Pengajuan";
@@ -192,21 +227,24 @@ export default function RiwayatKegiatanPage() {
                   >
                     Status Pengajuan
                   </button>
-                  <button
-                    onClick={() => {
-                      setFilterKategori("mou");
-                      setShowKategoriDropdown(false);
-                    }}
-                    className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50"
-                  >
-                    Status MOU
-                  </button>
+                  {/* Only show Status MOU if there are layanan with MOU workflow */}
+                  {hasAnyMouWorkflow && (
+                    <button
+                      onClick={() => {
+                        setFilterKategori("mou");
+                        setShowKategoriDropdown(false);
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50"
+                    >
+                      Status MOU
+                    </button>
+                  )}
                   <button
                     onClick={() => {
                       setFilterKategori("pelaksanaan");
                       setShowKategoriDropdown(false);
                     }}
-                    className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 rounded-b-lg"
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 rounded-b-lg`}
                   >
                     Status Pelaksanaan
                   </button>
@@ -301,6 +339,12 @@ export default function RiwayatKegiatanPage() {
               const slug = item.jenis_layanan
                 ? getSlugFromJenisLayanan(item.jenis_layanan.nama_jenis_layanan)
                 : "";
+
+              // Check if this layanan type has MOU workflow
+              const hasMouWorkflow =
+                jenisLayanan !== "Undangan Narasumber" &&
+                jenisLayanan !== "Kunjungan";
+
               return (
                 <div
                   key={item.id}
@@ -342,21 +386,23 @@ export default function RiwayatKegiatanPage() {
                       </span>
                     </div>
 
-                    {/* Status MOU */}
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-600 w-24 flex-shrink-0">
-                        MOU:
-                      </span>
-                      <span
-                        className={`px-2 py-0.5 rounded text-xs font-medium border ${getStatusColor(
-                          item.mou?.statusKode?.nama_status_kode ||
-                            "Belum Terlaksana"
-                        )}`}
-                      >
-                        {item.mou?.statusKode?.nama_status_kode ||
-                          "Belum Terlaksana"}
-                      </span>
-                    </div>
+                    {/* Status MOU - Only show for layanan types that have MOU workflow */}
+                    {hasMouWorkflow && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-600 w-24 flex-shrink-0">
+                          MOU:
+                        </span>
+                        <span
+                          className={`px-2 py-0.5 rounded text-xs font-medium border ${getStatusColor(
+                            item.mou?.statusKode?.nama_status_kode ||
+                              "Belum Terlaksana"
+                          )}`}
+                        >
+                          {item.mou?.statusKode?.nama_status_kode ||
+                            "Belum Terlaksana"}
+                        </span>
+                      </div>
+                    )}
 
                     {/* Status Pelaksanaan */}
                     <div className="flex items-center gap-2">
@@ -391,7 +437,9 @@ export default function RiwayatKegiatanPage() {
                     <div className="flex items-center gap-2 text-xs text-gray-600">
                       <MapPin size={14} className="flex-shrink-0" />
                       <span className="line-clamp-1">
-                        {item.tempat_kegiatan || "-"}
+                        {jenisLayanan === "Undangan Narasumber"
+                          ? item.tempat_kegiatan || "-"
+                          : "Sekolah Kopi Raisa"}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-gray-600">

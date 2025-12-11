@@ -16,6 +16,9 @@ export interface LayananItem {
   file_surat_permohonan?: string;
   file_surat_pengantar?: string;
   file_surat_undangan?: string;
+  file_undangan_narasumber?: string;
+  fakultas?: string;
+  prodi?: string;
   created_at: string;
   pemohon: {
     id: number;
@@ -25,6 +28,7 @@ export interface LayananItem {
   peserta?: Array<{
     id: number;
     nama_peserta: string;
+    nama?: string;
     instansi_asal: string;
     fakultas?: string;
     program_studi?: string;
@@ -33,8 +37,40 @@ export interface LayananItem {
   pengajuan: {
     id: number;
     nama_status_kode: string;
+    alasan_penolakan?: string; // Kemungkinan alasan langsung di dalam pengajuan
   };
+  pengajuanRejection?: {
+    id: number;
+    id_layanan: number;
+    alasan: string;
+  };
+  layananRejection?:
+    | {
+        id: number;
+        id_layanan: number;
+        alasan: string;
+      }
+    | Array<{
+        id: number;
+        id_layanan: number;
+        alasan: string;
+      }>;
+  rejection?: {
+    id: number;
+    id_layanan: number;
+    alasan: string;
+  };
+  alasan_penolakan?: string; // Kemungkinan langsung di root level
   pelaksanaan: {
+    id: number;
+    nama_status_kode: string;
+  };
+  // Backend response fields (for mapping)
+  statusKodePengajuan?: {
+    id: number;
+    nama_status_kode: string;
+  };
+  statusKodePelaksanaan?: {
     id: number;
     nama_status_kode: string;
   };
@@ -46,6 +82,11 @@ export interface LayananItem {
     };
     file_mou?: string;
     tanggal_upload?: string;
+    mouRejection?: {
+      id: number;
+      id_mou: number;
+      alasan: string;
+    };
   };
   sertifikat?: {
     id?: number;
@@ -97,6 +138,9 @@ export interface LayananQueryParams {
   include_mou?: boolean;
   include_sertifikat?: boolean;
   include_laporan?: boolean;
+  include_rejection?: boolean;
+  include_pengajuan?: boolean;
+  include_pelaksanaan?: boolean;
 }
 
 // GET ALL LAYANAN (untuk user dan admin)
@@ -111,6 +155,12 @@ export const fetchAllLayanan = async (
     if (params?.include_sertifikat)
       queryParams.append("include_sertifikat", "true");
     if (params?.include_laporan) queryParams.append("include_laporan", "true");
+    if (params?.include_rejection)
+      queryParams.append("include_rejection", "true");
+    if (params?.include_pengajuan)
+      queryParams.append("include_pengajuan", "true");
+    if (params?.include_pelaksanaan)
+      queryParams.append("include_pelaksanaan", "true");
 
     const url = `/api/v1/layanan${
       queryParams.toString() ? `?${queryParams.toString()}` : ""
@@ -147,6 +197,12 @@ export const fetchLayananById = async (
     if (params?.include_sertifikat)
       queryParams.append("include_sertifikat", "true");
     if (params?.include_laporan) queryParams.append("include_laporan", "true");
+    if (params?.include_rejection)
+      queryParams.append("include_rejection", "true");
+    if (params?.include_pengajuan)
+      queryParams.append("include_pengajuan", "true");
+    if (params?.include_pelaksanaan)
+      queryParams.append("include_pelaksanaan", "true");
 
     const url = `/api/v1/layanan/${id}${
       queryParams.toString() ? `?${queryParams.toString()}` : ""
@@ -178,7 +234,8 @@ export const createLayanan = async (
     // Debug isi FormData
     const debugEntries: Record<string, any> = {};
     formData.forEach((v, k) => {
-      debugEntries[k] = v instanceof File ? `File(name=${v.name}, size=${v.size})` : v;
+      debugEntries[k] =
+        v instanceof File ? `File(name=${v.name}, size=${v.size})` : v;
     });
     console.log("Creating layanan with data:", debugEntries);
 
@@ -195,34 +252,61 @@ export const createLayanan = async (
     console.error("Response status:", error?.response?.status);
     console.error("Response data:", error?.response?.data);
     console.error("Response headers:", error?.response?.headers);
-    const serverMsg = error?.response?.data?.message || error?.response?.data?.error || JSON.stringify(error?.response?.data);
+    const serverMsg =
+      error?.response?.data?.message ||
+      error?.response?.data?.error ||
+      JSON.stringify(error?.response?.data);
     throw new Error(serverMsg || error.message || "Gagal membuat layanan");
   }
 };
 
 // PUT UPDATE STATUS LAYANAN
-export interface UpdateStatusPayload {
-  tahapan: "PENGAJUAN" | "MOU" | "PELAKSANAAN" | "LAPORAN";
-  id_status_pengajuan: number;
-  alasan?: string;
-}
-
-export const updateStatusLayanan = async (
-  id: number,
-  payload: UpdateStatusPayload
-): Promise<LayananItem> => {
+export const acceptPengajuan = async (id: number): Promise<LayananItem> => {
   try {
-    console.log("Updating layanan status:", id, payload);
+    console.log("Accepting pengajuan:", id);
 
-    const response = await api.put(`/api/v1/layanan/status/${id}`, payload);
-    console.log("Update status response:", response.data);
+    // Backend route: PUT /api/v1/layanan/:id/accept-pengajuan
+    const response = await api.put(`/api/v1/layanan/${id}/accept-pengajuan`);
+    console.log("Accept pengajuan response:", response.data);
 
     if (response.data.success) {
       return response.data.data;
     }
-    throw new Error(response.data.message || "Gagal mengupdate status layanan");
+    throw new Error(response.data.message || "Gagal menyetujui pengajuan");
   } catch (error: any) {
-    console.error("Error updating layanan status:", error);
+    console.error("Error accepting pengajuan:", error);
+    throw new Error(
+      error.response?.data?.message ||
+        error.message ||
+        "Gagal menyetujui pengajuan"
+    );
+  }
+};
+
+export const rejectPengajuan = async (
+  id: number,
+  alasan: string
+): Promise<LayananItem> => {
+  try {
+    console.log("Rejecting pengajuan:", id, alasan);
+
+    // Backend route: PUT /api/v1/layanan/:id/reject-pengajuan with body { alasan: "..." }
+    const response = await api.put(`/api/v1/layanan/${id}/reject-pengajuan`, {
+      alasan,
+    });
+    console.log("Reject pengajuan response:", response.data);
+    console.log("Reject pengajuan response.data.data:", response.data.data);
+    console.log(
+      "Reject pengajuan response.data.data.layananRejection:",
+      response.data.data?.layananRejection
+    );
+
+    if (response.data.success) {
+      return response.data.data;
+    }
+    throw new Error(response.data.message || "Gagal menolak pengajuan");
+  } catch (error: any) {
+    console.error("Error rejecting pengajuan:", error);
     throw new Error(
       error.response?.data?.message ||
         error.message ||
@@ -250,11 +334,16 @@ export const submitLogbook = async (
     console.log("Submit logbook response:", response.data);
 
     // Handle different response formats
-    if (response.data && (response.data.success || response.status === 200 || response.status === 201)) {
+    if (
+      response.data &&
+      (response.data.success ||
+        response.status === 200 ||
+        response.status === 201)
+    ) {
       return {
         success: true,
         message: response.data.message || "Logbook berhasil dikirim",
-        data: response.data.data || response.data
+        data: response.data.data || response.data,
       };
     }
     throw new Error(response.data?.message || "Gagal mengirim logbook");
@@ -288,7 +377,7 @@ export const updateLogbook = async (
       return {
         success: true,
         message: response.data.message || "Logbook berhasil diupdate",
-        data: response.data.data || response.data
+        data: response.data.data || response.data,
       };
     }
     throw new Error(response.data?.message || "Gagal mengupdate logbook");
@@ -318,14 +407,22 @@ export const updateStatusPelaksanaan = async (
     const response = await api.put(`/api/v1/layanan/${id}/finish-pelaksanaan`);
     console.log("Finish pelaksanaan response:", response.data);
 
-    if (response.data && (response.data.success || response.status === 200 || response.status === 201)) {
+    if (
+      response.data &&
+      (response.data.success ||
+        response.status === 200 ||
+        response.status === 201)
+    ) {
       return {
         success: true,
-        message: response.data.message || "Status pelaksanaan berhasil diupdate",
-        data: response.data.data || response.data
+        message:
+          response.data.message || "Status pelaksanaan berhasil diupdate",
+        data: response.data.data || response.data,
       };
     }
-    throw new Error(response.data?.message || "Gagal mengupdate status pelaksanaan");
+    throw new Error(
+      response.data?.message || "Gagal mengupdate status pelaksanaan"
+    );
   } catch (error: any) {
     console.error("Error finishing pelaksanaan:", error);
     console.error("Error response:", error.response);

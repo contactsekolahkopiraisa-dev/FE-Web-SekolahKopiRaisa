@@ -13,35 +13,37 @@ export default function MagangFormPage() {
   const [formData, setFormData] = useState({
     namaPeserta: "",
     namaNIM: "",
+    fakultas: "",
+    prodi: "",
     instansi: "",
     tanggalMulai: "",
     tanggalSelesai: "",
     kegiatan: [] as string[],
     proposalFile: null as File | null,
-    suratPengantarFile: null as File | null
+    suratPengantarFile: null as File | null,
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleCheckboxChange = (kegiatan: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       kegiatan: prev.kegiatan.includes(kegiatan)
-        ? prev.kegiatan.filter(k => k !== kegiatan)
-        : [...prev.kegiatan, kegiatan]
+        ? prev.kegiatan.filter((k) => k !== kegiatan)
+        : [...prev.kegiatan, kegiatan],
     }));
   };
 
   const handleFileUpload = (field: string, file: File | null) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: file
+      [field]: file,
     }));
   };
 
@@ -60,7 +62,10 @@ export default function MagangFormPage() {
       });
       return;
     }
-    if (formData.suratPengantarFile && formData.suratPengantarFile.size > MAX_FILE_SIZE) {
+    if (
+      formData.suratPengantarFile &&
+      formData.suratPengantarFile.size > MAX_FILE_SIZE
+    ) {
       await Swal.fire({
         title: "File Terlalu Besar",
         text: "Ukuran file Surat Pengantar maksimal 5MB",
@@ -89,42 +94,63 @@ export default function MagangFormPage() {
     if (result.isConfirmed) {
       try {
         const jenisList = await fetchAllJenisLayanan();
-        const jenis = jenisList.find(j => j.nama_jenis_layanan.toLowerCase().includes("magang"));
+        const jenis = jenisList.find((j) =>
+          j.nama_jenis_layanan.toLowerCase().includes("magang")
+        );
         if (!jenis) throw new Error("Jenis layanan 'Magang' tidak ditemukan");
 
         const data = new FormData();
         data.append("id_jenis_layanan", String(jenis.id));
         data.append("instansi_asal", formData.instansi || "");
-        data.append("tanggal_mulai", formData.tanggalMulai || "");
-        data.append("tanggal_selesai", formData.tanggalSelesai || "");
+        // Convert date to ISO-8601 DateTime format
+        if (formData.tanggalMulai) {
+          const tanggalMulaiISO = new Date(formData.tanggalMulai).toISOString();
+          data.append("tanggal_mulai", tanggalMulaiISO);
+        }
+        if (formData.tanggalSelesai) {
+          const tanggalSelesaiISO = new Date(
+            formData.tanggalSelesai
+          ).toISOString();
+          data.append("tanggal_selesai", tanggalSelesaiISO);
+        }
         data.append("jumlah_peserta", "1");
         // Field Magang spesifik - hanya kirim jika ada nilai
         if (formData.namaNIM) data.append("nim", formData.namaNIM);
-        // Kegiatan - coba kirim id_kegiatan langsung
+        if (formData.fakultas) data.append("fakultas", formData.fakultas);
+        if (formData.prodi) data.append("prodi", formData.prodi);
+        // Kegiatan dalam format isi_konfigurasi_layanan
+        // Backend expect array of IDs, not names
         const kegiatanMapping: Record<string, number> = {
           "Pengenalan Tanaman Kopi": 1,
           "Persiapan Lahan": 2,
-          "Pembibitan": 3,
-          "Penanaman": 4,
-          "Pemeliharaan": 5,
-          "Pemanenan": 6,
-          "Panen": 6,
+          Pembibitan: 3,
+          Penanaman: 4,
+          Pemeliharaan: 5,
+          Pemanenan: 6,
+          Panen: 6,
           "Pasca Panen": 7,
-          "Pemasaran": 8,
+          Pemasaran: 8,
         };
-        const kegiatanArray = Array.isArray(formData.kegiatan) ? formData.kegiatan : [];
-        const kegiatanIds = kegiatanArray.map(name => kegiatanMapping[name]).filter(id => id !== undefined);
+        const kegiatanArray = Array.isArray(formData.kegiatan)
+          ? formData.kegiatan
+          : [];
+        const kegiatanIds = kegiatanArray
+          .map((name) => kegiatanMapping[name])
+          .filter((id) => id !== undefined);
         if (kegiatanIds.length > 0) {
-          data.append("id_kegiatan", JSON.stringify(kegiatanIds));
+          const isiKonfigurasi = [{ id_kegiatan: kegiatanIds }];
+          data.append(
+            "isi_konfigurasi_layanan",
+            JSON.stringify(isiKonfigurasi)
+          );
         }
-        // Peserta dengan format {urutan, nama} - field name: pesertas
-        if (formData.namaPeserta) {
-          const peserta = [{ urutan: 1, nama: formData.namaPeserta }];
-          data.append("pesertas", JSON.stringify(peserta));
-        }
+        // Untuk magang, TIDAK kirim field pesertas karena backend tidak menerimanya
+        // Data peserta sudah terinput di field nama_peserta, nim, fakultas, prodi
         // File dengan nama field yang benar
-        if (formData.proposalFile) data.append("file_proposal", formData.proposalFile);
-        if (formData.suratPengantarFile) data.append("file_surat_pengantar", formData.suratPengantarFile);
+        if (formData.proposalFile)
+          data.append("file_proposal", formData.proposalFile);
+        if (formData.suratPengantarFile)
+          data.append("file_surat_pengantar", formData.suratPengantarFile);
 
         const created = await createLayanan(data);
 
@@ -165,5 +191,3 @@ export default function MagangFormPage() {
     </>
   );
 }
-
-

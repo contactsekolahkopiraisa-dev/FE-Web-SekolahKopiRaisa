@@ -3,6 +3,7 @@ import FileUpload from "../FileUpload";
 
 interface KunjunganFormProps {
   formData: {
+    penanggungjawab: string;
     jumlahPeserta: string;
     instansi: string;
     tanggalKunjungan: string;
@@ -17,7 +18,7 @@ export default function KunjunganForm({
   formData,
   onInputChange,
   onFileUpload,
-  onSubmit
+  onSubmit,
 }: KunjunganFormProps) {
   return (
     <div className="py-8">
@@ -32,12 +33,22 @@ export default function KunjunganForm({
             readOnly={true}
           />
 
-           <FormField
+          <FormField
+            label="Penanggungjawab"
+            name="penanggungjawab"
+            type="text"
+            value={formData.penanggungjawab}
+            onChange={onInputChange}
+            placeholder="Masukkan nama penanggungjawab"
+          />
+
+          <FormField
             label="Jumlah Peserta"
             name="jumlahPeserta"
-            type="text"
+            type="number"
             value={formData.jumlahPeserta}
             onChange={onInputChange}
+            placeholder="Masukkan jumlah peserta"
           />
 
           <FormField
@@ -58,12 +69,16 @@ export default function KunjunganForm({
           />
 
           <div className="bg-gray-100 p-6 rounded-lg">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Upload Dokumen</h3>
+            <h3 className="text-lg font-bold text-gray-900 mb-4">
+              Upload Dokumen
+            </h3>
 
             <div className="mb-4">
               <FileUpload
                 label="Surat Permohonan / Surat Tugas"
-                onFileChange={(file) => onFileUpload('suratPengantarFile', file)}
+                onFileChange={(file) =>
+                  onFileUpload("suratPengantarFile", file)
+                }
                 file={formData.suratPengantarFile}
               />
             </div>
@@ -82,5 +97,3 @@ export default function KunjunganForm({
     </div>
   );
 }
-
-

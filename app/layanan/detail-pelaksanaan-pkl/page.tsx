@@ -20,16 +20,27 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Footer from "../../../components/main/Footer";
-import { fetchLayananById, LayananItem, formatDate, submitLogbook, updateLogbook, updateStatusPelaksanaan } from "../../utils/layanan";
+import {
+  fetchLayananById,
+  LayananItem,
+  formatDate,
+  submitLogbook,
+  updateLogbook,
+  updateStatusPelaksanaan,
+} from "../../utils/layanan";
+import { createMou, updateMou } from "../../utils/mou";
 import { fetchAllModul } from "../../utils/modul";
 import type { ModulItem } from "../../types/modulType";
 import { createLaporanLayanan } from "../../utils/laporan";
-import { fetchSertifikatById, type SertifikatItem } from "../../utils/sertifikat";
+import {
+  fetchSertifikatById,
+  type SertifikatItem,
+} from "../../utils/sertifikat";
 
 export default function DetailPelaksanaanPKLPage() {
   const searchParams = useSearchParams();
-  const layananId = searchParams.get('id');
-  
+  const layananId = searchParams.get("id");
+
   const [layananData, setLayananData] = useState<LayananItem | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +48,12 @@ export default function DetailPelaksanaanPKLPage() {
   const valueOrDash = (value?: string) => {
     if (typeof value !== "string") return "-";
     const v = value.trim();
-    if (v === "" || v.toLowerCase() === "null" || v.toLowerCase() === "undefined") return "-";
+    if (
+      v === "" ||
+      v.toLowerCase() === "null" ||
+      v.toLowerCase() === "undefined"
+    )
+      return "-";
     return v;
   };
 
@@ -45,7 +61,12 @@ export default function DetailPelaksanaanPKLPage() {
   const resolveFileUrl = (path?: string | null): string | null => {
     if (!path) return null;
     const trimmed = path.trim();
-    if (trimmed === "" || trimmed.toLowerCase() === "null" || trimmed.toLowerCase() === "undefined") return null;
+    if (
+      trimmed === "" ||
+      trimmed.toLowerCase() === "null" ||
+      trimmed.toLowerCase() === "undefined"
+    )
+      return null;
     if (/^https?:\/\//i.test(trimmed)) return trimmed;
     const base = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "");
     const p = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
@@ -54,19 +75,20 @@ export default function DetailPelaksanaanPKLPage() {
 
   const openFile = (url: string | null) => {
     if (!url) return;
-    if (typeof window !== "undefined") window.open(url, "_blank", "noopener,noreferrer");
+    if (typeof window !== "undefined")
+      window.open(url, "_blank", "noopener,noreferrer");
   };
 
   const downloadFile = (url: string | null, filename?: string) => {
     if (!url || typeof document === "undefined") return;
-    
+
     // Fetch file as blob then trigger download
     fetch(url)
-      .then(response => {
-        if (!response.ok) throw new Error('Network response was not ok');
+      .then((response) => {
+        if (!response.ok) throw new Error("Network response was not ok");
         return response.blob();
       })
-      .then(blob => {
+      .then((blob) => {
         const blobUrl = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = blobUrl;
@@ -77,7 +99,7 @@ export default function DetailPelaksanaanPKLPage() {
         document.body.removeChild(a);
         window.URL.revokeObjectURL(blobUrl);
       })
-      .catch(error => {
+      .catch((error) => {
         console.error("Download error:", error);
         // Fallback: open in new tab if fetch fails
         window.open(url, "_blank");
@@ -104,46 +126,91 @@ export default function DetailPelaksanaanPKLPage() {
           include_mou: true,
           include_sertifikat: true,
           include_laporan: true,
+          include_rejection: true,
         });
         setLayananData(data);
         if (typeof window !== "undefined") {
-          console.log("[DetailPelaksanaanPKL] fetched layananData.mou.file_mou:", data?.mou?.file_mou);
+          console.log(
+            "[DetailPelaksanaanPKL] fetched layananData.mou.file_mou:",
+            data?.mou?.file_mou
+          );
+          console.log("[PKL] pengajuanRejection:", data.pengajuanRejection);
           console.log("[DetailPelaksanaanPKL] fetched layananData:", data);
         }
-        
+
         // Set link logbook jika sudah ada
         if (data.link_logbook) {
           setLogbookLink(data.link_logbook);
           setIsLogbookSubmitted(true);
         }
-        
+
         // Set status berdasarkan data API dengan null checks
         if (data.pengajuan?.nama_status_kode) {
-          setPengajuanDecision(mapStatusToDecision(data.pengajuan.nama_status_kode, 'pengajuan') as typeof pengajuanDecision);
+          setPengajuanDecision(
+            mapStatusToDecision(
+              data.pengajuan.nama_status_kode,
+              "pengajuan"
+            ) as typeof pengajuanDecision
+          );
         }
         if (data.mou?.statusKode?.nama_status_kode) {
-          setMouDecision(mapStatusToDecision(data.mou.statusKode.nama_status_kode, 'mou') as typeof mouDecision);
+          setMouDecision(
+            mapStatusToDecision(
+              data.mou.statusKode.nama_status_kode,
+              "mou"
+            ) as typeof mouDecision
+          );
         }
         if (data.pelaksanaan?.nama_status_kode) {
-          setPelaksanaanDecision(mapStatusToDecision(data.pelaksanaan.nama_status_kode, 'pelaksanaan') as typeof pelaksanaanDecision);
+          setPelaksanaanDecision(
+            mapStatusToDecision(
+              data.pelaksanaan.nama_status_kode,
+              "pelaksanaan"
+            ) as typeof pelaksanaanDecision
+          );
         }
         if (data.laporan?.nama_status_kode) {
-          setLaporanDecision(mapStatusToDecision(data.laporan.nama_status_kode, 'laporan') as typeof laporanDecision);
+          setLaporanDecision(
+            mapStatusToDecision(
+              data.laporan.nama_status_kode,
+              "laporan"
+            ) as typeof laporanDecision
+          );
         } else if (data.laporan?.statusPelaporan?.nama_status_kode) {
-          setLaporanDecision(mapStatusToDecision(data.laporan.statusPelaporan.nama_status_kode, 'laporan') as typeof laporanDecision);
+          setLaporanDecision(
+            mapStatusToDecision(
+              data.laporan.statusPelaporan.nama_status_kode,
+              "laporan"
+            ) as typeof laporanDecision
+          );
         } else if (data.laporan?.status?.nama_status_kode) {
-          setLaporanDecision(mapStatusToDecision(data.laporan.status.nama_status_kode, 'laporan') as typeof laporanDecision);
+          setLaporanDecision(
+            mapStatusToDecision(
+              data.laporan.status.nama_status_kode,
+              "laporan"
+            ) as typeof laporanDecision
+          );
         }
         if (data.sertifikat?.nama_status_kode) {
-          setSertifikatDecision(mapStatusToDecision(data.sertifikat.nama_status_kode, 'sertifikat') as typeof sertifikatDecision);
+          setSertifikatDecision(
+            mapStatusToDecision(
+              data.sertifikat.nama_status_kode,
+              "sertifikat"
+            ) as typeof sertifikatDecision
+          );
         } else if (data.sertifikat?.status?.nama_status_kode) {
-          setSertifikatDecision(mapStatusToDecision(data.sertifikat.status.nama_status_kode, 'sertifikat') as typeof sertifikatDecision);
+          setSertifikatDecision(
+            mapStatusToDecision(
+              data.sertifikat.status.nama_status_kode,
+              "sertifikat"
+            ) as typeof sertifikatDecision
+          );
         }
-        
+
         setError(null);
       } catch (err: any) {
-        console.error('Error fetching layanan:', err);
-        setError(err.message || 'Gagal memuat data layanan');
+        console.error("Error fetching layanan:", err);
+        setError(err.message || "Gagal memuat data layanan");
       } finally {
         setLoading(false);
       }
@@ -153,33 +220,69 @@ export default function DetailPelaksanaanPKLPage() {
   }, [layananId]);
 
   // Helper function to map API status to component decision states
-  const mapStatusToDecision = (statusKode: string, type: string): "menunggu" | "disetujui" | "ditolak" | "berjalan" | "selesai" => {
+  const mapStatusToDecision = (
+    statusKode: string,
+    type: string
+  ): "menunggu" | "disetujui" | "ditolak" | "berjalan" | "selesai" => {
     const kode = statusKode.toLowerCase();
-    if (kode.includes('disetujui') || kode.includes('diterima')) return 'disetujui';
-    if (kode.includes('ditolak')) return 'ditolak';
-    if (kode.includes('berlangsung') || kode.includes('berjalan')) return 'berjalan';
-    if (kode.includes('selesai')) return 'selesai';
-    return 'menunggu';
+    if (kode.includes("disetujui") || kode.includes("diterima"))
+      return "disetujui";
+    if (kode.includes("ditolak")) return "ditolak";
+    if (kode.includes("berlangsung") || kode.includes("berjalan"))
+      return "berjalan";
+    if (kode.includes("selesai")) return "selesai";
+    return "menunggu";
   };
 
   // Get participant info - using first peserta if available
   const pesertaInfo = layananData?.peserta?.[0];
-  
+
   const infoKiri = [
-    { label: "Jenis Kegiatan", value: layananData?.jenisLayanan?.nama_jenis_layanan || layananData?.jenis_layanan?.nama_jenis_layanan || "Praktek Kerja Lapangan" },
-    { label: "Nama Peserta", value: pesertaInfo?.nama_peserta || layananData?.pemohon?.name || "-" },
+    {
+      label: "Jenis Kegiatan",
+      value:
+        layananData?.jenisLayanan?.nama_jenis_layanan ||
+        layananData?.jenis_layanan?.nama_jenis_layanan ||
+        "Praktek Kerja Lapangan",
+    },
+    {
+      label: "Nama Peserta",
+      value: pesertaInfo?.nama_peserta || layananData?.pemohon?.name || "-",
+    },
     { label: "NIM / NIS", value: pesertaInfo?.nim || "-" },
-    { label: "Instansi", value: pesertaInfo?.instansi_asal || layananData?.instansi_asal || "-" },
+    { label: "Fakultas", value: layananData?.fakultas || "-" },
+    { label: "Prodi / Jurusan", value: layananData?.prodi || "-" },
   ];
 
   const infoKanan = [
-    { label: "Tanggal Mulai", value: layananData?.tanggal_mulai ? formatDate(layananData.tanggal_mulai) : "-" },
-    { label: "Tanggal Selesai", value: layananData?.tanggal_selesai ? formatDate(layananData.tanggal_selesai) : "-" },
-    { label: "Kegiatan yang dipilih", value: layananData?.kegiatan?.map(k => k.nama_kegiatan).join(", ") || layananData?.nama_kegiatan || "-" },
+    { label: "Instansi", value: layananData?.instansi_asal || "-" },
+    {
+      label: "Tanggal Mulai",
+      value: layananData?.tanggal_mulai
+        ? formatDate(layananData.tanggal_mulai)
+        : "-",
+    },
+    {
+      label: "Tanggal Selesai",
+      value: layananData?.tanggal_selesai
+        ? formatDate(layananData.tanggal_selesai)
+        : "-",
+    },
+    {
+      label: "Kegiatan yang dipilih",
+      value:
+        layananData?.kegiatan?.map((k) => k.nama_kegiatan).join(", ") ||
+        layananData?.nama_kegiatan ||
+        "-",
+    },
   ];
 
   const dokumen = [
-    { label: "Proposal / Surat Permohonan", file: layananData?.file_surat_permohonan || layananData?.file_proposal || "" },
+    {
+      label: "Proposal / Surat Permohonan",
+      file:
+        layananData?.file_surat_permohonan || layananData?.file_proposal || "",
+    },
     { label: "Surat Pengantar", file: layananData?.file_surat_pengantar || "" },
   ];
 
@@ -261,18 +364,69 @@ export default function DetailPelaksanaanPKLPage() {
     });
 
     if (result.isConfirmed) {
-      await Swal.fire({
-        title: "MOU berhasil dikirim",
-        text: "Silahkan tunggu persetujuan dari admin.",
-        icon: "success",
-        confirmButtonText: "OK",
-        customClass: {
-          confirmButton:
-            "swal2-confirm bg-[#5C3A1E] text-white px-6 py-2 rounded-lg",
-          popup: "rounded-xl",
-        },
-        buttonsStyling: false,
-      });
+      try {
+        Swal.fire({
+          title: "Mengunggah MOU...",
+          text: "Mohon tunggu sebentar",
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          },
+        });
+
+        if (layananData?.mou?.id) {
+          await updateMou(layananData.mou.id, mouFile);
+        } else {
+          await createMou({ id_layanan: Number(layananId), file_mou: mouFile });
+        }
+
+        const updatedData = await fetchLayananById(Number(layananId), {
+          include_jenis: true,
+          include_peserta: true,
+          include_mou: true,
+          include_sertifikat: true,
+          include_laporan: true,
+          include_rejection: true,
+        });
+        setLayananData(updatedData);
+
+        if (updatedData.mou?.statusKode?.nama_status_kode) {
+          setMouDecision(
+            mapStatusToDecision(
+              updatedData.mou.statusKode.nama_status_kode,
+              "mou"
+            ) as typeof mouDecision
+          );
+        }
+
+        setMouFile(null);
+
+        await Swal.fire({
+          title: "MOU berhasil dikirim",
+          text: "Silahkan tunggu persetujuan dari admin.",
+          icon: "success",
+          confirmButtonText: "OK",
+          customClass: {
+            confirmButton:
+              "swal2-confirm bg-[#5C3A1E] text-white px-6 py-2 rounded-lg",
+            popup: "rounded-xl",
+          },
+          buttonsStyling: false,
+        });
+      } catch (error: any) {
+        await Swal.fire({
+          title: "Gagal Mengirim MOU",
+          text: error.message || "Terjadi kesalahan saat mengirim MOU",
+          icon: "error",
+          confirmButtonText: "OK",
+          customClass: {
+            confirmButton:
+              "swal2-confirm bg-[#5C3A1E] text-white px-6 py-2 rounded-lg",
+            popup: "rounded-xl",
+          },
+          buttonsStyling: false,
+        });
+      }
     }
   };
 
@@ -310,7 +464,7 @@ export default function DetailPelaksanaanPKLPage() {
       if (laporanDecision !== "disetujui" || !layananId) {
         return;
       }
-      
+
       try {
         setSertifikatLoading(true);
         const sertifikat = await fetchSertifikatById(Number(layananId));
@@ -331,15 +485,15 @@ export default function DetailPelaksanaanPKLPage() {
         setSertifikatLoading(false);
       }
     };
-    
+
     loadSertifikat();
-    
+
     // Poll untuk cek sertifikat setiap 30 detik jika laporan disetujui tapi sertifikat belum selesai
     let pollInterval: NodeJS.Timeout | null = null;
     if (laporanDecision === "disetujui" && sertifikatDecision !== "selesai") {
       pollInterval = setInterval(loadSertifikat, 30000);
     }
-    
+
     return () => {
       if (pollInterval) clearInterval(pollInterval);
     };
@@ -395,11 +549,11 @@ export default function DetailPelaksanaanPKLPage() {
           // Jika sudah pernah submit, tidak perlu update lagi
           return;
         }
-        
+
         // Both create and update use the same PUT endpoint
-        await submitLogbook(Number(layananId), { 
+        await submitLogbook(Number(layananId), {
           id_layanan: Number(layananId),
-          link_logbook: logbookLink 
+          link_logbook: logbookLink,
         });
 
         setIsLogbookSubmitted(true);
@@ -464,7 +618,9 @@ export default function DetailPelaksanaanPKLPage() {
   const [successOpen, setSuccessOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [laporanSubmitted, setLaporanSubmitted] = useState(false);
-  const [sertifikatData, setSertifikatData] = useState<SertifikatItem | null>(null);
+  const [sertifikatData, setSertifikatData] = useState<SertifikatItem | null>(
+    null
+  );
   const [sertifikatLoading, setSertifikatLoading] = useState<boolean>(false);
   const [sertifikatError, setSertifikatError] = useState<string | null>(null);
   const scrollToSertifikat = () => {
@@ -483,9 +639,16 @@ export default function DetailPelaksanaanPKLPage() {
   };
   const handleSubmitLaporan = async () => {
     // Validasi form
-    if (!laporanForm.namaP4s || !laporanForm.kota || !laporanForm.jenisKegiatan || 
-        !laporanForm.asalPeserta || !laporanForm.jumlahPeserta || 
-        !laporanForm.tanggalPelaksanaan || !laporanForm.lamaPelaksanaan || !fotoKegiatan) {
+    if (
+      !laporanForm.namaP4s ||
+      !laporanForm.kota ||
+      !laporanForm.jenisKegiatan ||
+      !laporanForm.asalPeserta ||
+      !laporanForm.jumlahPeserta ||
+      !laporanForm.tanggalPelaksanaan ||
+      !laporanForm.lamaPelaksanaan ||
+      !fotoKegiatan
+    ) {
       const Swal = (await import("sweetalert2")).default;
       await Swal.fire({
         title: "Form Tidak Lengkap",
@@ -621,8 +784,12 @@ export default function DetailPelaksanaanPKLPage() {
             </div>
             <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center">
               <XCircle className="mx-auto mb-3 text-red-500" size={48} />
-              <h2 className="text-xl font-semibold text-red-800 mb-2">Gagal Memuat Data</h2>
-              <p className="text-red-600 mb-4">{error || "Data layanan tidak ditemukan"}</p>
+              <h2 className="text-xl font-semibold text-red-800 mb-2">
+                Gagal Memuat Data
+              </h2>
+              <p className="text-red-600 mb-4">
+                {error || "Data layanan tidak ditemukan"}
+              </p>
               <Link
                 href="/layanan"
                 className="inline-flex items-center rounded-lg bg-red-600 text-white px-4 py-2 hover:bg-red-700"
@@ -768,6 +935,76 @@ export default function DetailPelaksanaanPKLPage() {
                 Detail informasi dan Dokumen yang telah anda Submit
               </p>
 
+              {/* Status Badge Pengajuan */}
+              {(() => {
+                const status =
+                  layananData?.pengajuan?.nama_status_kode?.toLowerCase() || "";
+                const isApproved = status.includes("disetujui");
+                const isRejected = status.includes("ditolak");
+                const isPending = status.includes("menunggu");
+
+                if (!isPending && (isApproved || isRejected)) {
+                  return (
+                    <div
+                      className={`mb-4 rounded-lg border p-4 ${
+                        isApproved
+                          ? "bg-green-50 border-green-200"
+                          : "bg-red-50 border-red-200"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        {isApproved ? (
+                          <CheckCircle2 className="text-green-600" size={20} />
+                        ) : (
+                          <XCircle className="text-red-600" size={20} />
+                        )}
+                        <p
+                          className={`text-sm font-semibold ${
+                            isApproved ? "text-green-800" : "text-red-800"
+                          }`}
+                        >
+                          Pengajuan {isApproved ? "Disetujui" : "Ditolak"}
+                        </p>
+                      </div>
+                      <p
+                        className={`text-[12px] ${
+                          isApproved ? "text-green-700" : "text-red-700"
+                        }`}
+                      >
+                        {isApproved
+                          ? "Pengajuan Anda telah disetujui oleh admin. Silakan lanjutkan ke tahap berikutnya."
+                          : "Pengajuan Anda ditolak oleh admin. Silakan lihat alasan penolakan di bawah."}
+                      </p>
+
+                      {/* Alasan Penolakan */}
+                      {isRejected &&
+                        (() => {
+                          const rejection = layananData?.layananRejection;
+                          const alasan = Array.isArray(rejection)
+                            ? rejection[0]?.alasan
+                            : rejection?.alasan ||
+                              layananData?.pengajuanRejection?.alasan ||
+                              layananData?.rejection?.alasan ||
+                              layananData?.pengajuan?.alasan_penolakan ||
+                              layananData?.alasan_penolakan;
+
+                          return alasan ? (
+                            <div className="mt-3 rounded-lg bg-white border border-red-200 p-3">
+                              <p className="text-[12px] font-semibold text-red-800 mb-1">
+                                Alasan Penolakan:
+                              </p>
+                              <p className="text-[12px] text-red-700 whitespace-pre-wrap">
+                                {alasan}
+                              </p>
+                            </div>
+                          ) : null;
+                        })()}
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+
               <div className="rounded-lg bg-[#F7F4F0] border border-[#E8E2DB] p-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-3">
@@ -812,7 +1049,9 @@ export default function DetailPelaksanaanPKLPage() {
                         <p className="text-sm font-semibold text-[#3B3B3B]">
                           {d.label}
                         </p>
-                        <p className="text-[12px] text-[#6B6B6B]">{valueOrDash(d.file)}</p>
+                        <p className="text-[12px] text-[#6B6B6B]">
+                          {d.label}.pdf
+                        </p>
                       </div>
                       <div className="flex items-center gap-2">
                         {(() => {
@@ -844,7 +1083,12 @@ export default function DetailPelaksanaanPKLPage() {
                 {(() => {
                   const resolved = resolveFileUrl(layananData?.mou?.file_mou);
                   if (typeof window !== "undefined") {
-                    console.log("[DetailPelaksanaanPKL] render MOU, raw:", layananData?.mou?.file_mou, "resolved:", resolved);
+                    console.log(
+                      "[DetailPelaksanaanPKL] render MOU, raw:",
+                      layananData?.mou?.file_mou,
+                      "resolved:",
+                      resolved
+                    );
                   }
                   return !!resolved;
                 })() && (
@@ -853,7 +1097,7 @@ export default function DetailPelaksanaanPKLPage() {
                       <p className="text-sm font-semibold text-[#3B3B3B]">
                         Memorandum of Understanding
                       </p>
-                      <p className="text-[12px] text-[#6B6B6B]">{valueOrDash(layananData?.mou?.file_mou || "")}</p>
+                      <p className="text-[12px] text-[#6B6B6B]">MOU.pdf</p>
                     </div>
                     <div className="flex items-center gap-2">
                       {(() => {
@@ -887,24 +1131,47 @@ export default function DetailPelaksanaanPKLPage() {
       </div>
       {pengajuanDecision === "ditolak" && (
         <div className="container mx-auto px-4 max-w-6xl mt-6 mb-8">
-          <div className="rounded-xl border border-[#F0CFCF] bg-[#FFF6F6] p-6 text-center shadow-sm">
+          <div className="rounded-xl border border-[#F0CFCF] bg-[#FFF6F6] p-6 shadow-sm">
             <div className="mx-auto mb-3 w-12 h-12 rounded-lg border border-[#F0C3C3] bg-[#FBECEC] flex items-center justify-center">
               <XCircle className="text-[#CD0300]" />
             </div>
-            <p className="text-[15px] md:text-base font-semibold text-[#CD0300]">
+            <p className="text-[15px] md:text-base font-semibold text-[#CD0300] text-center">
               Pengajuan Ditolak
             </p>
-            <p className="mt-1 text-[12px] text-[#6B6B6B]">
-              Pengajuan Anda Ditolak karena Proposal belum ditandatangani
-              pimpinan fakultas dan jadwal pelaksanaan tidak jelas. Silakan
-              perbaiki sesuai catatan di atas dan ajukan kembali.
+            <p className="mt-2 text-[12px] text-[#6B6B6B] text-center">
+              Pengajuan Anda ditolak oleh admin. Silakan perbaiki sesuai catatan
+              di bawah dan ajukan kembali.
             </p>
-            <div className="mt-4">
+
+            {/* Alasan Penolakan dari API */}
+            {(() => {
+              const rejection = layananData?.layananRejection;
+              const alasan = Array.isArray(rejection)
+                ? rejection[0]?.alasan
+                : rejection?.alasan ||
+                  layananData?.pengajuanRejection?.alasan ||
+                  layananData?.rejection?.alasan ||
+                  layananData?.pengajuan?.alasan_penolakan ||
+                  layananData?.alasan_penolakan;
+
+              return alasan ? (
+                <div className="mt-4 rounded-lg border border-[#F0C3C3] bg-white p-4 text-left">
+                  <p className="text-sm font-semibold text-[#CD0300] mb-2">
+                    Alasan Penolakan:
+                  </p>
+                  <p className="text-[12px] text-[#3B3B3B] whitespace-pre-wrap">
+                    {alasan}
+                  </p>
+                </div>
+              ) : null;
+            })()}
+
+            <div className="mt-4 text-center">
               <Link
-                href="/"
+                href="/layanan"
                 className="inline-flex items-center rounded-lg bg-[#CD0300] text-white px-4 py-2 text-[12px] hover:opacity-90"
               >
-                Kembali Ke Beranda
+                Ajukan Ulang
               </Link>
             </div>
           </div>
@@ -1088,14 +1355,22 @@ export default function DetailPelaksanaanPKLPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {modulLoading && (
-                  <div className="col-span-1 md:col-span-2 text-center text-[12px] text-[#6B6B6B]">Memuat modul…</div>
+                  <div className="col-span-1 md:col-span-2 text-center text-[12px] text-[#6B6B6B]">
+                    Memuat modul…
+                  </div>
                 )}
                 {modulError && (
-                  <div className="col-span-1 md:col-span-2 text-center text-[12px] text-red-600">{modulError}</div>
+                  <div className="col-span-1 md:col-span-2 text-center text-[12px] text-red-600">
+                    {modulError}
+                  </div>
                 )}
-                {!modulLoading && !modulError && pelaksanaanModules.length === 0 && (
-                  <div className="col-span-1 md:col-span-2 text-center text-[12px] text-[#6B6B6B]">Belum ada modul tersedia.</div>
-                )}
+                {!modulLoading &&
+                  !modulError &&
+                  pelaksanaanModules.length === 0 && (
+                    <div className="col-span-1 md:col-span-2 text-center text-[12px] text-[#6B6B6B]">
+                      Belum ada modul tersedia.
+                    </div>
+                  )}
                 {pelaksanaanModules.map((m) => (
                   <div
                     key={m.id}
@@ -1106,7 +1381,9 @@ export default function DetailPelaksanaanPKLPage() {
                       <p className="text-[13px] font-semibold text-[#3B3B3B]">
                         {m.judul_modul}
                       </p>
-                      <p className="text-[12px] text-[#675e5e]">{m.deskripsi}</p>
+                      <p className="text-[12px] text-[#675e5e]">
+                        {m.deskripsi}
+                      </p>
                       <div className="mt-2 flex items-center gap-2">
                         {m.file_modul && (
                           <>
@@ -1128,7 +1405,9 @@ export default function DetailPelaksanaanPKLPage() {
                           </>
                         )}
                         {!m.file_modul && (
-                          <span className="text-[12px] text-[#9A948E]">File modul belum tersedia</span>
+                          <span className="text-[12px] text-[#9A948E]">
+                            File modul belum tersedia
+                          </span>
                         )}
                       </div>
                     </div>
@@ -1137,70 +1416,80 @@ export default function DetailPelaksanaanPKLPage() {
               </div>
 
               {/* Input link logbook */}
-            <div className="mt-6 rounded-lg border border-[#F0EAE3] bg-[#FBF9F7] p-4">
-              <h3 className="text-sm font-semibold text-[#3B3B3B] mb-3">Link Logbook</h3>
-              <p className="text-[12px] text-[#6B6B6B] mb-4">Masukkan link logbook</p>
-              
-              {isLogbookSubmitted && !isEditingLogbook ? (
-                <div className="space-y-3">
-                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <p className="text-sm text-green-800 font-medium">Link Logbook Terkirim</p>
-                    <p className="text-xs text-green-600 mt-1">Status: Logbook telah dikirim</p>
-                  </div>
-                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                    <p className="text-xs text-gray-600 mb-2">Link yang dikirim:</p>
+              <div className="mt-6 rounded-lg border border-[#F0EAE3] bg-[#FBF9F7] p-4">
+                <h3 className="text-sm font-semibold text-[#3B3B3B] mb-3">
+                  Link Logbook
+                </h3>
+                <p className="text-[12px] text-[#6B6B6B] mb-4">
+                  Masukkan link logbook
+                </p>
+
+                {isLogbookSubmitted && !isEditingLogbook ? (
+                  <div className="space-y-3">
+                    <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                      <p className="text-sm text-green-800 font-medium">
+                        Link Logbook Terkirim
+                      </p>
+                      <p className="text-xs text-green-600 mt-1">
+                        Status: Logbook telah dikirim
+                      </p>
+                    </div>
+                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                      <p className="text-xs text-gray-600 mb-2">
+                        Link yang dikirim:
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="url"
+                          value={logbookLink}
+                          readOnly
+                          className="flex-1 rounded-lg border border-[#E8E2DB] bg-white px-3 py-2 text-[12px] text-[#3B3B3B] focus:outline-none"
+                        />
+                        <button
+                          onClick={() => window.open(logbookLink, "_blank")}
+                          className="inline-flex items-center rounded-lg bg-[#5C3A1E] text-white px-3 py-2 text-[12px] hover:opacity-90"
+                        >
+                          Buka Link
+                        </button>
+                      </div>
+                    </div>
                     <div className="flex items-center gap-2">
-                      <input
-                        type="url"
-                        value={logbookLink}
-                        readOnly
-                        className="flex-1 rounded-lg border border-[#E8E2DB] bg-white px-3 py-2 text-[12px] text-[#3B3B3B] focus:outline-none"
-                      />
                       <button
-                        onClick={() => window.open(logbookLink, '_blank')}
-                        className="inline-flex items-center rounded-lg bg-[#5C3A1E] text-white px-3 py-2 text-[12px] hover:opacity-90"
+                        onClick={handleEditLogbook}
+                        className="inline-flex items-center rounded-lg border border-[#E8E2DB] px-3 py-2 text-[12px] text-[#3B3B3B] hover:bg-[#F5EFE8]"
                       >
-                        Buka Link
+                        Edit
                       </button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={handleEditLogbook}
-                      className="inline-flex items-center rounded-lg border border-[#E8E2DB] px-3 py-2 text-[12px] text-[#3B3B3B] hover:bg-[#F5EFE8]"
-                    >
-                      Edit
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <input
-                    type="url"
-                    value={logbookLink}
-                    onChange={handleLogbookLinkChange}
-                    placeholder="Masukkan link logbook (contoh: https://drive.google.com/...)"
-                    className="w-full rounded-lg border border-[#E8E2DB] bg-white px-3 py-2 text-[12px] text-[#3B3B3B] focus:outline-none focus:ring-2 focus:ring-[#5C3A1E] focus:border-transparent"
-                  />
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={handleSubmitLogbook}
-                      className="inline-flex items-center rounded-lg bg-[#5C3A1E] text-white px-4 py-2 text-[12px] hover:opacity-90"
-                    >
-                      Kirim
-                    </button>
-                    {isEditingLogbook && (
+                ) : (
+                  <div className="space-y-3">
+                    <input
+                      type="url"
+                      value={logbookLink}
+                      onChange={handleLogbookLinkChange}
+                      placeholder="Masukkan link logbook (contoh: https://drive.google.com/...)"
+                      className="w-full rounded-lg border border-[#E8E2DB] bg-white px-3 py-2 text-[12px] text-[#3B3B3B] focus:outline-none focus:ring-2 focus:ring-[#5C3A1E] focus:border-transparent"
+                    />
+                    <div className="flex items-center gap-2">
                       <button
-                        onClick={() => setIsEditingLogbook(false)}
-                        className="inline-flex items-center rounded-lg border border-[#E8E2DB] px-3 py-2 text-[12px] text-[#3B3B3B] hover:bg-[#F5EFE8]"
+                        onClick={handleSubmitLogbook}
+                        className="inline-flex items-center rounded-lg bg-[#5C3A1E] text-white px-4 py-2 text-[12px] hover:opacity-90"
                       >
-                        Batal
+                        Kirim
                       </button>
-                    )}
+                      {isEditingLogbook && (
+                        <button
+                          onClick={() => setIsEditingLogbook(false)}
+                          className="inline-flex items-center rounded-lg border border-[#E8E2DB] px-3 py-2 text-[12px] text-[#3B3B3B] hover:bg-[#F5EFE8]"
+                        >
+                          Batal
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
 
               <div
                 className={`mt-5 rounded-xl border p-6 text-center ${
@@ -1273,18 +1562,24 @@ export default function DetailPelaksanaanPKLPage() {
                       if (result.isConfirmed) {
                         try {
                           // Update status pelaksanaan di backend
-                          await updateStatusPelaksanaan(Number(layananId), "SELESAI");
-                          
+                          await updateStatusPelaksanaan(
+                            Number(layananId),
+                            "SELESAI"
+                          );
+
                           // Re-fetch layanan data to get updated status
-                          const updatedData = await fetchLayananById(Number(layananId), {
-                            include_jenis: true,
-                            include_peserta: true,
-                            include_mou: true,
-                            include_sertifikat: true,
-                            include_laporan: true,
-                          });
+                          const updatedData = await fetchLayananById(
+                            Number(layananId),
+                            {
+                              include_jenis: true,
+                              include_peserta: true,
+                              include_mou: true,
+                              include_sertifikat: true,
+                              include_laporan: true,
+                            }
+                          );
                           setLayananData(updatedData);
-                          
+
                           setPelaksanaanDecision("selesai");
                           await Swal.fire({
                             title: "Kegiatan Berhasil Diselesaikan",
@@ -1301,7 +1596,9 @@ export default function DetailPelaksanaanPKLPage() {
                         } catch (error: any) {
                           await Swal.fire({
                             title: "Gagal Menyelesaikan Kegiatan",
-                            text: error.message || "Terjadi kesalahan saat mengupdate status.",
+                            text:
+                              error.message ||
+                              "Terjadi kesalahan saat mengupdate status.",
                             icon: "error",
                             confirmButtonText: "OK",
                             customClass: {
@@ -1493,143 +1790,171 @@ export default function DetailPelaksanaanPKLPage() {
           id="sertifikat-section"
         >
           <div className="rounded-xl border border-[#E8E2DB] bg-white p-5 md:p-6">
-          {/* Jika Laporan Ditolak */}
-          {laporanSubmitted && laporanDecision === "ditolak" && (
-            <div className="rounded-lg border border-[#F0CFCF] bg-[#FFF6F6] p-4 text-center">
-              <div className="mx-auto mb-2 w-10 h-10 rounded-lg border border-[#F0C3C3] bg-[#FBECEC] flex items-center justify-center">
-                <XCircle className="text-[#CD0300]" />
-              </div>
-              <p className="text-sm font-semibold text-[#CD0300]">
-                Laporan Ditolak
-              </p>
-              <p className="mt-1 text-[12px] text-[#6B6B6B]">
-                Silakan perbaiki laporan sesuai catatan verifikator, kemudian
-                kirim ulang.
-              </p>
-              <div className="mt-3">
-                <button
-                  onClick={() => {
-                    setLaporanDecision("menunggu" as typeof laporanDecision);
-                    scrollToLaporan();
-                  }}
-                  className="inline-flex items-center rounded-lg bg-[#CD0300] text-white px-4 py-2 text-[12px] hover:opacity-90"
-                >
-                  Kembali ke Laporan Akhir
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Jika Laporan Disetujui tapi Sertifikat Belum Selesai */}
-          {laporanDecision === "disetujui" && sertifikatDecision !== "selesai" && (
-              <div className="text-center py-8">
-                <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-[#F7F4F0] border border-[#E8E2DB] flex items-center justify-center">
-                  <Award size={32} className="text-[#A99F99]" />
+            {/* Jika Laporan Ditolak */}
+            {laporanSubmitted && laporanDecision === "ditolak" && (
+              <div className="rounded-lg border border-[#F0CFCF] bg-[#FFF6F6] p-4 text-center">
+                <div className="mx-auto mb-2 w-10 h-10 rounded-lg border border-[#F0C3C3] bg-[#FBECEC] flex items-center justify-center">
+                  <XCircle className="text-[#CD0300]" />
                 </div>
-                <h3 className="text-base font-semibold text-[#3B3B3B] mb-2">
-                  Sertifikat Belum Tersedia
-                </h3>
-                <p className="text-[12px] text-[#6B6B6B] max-w-md mx-auto">
-                  Sertifikat sedang dalam proses pembuatan. Harap tunggu beberapa saat.
+                <p className="text-sm font-semibold text-[#CD0300]">
+                  Laporan Ditolak
                 </p>
+                <p className="mt-1 text-[12px] text-[#6B6B6B]">
+                  Silakan perbaiki laporan sesuai catatan verifikator, kemudian
+                  kirim ulang.
+                </p>
+                <div className="mt-3">
+                  <button
+                    onClick={() => {
+                      setLaporanDecision("menunggu" as typeof laporanDecision);
+                      scrollToLaporan();
+                    }}
+                    className="inline-flex items-center rounded-lg bg-[#CD0300] text-white px-4 py-2 text-[12px] hover:opacity-90"
+                  >
+                    Kembali ke Laporan Akhir
+                  </button>
+                </div>
               </div>
             )}
 
-          {/* Jika Sertifikat Selesai (Bisa Didownload) */}
-          {laporanSubmitted &&
-            laporanDecision === "disetujui" &&
-            sertifikatDecision === "selesai" && (
-              <div>
-                {sertifikatLoading ? (
-                  <div className="text-center py-8">
-                    <div className="animate-spin mx-auto mb-4 w-12 h-12 border-4 border-primary border-t-transparent rounded-full"></div>
-                    <p className="text-[12px] text-[#6B6B6B]">Memuat sertifikat...</p>
+            {/* Jika Laporan Disetujui tapi Sertifikat Belum Selesai */}
+            {laporanDecision === "disetujui" &&
+              sertifikatDecision !== "selesai" && (
+                <div className="text-center py-8">
+                  <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-[#F7F4F0] border border-[#E8E2DB] flex items-center justify-center">
+                    <Award size={32} className="text-[#A99F99]" />
                   </div>
-                ) : sertifikatError ? (
-                  <div className="text-center py-8">
-                    <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-red-50 border border-red-200 flex items-center justify-center">
-                      <XCircle size={32} className="text-red-500" />
-                    </div>
-                    <h3 className="text-base font-semibold text-red-800 mb-2">
-                      Gagal Memuat Sertifikat
-                    </h3>
-                    <p className="text-[12px] text-red-600 max-w-md mx-auto">
-                      {sertifikatError}
-                    </p>
-                  </div>
-                ) : sertifikatData && sertifikatData.file_sertifikat ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-                    <div className="relative w-full h-56 md:h-64 rounded-xl overflow-hidden border border-[#E8E2DB] shadow-sm bg-gray-100 flex items-center justify-center">
-                      {sertifikatData.file_sertifikat ? (
-                        <>
-                          <iframe
-                            src={resolveFileUrl(sertifikatData.file_sertifikat) || ""}
-                            className="w-full h-full"
-                            title="Preview Sertifikat"
-                          />
-                          <div className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full bg-white/90 border border-[#E8E2DB] px-3 py-1 text-[11px] text-[#3B3B3B] shadow-xs">
-                            Sertifikat Preview
-                          </div>
-                        </>
-                      ) : (
-                        <div className="text-center">
-                          <Award size={48} className="mx-auto mb-2 text-gray-400" />
-                          <p className="text-[12px] text-gray-500">Preview tidak tersedia</p>
-                        </div>
-                      )}
-                    </div>
-                    <div className="text-center">
-                      <div className="mx-auto mb-3 w-14 h-14 rounded-full border border-[#CBE6D7] bg-[#E9F7F0] flex items-center justify-center shadow-sm">
-                        <Award size={28} className="text-[#2F8A57]" />
-                      </div>
-                      <h3 className="text-base md:text-lg font-semibold text-[#3B3B3B]">
-                        Selamat, Program PKL Anda telah selesai!
-                      </h3>
-                      <p className="mt-1 text-[12px] text-[#6B6B6B]">
-                        Anda telah menyelesaikan program dan berhak mendapatkan
-                        sertifikat resmi dari Sekolah Kopi Raisa.
-                      </p>
-                      {sertifikatData.created_at && (
-                        <p className="mt-2 text-[11px] text-[#6B6B6B]">
-                          Tanggal Terbit: {formatDate(sertifikatData.created_at)}
-                        </p>
-                      )}
+                  <h3 className="text-base font-semibold text-[#3B3B3B] mb-2">
+                    Sertifikat Belum Tersedia
+                  </h3>
+                  <p className="text-[12px] text-[#6B6B6B] max-w-md mx-auto">
+                    Sertifikat sedang dalam proses pembuatan. Harap tunggu
+                    beberapa saat.
+                  </p>
+                </div>
+              )}
 
-                      <div className="mt-4 justify-center flex flex-wrap items-center gap-2">
-                        {sertifikatData.file_sertifikat && (
+            {/* Jika Sertifikat Selesai (Bisa Didownload) */}
+            {laporanSubmitted &&
+              laporanDecision === "disetujui" &&
+              sertifikatDecision === "selesai" && (
+                <div>
+                  {sertifikatLoading ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin mx-auto mb-4 w-12 h-12 border-4 border-primary border-t-transparent rounded-full"></div>
+                      <p className="text-[12px] text-[#6B6B6B]">
+                        Memuat sertifikat...
+                      </p>
+                    </div>
+                  ) : sertifikatError ? (
+                    <div className="text-center py-8">
+                      <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-red-50 border border-red-200 flex items-center justify-center">
+                        <XCircle size={32} className="text-red-500" />
+                      </div>
+                      <h3 className="text-base font-semibold text-red-800 mb-2">
+                        Gagal Memuat Sertifikat
+                      </h3>
+                      <p className="text-[12px] text-red-600 max-w-md mx-auto">
+                        {sertifikatError}
+                      </p>
+                    </div>
+                  ) : sertifikatData && sertifikatData.file_sertifikat ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                      <div className="relative w-full h-56 md:h-64 rounded-xl overflow-hidden border border-[#E8E2DB] shadow-sm bg-gray-100 flex items-center justify-center">
+                        {sertifikatData.file_sertifikat ? (
                           <>
-                            <button
-                              onClick={() => openFile(resolveFileUrl(sertifikatData.file_sertifikat))}
-                              className="inline-flex items-center gap-1 rounded-lg border border-[#E8E2DB] px-3 py-2 text-[12px] text-[#3B3B3B] hover:bg-[#F5EFE8]"
-                            >
-                              <Eye size={16} /> Preview Sertifikat
-                            </button>
-                            <button
-                              onClick={() => downloadFile(resolveFileUrl(sertifikatData.file_sertifikat), "Sertifikat_PKL.pdf")}
-                              className="inline-flex justify-center items-center gap-1 rounded-lg bg-[#5C3A1E] text-white px-3 py-2 text-[12px] hover:opacity-90"
-                            >
-                              <Download size={16} /> Download Sertifikat PDF
-                            </button>
+                            <iframe
+                              src={
+                                resolveFileUrl(
+                                  sertifikatData.file_sertifikat
+                                ) || ""
+                              }
+                              className="w-full h-full"
+                              title="Preview Sertifikat"
+                            />
+                            <div className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full bg-white/90 border border-[#E8E2DB] px-3 py-1 text-[11px] text-[#3B3B3B] shadow-xs">
+                              Sertifikat Preview
+                            </div>
                           </>
+                        ) : (
+                          <div className="text-center">
+                            <Award
+                              size={48}
+                              className="mx-auto mb-2 text-gray-400"
+                            />
+                            <p className="text-[12px] text-gray-500">
+                              Preview tidak tersedia
+                            </p>
+                          </div>
                         )}
                       </div>
+                      <div className="text-center">
+                        <div className="mx-auto mb-3 w-14 h-14 rounded-full border border-[#CBE6D7] bg-[#E9F7F0] flex items-center justify-center shadow-sm">
+                          <Award size={28} className="text-[#2F8A57]" />
+                        </div>
+                        <h3 className="text-base md:text-lg font-semibold text-[#3B3B3B]">
+                          Selamat, Program PKL Anda telah selesai!
+                        </h3>
+                        <p className="mt-1 text-[12px] text-[#6B6B6B]">
+                          Anda telah menyelesaikan program dan berhak
+                          mendapatkan sertifikat resmi dari Sekolah Kopi Raisa.
+                        </p>
+                        {sertifikatData.created_at && (
+                          <p className="mt-2 text-[11px] text-[#6B6B6B]">
+                            Tanggal Terbit:{" "}
+                            {formatDate(sertifikatData.created_at)}
+                          </p>
+                        )}
+
+                        <div className="mt-4 justify-center flex flex-wrap items-center gap-2">
+                          {sertifikatData.file_sertifikat && (
+                            <>
+                              <button
+                                onClick={() =>
+                                  openFile(
+                                    resolveFileUrl(
+                                      sertifikatData.file_sertifikat
+                                    )
+                                  )
+                                }
+                                className="inline-flex items-center gap-1 rounded-lg border border-[#E8E2DB] px-3 py-2 text-[12px] text-[#3B3B3B] hover:bg-[#F5EFE8]"
+                              >
+                                <Eye size={16} /> Preview Sertifikat
+                              </button>
+                              <button
+                                onClick={() =>
+                                  downloadFile(
+                                    resolveFileUrl(
+                                      sertifikatData.file_sertifikat
+                                    ),
+                                    "Sertifikat_PKL.pdf"
+                                  )
+                                }
+                                className="inline-flex justify-center items-center gap-1 rounded-lg bg-[#5C3A1E] text-white px-3 py-2 text-[12px] hover:opacity-90"
+                              >
+                                <Download size={16} /> Download Sertifikat PDF
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-[#F7F4F0] border border-[#E8E2DB] flex items-center justify-center">
-                      <Award size={32} className="text-[#A99F99]" />
+                  ) : (
+                    <div className="text-center py-8">
+                      <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-[#F7F4F0] border border-[#E8E2DB] flex items-center justify-center">
+                        <Award size={32} className="text-[#A99F99]" />
+                      </div>
+                      <h3 className="text-base font-semibold text-[#3B3B3B] mb-2">
+                        Sertifikat Belum Tersedia
+                      </h3>
+                      <p className="text-[12px] text-[#6B6B6B] max-w-md mx-auto">
+                        Sertifikat sedang dalam proses pembuatan. Harap tunggu
+                        beberapa saat.
+                      </p>
                     </div>
-                    <h3 className="text-base font-semibold text-[#3B3B3B] mb-2">
-                      Sertifikat Belum Tersedia
-                    </h3>
-                    <p className="text-[12px] text-[#6B6B6B] max-w-md mx-auto">
-                      Sertifikat sedang dalam proses pembuatan. Harap tunggu beberapa saat.
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
+                  )}
+                </div>
+              )}
           </div>
         </div>
       )}
