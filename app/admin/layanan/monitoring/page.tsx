@@ -410,150 +410,158 @@ export default function AdminLayananMonitoringPage() {
           </div>
 
           {/* DataTable */}
-          <div className="mt-4 rounded-xl border border-gray-100 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead className="bg-primary text-white">
-                  <tr>
-                    <th className="px-4 py-3 text-center font-medium whitespace-nowrap">
-                      Nama
-                    </th>
-                    <th className="px-4 py-3 text-center font-medium whitespace-nowrap">
-                      Jenis Kegiatan
-                    </th>
-                    <th className="px-4 py-3 text-center font-medium whitespace-nowrap">
-                      Instansi
-                    </th>
-                    <th className="px-4 py-3 text-center font-medium whitespace-nowrap">
-                      Diajukan
-                    </th>
-                    <th className="px-4 py-3 text-center font-medium whitespace-nowrap">
-                      Status MOU
-                    </th>
-                    <th className="px-4 py-3 text-center font-medium whitespace-nowrap">
-                      Status Pengajuan
-                    </th>
-                    <th className="px-4 py-3 text-center font-medium whitespace-nowrap">
-                      Aksi
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {(activeTab === "berlangsung"
-                    ? filtered
-                    : filtered.filter((r) => {
-                        const jenisNama =
-                          r.jenis_layanan?.nama_jenis_layanan || "";
-                        const isSimpleWorkflow = [
-                          "Kunjungan",
-                          "Undangan Narasumber",
-                        ].some((j) => jenisNama.includes(j));
-
-                        if (isSimpleWorkflow) {
-                          // Kunjungan & Undangan Narasumber tidak ada di tab selesai (tidak ada sertifikat)
-                          return false;
-                        } else {
-                          // For MOU workflows (PKL, Magang, Pelatihan): selesai if laporan submitted
-                          // Check if laporan exists and has valid data (not just empty object)
-                          const hasLaporan =
-                            r.laporan && (r.laporan.id || r.laporan.length > 0);
-                          return !!hasLaporan;
-                        }
-                      })
-                  ).map((row) => {
-                    const pemohonNama = row.pemohon?.name || "N/A";
-                    const jenisNama =
-                      row.jenis_layanan?.nama_jenis_layanan || "N/A";
-
-                    // Check if it's simple workflow (Kunjungan, Undangan Narasumber - no MOU)
-                    const isSimpleWorkflow = [
-                      "Kunjungan",
-                      "Undangan Narasumber",
-                    ].some((j) => jenisNama.includes(j));
-
-                    const mouStatusText = isSimpleWorkflow
-                      ? "-"
-                      : row.mou?.statusKode?.nama_status_kode || "Menunggu";
-                    const pengajuanStatusText =
-                      row.pengajuan?.nama_status_kode || "Menunggu";
-
-                    // Check if laporan has been submitted (has valid id or length)
-                    const hasLaporan =
-                      row.laporan &&
-                      (row.laporan.id ||
-                        (row.laporan.length && row.laporan.length > 0));
-
-                    // Handle sertifikat union type
-                    const sertifikat = Array.isArray(row.sertifikat)
-                      ? row.sertifikat[0]
-                      : row.sertifikat;
-
-                    // Check if sertifikat already uploaded
-                    const hasSertifikat = !!sertifikat?.file_sertifikat;
-
-                    return (
-                      <tr key={row.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 text-center">
-                          <div className="font-medium text-gray-900">
-                            {pemohonNama}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {jenisNama.includes("Undangan Narasumber")
-                              ? formatDate(row.tanggal_mulai)
-                              : `${row.jumlah_peserta} Peserta • ${formatDate(
-                                  row.tanggal_mulai
-                                )}`}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-center text-gray-700">
-                          {jenisNama}
-                        </td>
-                        <td className="px-4 py-3 text-center text-gray-700 whitespace-nowrap">
-                          {row.instansi_asal}
-                        </td>
-                        <td className="px-4 py-3 text-center text-gray-700 whitespace-nowrap">
-                          Diajukan pada {formatDate(row.created_at)}
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          {mouStatusText === "-" ? (
-                            <span className="text-gray-500">-</span>
-                          ) : (
-                            <Badge status={mouStatusText} />
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          <Badge status={pengajuanStatusText} />
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          {activeTab === "selesai" ? (
-                            hasLaporan &&
-                            (hasSertifikat ? (
-                              <span className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                Sertifikat telah di upload
-                              </span>
-                            ) : (
-                              <button
-                                onClick={() => handleUploadSertifikat(row)}
-                                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md bg-amber-900 text-white hover:bg-amber-950"
-                              >
-                                Upload Sertifikat
-                              </button>
-                            ))
-                          ) : (
-                            <Link href={`/admin/layanan/monitoring/${row.id}`}>
-                              <button className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md border hover:bg-gray-50">
-                                <Eye size={14} /> Detail
-                              </button>
-                            </Link>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+          {isLoading ? (
+            <div className="mt-4 rounded-xl border border-gray-100 bg-white p-8 text-center">
+              <div className="mx-auto mb-3 h-10 w-10 animate-spin rounded-full border-4 border-amber-200 border-t-amber-900" />
+              <p className="text-sm font-semibold text-gray-800">Memuat data...</p>
+              <p className="text-xs text-gray-500">Mohon tunggu, sedang mengambil daftar layanan.</p>
             </div>
-          </div>
+          ) : (
+            <div className="mt-4 rounded-xl border border-gray-100 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-primary text-white">
+                    <tr>
+                      <th className="px-4 py-3 text-center font-medium whitespace-nowrap">
+                        Nama
+                      </th>
+                      <th className="px-4 py-3 text-center font-medium whitespace-nowrap">
+                        Jenis Kegiatan
+                      </th>
+                      <th className="px-4 py-3 text-center font-medium whitespace-nowrap">
+                        Instansi
+                      </th>
+                      <th className="px-4 py-3 text-center font-medium whitespace-nowrap">
+                        Diajukan
+                      </th>
+                      <th className="px-4 py-3 text-center font-medium whitespace-nowrap">
+                        Status MOU
+                      </th>
+                      <th className="px-4 py-3 text-center font-medium whitespace-nowrap">
+                        Status Pengajuan
+                      </th>
+                      <th className="px-4 py-3 text-center font-medium whitespace-nowrap">
+                        Aksi
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {(activeTab === "berlangsung"
+                      ? filtered
+                      : filtered.filter((r) => {
+                          const jenisNama =
+                            r.jenis_layanan?.nama_jenis_layanan || "";
+                          const isSimpleWorkflow = [
+                            "Kunjungan",
+                            "Undangan Narasumber",
+                          ].some((j) => jenisNama.includes(j));
+
+                          if (isSimpleWorkflow) {
+                            // Kunjungan & Undangan Narasumber tidak ada di tab selesai (tidak ada sertifikat)
+                            return false;
+                          } else {
+                            // For MOU workflows (PKL, Magang, Pelatihan): selesai if laporan submitted
+                            // Check if laporan exists and has valid data (not just empty object)
+                            const hasLaporan =
+                              r.laporan && (r.laporan.id || r.laporan.length > 0);
+                            return !!hasLaporan;
+                          }
+                        })
+                    ).map((row) => {
+                      const pemohonNama = row.pemohon?.name || "N/A";
+                      const jenisNama =
+                        row.jenis_layanan?.nama_jenis_layanan || "N/A";
+
+                      // Check if it's simple workflow (Kunjungan, Undangan Narasumber - no MOU)
+                      const isSimpleWorkflow = [
+                        "Kunjungan",
+                        "Undangan Narasumber",
+                      ].some((j) => jenisNama.includes(j));
+
+                      const mouStatusText = isSimpleWorkflow
+                        ? "-"
+                        : row.mou?.statusKode?.nama_status_kode || "Menunggu";
+                      const pengajuanStatusText =
+                        row.pengajuan?.nama_status_kode || "Menunggu";
+
+                      // Check if laporan has been submitted (has valid id or length)
+                      const hasLaporan =
+                        row.laporan &&
+                        (row.laporan.id ||
+                          (row.laporan.length && row.laporan.length > 0));
+
+                      // Handle sertifikat union type
+                      const sertifikat = Array.isArray(row.sertifikat)
+                        ? row.sertifikat[0]
+                        : row.sertifikat;
+
+                      // Check if sertifikat already uploaded
+                      const hasSertifikat = !!sertifikat?.file_sertifikat;
+
+                      return (
+                        <tr key={row.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 text-center">
+                            <div className="font-medium text-gray-900">
+                              {pemohonNama}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {jenisNama.includes("Undangan Narasumber")
+                                ? formatDate(row.tanggal_mulai)
+                                : `${row.jumlah_peserta} Peserta • ${formatDate(
+                                    row.tanggal_mulai
+                                  )}`}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-center text-gray-700">
+                            {jenisNama}
+                          </td>
+                          <td className="px-4 py-3 text-center text-gray-700 whitespace-nowrap">
+                            {row.instansi_asal}
+                          </td>
+                          <td className="px-4 py-3 text-center text-gray-700 whitespace-nowrap">
+                            Diajukan pada {formatDate(row.created_at)}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            {mouStatusText === "-" ? (
+                              <span className="text-gray-500">-</span>
+                            ) : (
+                              <Badge status={mouStatusText} />
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <Badge status={pengajuanStatusText} />
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            {activeTab === "selesai" ? (
+                              hasLaporan &&
+                              (hasSertifikat ? (
+                                <span className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                  Sertifikat telah di upload
+                                </span>
+                              ) : (
+                                <button
+                                  onClick={() => handleUploadSertifikat(row)}
+                                  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md bg-amber-900 text-white hover:bg-amber-950"
+                                >
+                                  Upload Sertifikat
+                                </button>
+                              ))
+                            ) : (
+                              <Link href={`/admin/layanan/monitoring/${row.id}`}>
+                                <button className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md border hover:bg-gray-50">
+                                  <Eye size={14} /> Detail
+                                </button>
+                              </Link>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

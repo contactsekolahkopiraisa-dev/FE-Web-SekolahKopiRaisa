@@ -112,7 +112,11 @@ export default function AdminLayananModulPage() {
       {/* Loading State */}
       {isLoading && (
         <div className="flex justify-center items-center py-20">
-          <div className="text-gray-600">Memuat data modul...</div>
+          <div className="rounded-xl border border-gray-100 bg-white p-8 text-center">
+            <div className="mx-auto mb-3 h-10 w-10 animate-spin rounded-full border-4 border-amber-200 border-t-amber-900" />
+            <p className="text-sm font-semibold text-gray-800">Memuat data...</p>
+            <p className="text-xs text-gray-500">Mohon tunggu, sedang mengambil daftar modul.</p>
+          </div>
         </div>
       )}
 

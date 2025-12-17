@@ -684,6 +684,11 @@ export default function DetailPelaksanaanMagangPage() {
         id_layanan: Number(layananId),
         nama_p4s: laporanForm.namaP4s,
         asal_kab_kota: laporanForm.kota,
+        jenis_kegiatan: laporanForm.jenisKegiatan,
+        asal_peserta: laporanForm.asalPeserta,
+        jumlah_peserta: laporanForm.jumlahPeserta,
+        tanggal_pelaksanaan: laporanForm.tanggalPelaksanaan,
+        lama_pelaksanaan: laporanForm.lamaPelaksanaan,
         foto_kegiatan: fotoKegiatan,
       });
 
@@ -799,8 +804,8 @@ export default function DetailPelaksanaanMagangPage() {
 
   return (
     <>
-      <div className="min-h-screen bg-tertiary pt-24 md:pt-28">
-        <div className="container mx-auto px-4 max-w-6xl py-10">
+      <div className="min-h-screen bg-tertiary pt-16 md:pt-20">
+        <div className="container mx-auto px-5 max-w-5l py-20">
           <div className="mb-4">
             <Link
               href="/layanan"
@@ -1234,7 +1239,7 @@ export default function DetailPelaksanaanMagangPage() {
       </div>
       {pengajuanDecision === "disetujui" &&
         mouDecision !== ("disetujui" as typeof mouDecision) && (
-          <div className="container mx-auto px-4 max-w-6xl mb-8">
+          <div className="container mx-auto px-4 max-w-5l mb-6">
             <div
               className={`rounded-xl border bg-white p-5 md:p-6 transition-shadow ${
                 mouDecision === "ditolak"
@@ -1395,7 +1400,7 @@ export default function DetailPelaksanaanMagangPage() {
 
       {mouDecision === "disetujui" &&
         pelaksanaanDecision !== ("selesai" as typeof pelaksanaanDecision) && (
-          <div className="container mx-auto px-4 max-w-6xl mb-8">
+          <div className="container mx-auto px-4 max-w-5l mb-6">
             <div
               className={`rounded-xl border bg-white p-5 md:p-6 ${
                 pelaksanaanDecision === "selesai"
@@ -1686,7 +1691,7 @@ export default function DetailPelaksanaanMagangPage() {
       {pelaksanaanDecision === "selesai" &&
         laporanDecision !== ("disetujui" as typeof laporanDecision) && (
           <div
-            className="container mx-auto px-4 max-w-6xl mb-8"
+            className="container mx-auto px-4 max-w-5l mb-6"
             id="laporan-section"
           >
             <div className="rounded-xl border border-[#E8E2DB] bg-white p-5 md:p-6">
@@ -1849,7 +1854,7 @@ export default function DetailPelaksanaanMagangPage() {
 
       {laporanSubmitted && (
         <div
-          className="container mx-auto px-4 max-w-6xl mb-8"
+          className="container mx-auto px-4 max-w-5l mb-6"
           id="sertifikat-section"
         >
           <div className="rounded-xl border border-[#E8E2DB] bg-white p-5 md:p-6">

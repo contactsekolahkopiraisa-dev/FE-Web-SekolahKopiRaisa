@@ -871,6 +871,11 @@ export default function DetailPelaksanaanPelatihanPage() {
         id_layanan: Number(layananId),
         nama_p4s: laporanForm.namaP4s,
         asal_kab_kota: laporanForm.kota,
+        jenis_kegiatan: laporanForm.jenisKegiatan,
+        asal_peserta: laporanForm.asalPeserta,
+        jumlah_peserta: laporanForm.jumlahPeserta,
+        tanggal_pelaksanaan: laporanForm.tanggalPelaksanaan,
+        lama_pelaksanaan: laporanForm.lamaPelaksanaan,
         foto_kegiatan: fotoKegiatan,
       });
 
@@ -986,9 +991,9 @@ export default function DetailPelaksanaanPelatihanPage() {
 
   return (
     <>
-      <div className="min-h-screen bg-tertiary pt-24 md:pt-28">
-        <div className="container mx-auto px-4 max-w-6xl py-10">
-          <div className="mb-4">
+      <div className="min-h-screen bg-tertiary pt-16 md:pt-20">
+        <div className="container mx-auto px-5 max-w-5l py-20">
+          <div className="mb-4 ">
             <Link
               href="/layanan"
               className="flex items-center text-amber-600 hover:text-amber-700 transition-colors"
@@ -1095,11 +1100,13 @@ export default function DetailPelaksanaanPelatihanPage() {
               </div>
             </div>
           </div> */}
-          <h1 className="text-center text-2xl md:text-[22px] font-semibold text-[#3B3B3B]">
-            Detail Pelaksanaan Pelatihan Kopi
-          </h1>
+          <div className="mb-8">
+            <h1 className="text-center text-2xl md:text-[22px] font-semibold text-[#3B3B3B]">
+              Detail Pelaksanaan Pelatihan Kopi
+            </h1>
+          </div>
 
-          <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className=" fumt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="rounded-xl border border-[#E8E2DB] bg-white p-4 md:p-6">
               <div className="flex flex-col items-center gap-2 text-center">
                 <div className="w-10 h-10 rounded-lg border border-[#E8E2DB] flex items-center justify-center">
@@ -1470,7 +1477,7 @@ export default function DetailPelaksanaanPelatihanPage() {
       )}
       {pengajuanDecision === "disetujui" &&
         mouDecision !== ("disetujui" as typeof mouDecision) && (
-          <div className="container mx-auto px-4 max-w-6xl mb-8">
+          <div className="container mx-auto px-4 max-w-5l mb-6">
             <div
               className={`rounded-xl border bg-white p-5 md:p-6 transition-shadow ${
                 mouDecision === "ditolak"
@@ -1631,7 +1638,7 @@ export default function DetailPelaksanaanPelatihanPage() {
 
       {mouDecision === "disetujui" &&
         pelaksanaanDecision !== ("selesai" as typeof pelaksanaanDecision) && (
-          <div className="container mx-auto px-4 max-w-6xl mb-8">
+          <div className="container mx-auto px-4 max-w-5l mb-6">
             <div
               className={`rounded-xl border bg-white p-5 md:p-6 ${
                 pelaksanaanDecision === "selesai"
@@ -1922,7 +1929,7 @@ export default function DetailPelaksanaanPelatihanPage() {
       {pelaksanaanDecision === "selesai" &&
         laporanDecision !== ("disetujui" as typeof laporanDecision) && (
           <div
-            className="container mx-auto px-4 max-w-6xl mb-8"
+            className="container mx-auto px-4 max-w-5l mb-6"
             id="laporan-section"
           >
             <div className="rounded-xl border border-[#E8E2DB] bg-white p-5 md:p-6">
@@ -2085,7 +2092,7 @@ export default function DetailPelaksanaanPelatihanPage() {
 
       {laporanSubmitted && (
         <div
-          className="container mx-auto px-4 max-w-6xl mb-8"
+          className="container mx-auto px-4 max-w-5l mb-6"
           id="sertifikat-section"
         >
           <div className="rounded-xl border border-[#E8E2DB] bg-white p-5 md:p-6">

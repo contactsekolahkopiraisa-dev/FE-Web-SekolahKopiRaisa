@@ -349,6 +349,11 @@ export default function DetailPelaksanaanUndanganNarasumberPage() {
         id_layanan: Number(layananId),
         nama_p4s: laporanForm.namaP4s,
         asal_kab_kota: laporanForm.kota,
+        jenis_kegiatan: laporanForm.jenisKegiatan,
+        asal_peserta: laporanForm.asalPeserta,
+        jumlah_peserta: laporanForm.jumlahPeserta,
+        tanggal_pelaksanaan: laporanForm.tanggalPelaksanaan,
+        lama_pelaksanaan: laporanForm.lamaPelaksanaan,
         foto_kegiatan: fotoKegiatan,
       });
 
@@ -492,8 +497,8 @@ export default function DetailPelaksanaanUndanganNarasumberPage() {
 
   return (
     <>
-      <div className="min-h-screen bg-[#FCFBF7] pt-24 md:pt-28">
-        <div className="container mx-auto px-4 max-w-6xl py-10">
+      <div className="min-h-screen bg-[#FCFBF7] pt-16 md:pt-20">
+       <div className="container mx-auto px-5 max-w-5l py-20">
           <div className="mb-4">
             <Link
               href="/layanan"
@@ -796,7 +801,7 @@ export default function DetailPelaksanaanUndanganNarasumberPage() {
       {/* Laporan Akhir Section */}
       {pengajuanDecision === "disetujui" && (
         <div
-          className="container mx-auto px-4 max-w-6xl mb-8"
+          className="container mx-auto px-4 max-w-5l mb-6"
           id="laporan-section"
         >
           <div className="rounded-xl border border-[#E8E2DB] bg-white p-5 md:p-6">

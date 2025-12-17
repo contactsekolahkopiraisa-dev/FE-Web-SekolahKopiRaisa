@@ -328,6 +328,11 @@ export default function DetailPelaksanaanKunjunganPage() {
         id_layanan: Number(layananId),
         nama_p4s: laporanForm.namaP4s,
         asal_kab_kota: laporanForm.kota,
+        jenis_kegiatan: laporanForm.jenisKegiatan,
+        asal_peserta: laporanForm.asalPeserta,
+        jumlah_peserta: laporanForm.jumlahPeserta,
+        tanggal_pelaksanaan: laporanForm.tanggalPelaksanaan,
+        lama_pelaksanaan: laporanForm.lamaPelaksanaan,
         foto_kegiatan: fotoKegiatan,
       };
 
@@ -447,8 +452,8 @@ export default function DetailPelaksanaanKunjunganPage() {
 
   return (
     <>
-      <div className="min-h-screen bg-[#FCFBF7] pt-24 md:pt-28">
-        <div className="container mx-auto px-4 max-w-6xl py-10">
+      <div className="min-h-screen bg-[#FCFBF7] pt-16 md:pt-20">
+        <div className="container mx-auto px-5 max-w-5l py-15"> 
           <div className="mb-4">
             <Link
               href="/layanan"
@@ -754,7 +759,6 @@ export default function DetailPelaksanaanKunjunganPage() {
         const isAdminView =
           typeof window !== "undefined" &&
           window.location.pathname.includes("/admin/");
-
         // Show for admin always, or for user only when approved
         const shouldShowLaporan =
           isAdminView || pengajuanDecision === "disetujui";
@@ -764,7 +768,7 @@ export default function DetailPelaksanaanKunjunganPage() {
         // For admin, if laporan not filled yet, show message
         if (isAdminView && !isLaporanTerisi) {
           return (
-            <div className="container mx-auto px-4 max-w-6xl mb-8">
+            <div className="container mx-auto px-4 max-w-6xl mb-6">
               <div className="rounded-xl border border-[#E8E2DB] bg-white p-5 md:p-6">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="w-5 h-5 rounded-full border border-[#E8E2DB] flex items-center justify-center">
@@ -852,7 +856,7 @@ function LaporanAkhirForm({
   downloadFile,
 }: any) {
   return (
-    <div className="container mx-auto px-4 max-w-6xl mb-8" id="laporan-section">
+    <div className="container mx-auto px-4 max-w-5l mb-6" id="laporan-section">
       <div className="rounded-xl border border-[#E8E2DB] bg-white p-5 md:p-6">
         <div className="flex items-center gap-2 mb-2">
           <span className="w-5 h-5 rounded-full border border-[#E8E2DB] flex items-center justify-center">
