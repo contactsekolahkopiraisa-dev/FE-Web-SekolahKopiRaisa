@@ -117,12 +117,6 @@ export default function DetailPelaksanaanMagangPage() {
 
       try {
         setLoading(true);
-        if (typeof window !== "undefined") {
-          console.log(
-            "[DetailPelaksanaanMagang] fetching layananId:",
-            layananId
-          );
-        }
         const data = await fetchLayananById(Number(layananId), {
           include_jenis: true,
           include_peserta: true,
@@ -132,16 +126,6 @@ export default function DetailPelaksanaanMagangPage() {
           include_rejection: true,
         });
         setLayananData(data);
-        if (typeof window !== "undefined") {
-          console.log(
-            "[DetailPelaksanaanMagang] fetched layananData.mou.file_mou:",
-            data?.mou?.file_mou
-          );
-          console.log("[DetailPelaksanaanMagang] fetched layananData:", data);
-          console.log("[Magang] pengajuanRejection:", data.pengajuanRejection);
-          console.log("[Magang] pengajuan status:", data.pengajuan);
-          console.log("[Magang] ALL KEYS in data:", Object.keys(data));
-        }
 
         // Set link logbook jika sudah ada
         if (data.link_logbook) {
@@ -196,17 +180,20 @@ export default function DetailPelaksanaanMagangPage() {
             ) as typeof laporanDecision
           );
         }
-        if (data.sertifikat?.nama_status_kode) {
+        const sertifikat = Array.isArray(data.sertifikat)
+          ? data.sertifikat[0]
+          : data.sertifikat;
+        if (sertifikat?.nama_status_kode) {
           setSertifikatDecision(
             mapStatusToDecision(
-              data.sertifikat.nama_status_kode,
+              sertifikat.nama_status_kode,
               "sertifikat"
             ) as typeof sertifikatDecision
           );
-        } else if (data.sertifikat?.status?.nama_status_kode) {
+        } else if (sertifikat?.status?.nama_status_kode) {
           setSertifikatDecision(
             mapStatusToDecision(
-              data.sertifikat.status.nama_status_kode,
+              sertifikat.status.nama_status_kode,
               "sertifikat"
             ) as typeof sertifikatDecision
           );
@@ -255,8 +242,14 @@ export default function DetailPelaksanaanMagangPage() {
       value: pesertaInfo?.nama_peserta || layananData?.pemohon?.name || "-",
     },
     { label: "NIM / NIS", value: pesertaInfo?.nim || "-" },
-    { label: "Fakultas", value: layananData?.fakultas || "-" },
-    { label: "Prodi / Jurusan", value: layananData?.prodi || "-" },
+    {
+      label: "Fakultas",
+      value: pesertaInfo?.fakultas || layananData?.fakultas || "-",
+    },
+    {
+      label: "Prodi / Jurusan",
+      value: pesertaInfo?.program_studi || layananData?.prodi || "-",
+    },
   ];
 
   const infoKanan = [
@@ -453,11 +446,11 @@ export default function DetailPelaksanaanMagangPage() {
   const [modulLoading, setModulLoading] = useState<boolean>(false);
   const [modulError, setModulError] = useState<string | null>(null);
 
-  // Fetch modul saat tahapan pelaksanaan disetujui/berjalan
+  // Fetch modul saat MOU sudah disetujui
   useEffect(() => {
     const loadModuls = async () => {
-      // Hanya fetch jika pelaksanaan sudah berjalan atau selesai
-      if (pelaksanaanDecision === "menunggu") return;
+      // Hanya fetch jika MOU sudah disetujui
+      if (mouDecision !== "disetujui") return;
       try {
         setModulLoading(true);
         const moduls = await fetchAllModul();
@@ -470,49 +463,34 @@ export default function DetailPelaksanaanMagangPage() {
       }
     };
     loadModuls();
-  }, [pelaksanaanDecision]);
+  }, [mouDecision]);
 
-  // Fetch sertifikat saat laporan disetujui (cek apakah sertifikat sudah tersedia)
+  // Ambil sertifikat dari layananData (sudah di-include saat fetch layanan)
   useEffect(() => {
-    const loadSertifikat = async () => {
-      // Validasi: hanya fetch jika laporan disetujui dan layananId ada
-      if (laporanDecision !== "disetujui" || !layananId) {
-        return;
-      }
-
-      try {
-        setSertifikatLoading(true);
-        const sertifikat = await fetchSertifikatById(Number(layananId));
-        if (sertifikat && sertifikat.file_sertifikat) {
-          setSertifikatData(sertifikat);
-          setSertifikatDecision("selesai");
-        }
-        setSertifikatError(null);
-      } catch (e: any) {
-        console.error("Error loading sertifikat:", e);
-        // Jika sertifikat belum ada (404 atau 500), tidak perlu set error
-        const status = e.response?.status;
-        if (status !== 404 && status !== 500) {
-          setSertifikatError(e.message || "Gagal memuat sertifikat");
-        }
-        // Status 404 atau 500 berarti sertifikat belum diupload, ini normal
-      } finally {
-        setSertifikatLoading(false);
-      }
-    };
-
-    loadSertifikat();
-
-    // Poll untuk cek sertifikat setiap 30 detik jika laporan disetujui tapi sertifikat belum selesai
-    let pollInterval: NodeJS.Timeout | null = null;
-    if (laporanDecision === "disetujui" && sertifikatDecision !== "selesai") {
-      pollInterval = setInterval(loadSertifikat, 30000);
+    if (!layananData) {
+      return;
     }
 
-    return () => {
-      if (pollInterval) clearInterval(pollInterval);
-    };
-  }, [laporanDecision, sertifikatDecision, layananId]);
+    // Auto-set laporanSubmitted jika pelaksanaan sudah selesai
+    if (pelaksanaanDecision === "selesai") {
+      setLaporanSubmitted(true);
+    }
+
+    // Ambil sertifikat dari layananData
+    const sertifikatFromLayanan = Array.isArray(layananData.sertifikat)
+      ? layananData.sertifikat[0]
+      : layananData.sertifikat;
+
+    if (sertifikatFromLayanan && sertifikatFromLayanan.file_sertifikat) {
+      setSertifikatData(sertifikatFromLayanan as any);
+      setSertifikatDecision("selesai");
+      setSertifikatError(null);
+    } else {
+      // Sertifikat belum diupload - ini normal
+      setSertifikatData(null);
+      setSertifikatDecision("menunggu");
+    }
+  }, [layananData, pelaksanaanDecision]);
 
   const handleLogbookLinkChange: React.ChangeEventHandler<HTMLInputElement> = (
     e
@@ -710,7 +688,7 @@ export default function DetailPelaksanaanMagangPage() {
       });
 
       setSubmitting(false);
-      setSuccessOpen(true);
+      // setSuccessOpen(true); // Removed: laporan tidak diverifikasi admin
       setLaporanSubmitted(true);
       setLaporanDecision("disetujui" as typeof laporanDecision); // Auto-approve laporan
       scrollToSertifikat();
@@ -832,7 +810,7 @@ export default function DetailPelaksanaanMagangPage() {
               <span className="font-medium">Kembali ke Layanan</span>
             </Link>
           </div>
-          {/* Decision Test */}
+          {/* Decision Test
           <div className="mb-4 rounded-lg border border-[#E8E2DB] bg-white p-3 text-[12px] text-[#3B3B3B]">
             <p className="font-semibold mb-2">Decision Test</p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -929,7 +907,7 @@ export default function DetailPelaksanaanMagangPage() {
                 </button>
               </div>
             </div>
-          </div>
+          </div> */}
           <h1 className="text-center text-2xl md:text-[22px] font-semibold text-[#3B3B3B]">
             Detail Pelaksanaan Magang
           </h1>
@@ -970,7 +948,7 @@ export default function DetailPelaksanaanMagangPage() {
                     ? status === "disetujui"
                       ? "bg-[#EAF8F0] border-[#D2EBDD]"
                       : status === "ditolak"
-                      ? "bg-[#FBECEC] border-[#F0C3C3]"
+                      ? "bg-[#FEE2E2] border-[#F87171]"
                       : "bg-[#EDE6DF] border-[#E0D8D1]"
                     : isCompleted
                     ? "bg-[#F3FBF7] border-[#CFEAD9]"
@@ -980,7 +958,7 @@ export default function DetailPelaksanaanMagangPage() {
                     ? status === "disetujui"
                       ? "bg-[#E2F3EA] border-[#CBE6D7]"
                       : status === "ditolak"
-                      ? "bg-[#FCECEC] border-[#F0C3C3]"
+                      ? "bg-[#FEE2E2] border-[#EF4444]"
                       : "bg-[#DCD3CB] border-[#CFC6BE]"
                     : isCompleted
                     ? "bg-[#E9F7F0] border-[#CBE6D7]"
@@ -1044,7 +1022,7 @@ export default function DetailPelaksanaanMagangPage() {
               <p className="text-[15px] md:text-base font-semibold text-[#3B3B3B]">
                 Ringkasan Pengajuan & Dokumen
               </p>
-              <p className="text-[12px] text-[#6B6B6B] mb-4">
+              <p className="text-[12px] text-[#6B6B6B] mb-3">
                 Detail informasi dan Dokumen yang telah anda Submit
               </p>
 
@@ -1059,10 +1037,10 @@ export default function DetailPelaksanaanMagangPage() {
                 if (!isPending && (isApproved || isRejected)) {
                   return (
                     <div
-                      className={`mb-4 rounded-lg border p-4 ${
+                      className={`mb-3 rounded-lg border-2 p-4 shadow-sm ${
                         isApproved
-                          ? "bg-green-50 border-green-200"
-                          : "bg-red-50 border-red-200"
+                          ? "bg-green-50 border-green-400"
+                          : "bg-red-100 border-red-500"
                       }`}
                     >
                       <div className="flex items-center gap-2 mb-2">
@@ -1112,13 +1090,25 @@ export default function DetailPelaksanaanMagangPage() {
                             </div>
                           ) : null;
                         })()}
+
+                      {/* Tombol Ajukan Ulang */}
+                      {isRejected && (
+                        <div className="mt-3">
+                          <Link
+                            href="/layanan"
+                            className="inline-flex items-center rounded-lg bg-[#CD0300] text-white px-4 py-2 text-[12px] hover:opacity-90 w-full justify-center"
+                          >
+                            Ajukan Ulang
+                          </Link>
+                        </div>
+                      )}
                     </div>
                   );
                 }
                 return null;
               })()}
 
-              <div className="rounded-lg bg-[#F7F4F0] border border-[#E8E2DB] p-4">
+              <div className="rounded-lg border border-[#E8E2DB] p-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-3">
                     {infoKiri.map((it) => (
@@ -1242,54 +1232,6 @@ export default function DetailPelaksanaanMagangPage() {
           </div>
         </div>
       </div>
-      {pengajuanDecision === "ditolak" && (
-        <div className="container mx-auto px-4 max-w-6xl mt-6 mb-8">
-          <div className="rounded-xl border border-[#F0CFCF] bg-[#FFF6F6] p-6 shadow-sm">
-            <div className="mx-auto mb-3 w-12 h-12 rounded-lg border border-[#F0C3C3] bg-[#FBECEC] flex items-center justify-center">
-              <XCircle className="text-[#CD0300]" />
-            </div>
-            <p className="text-[15px] md:text-base font-semibold text-[#CD0300] text-center">
-              Pengajuan Ditolak
-            </p>
-            <p className="mt-2 text-[12px] text-[#6B6B6B] text-center">
-              Pengajuan Anda ditolak oleh admin. Silakan perbaiki sesuai catatan
-              di bawah dan ajukan kembali.
-            </p>
-
-            {/* Alasan Penolakan dari API */}
-            {(() => {
-              const rejection = layananData?.layananRejection;
-              const alasan = Array.isArray(rejection)
-                ? rejection[0]?.alasan
-                : rejection?.alasan ||
-                  layananData?.pengajuanRejection?.alasan ||
-                  layananData?.rejection?.alasan ||
-                  layananData?.pengajuan?.alasan_penolakan ||
-                  layananData?.alasan_penolakan;
-
-              return alasan ? (
-                <div className="mt-4 rounded-lg border border-[#F0C3C3] bg-white p-4 text-left">
-                  <p className="text-sm font-semibold text-[#CD0300] mb-2">
-                    Alasan Penolakan:
-                  </p>
-                  <p className="text-[12px] text-[#3B3B3B] whitespace-pre-wrap">
-                    {alasan}
-                  </p>
-                </div>
-              ) : null;
-            })()}
-
-            <div className="mt-4 text-center">
-              <Link
-                href="/layanan"
-                className="inline-flex items-center rounded-lg bg-[#CD0300] text-white px-4 py-2 text-[12px] hover:opacity-90"
-              >
-                Ajukan Ulang
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
       {pengajuanDecision === "disetujui" &&
         mouDecision !== ("disetujui" as typeof mouDecision) && (
           <div className="container mx-auto px-4 max-w-6xl mb-8">
@@ -1354,17 +1296,13 @@ export default function DetailPelaksanaanMagangPage() {
 
                 {mouDecision === "ditolak" && (
                   <div className="rounded-lg border border-[#F0CFCF] bg-[#FFF6F6] p-4">
-                    <p className="text-sm font-semibold text-[#CD0300] mb-1">
-                      Catatan Penolakan
+                    <p className="text-sm font-semibold text-[#CD0300] mb-2">
+                      Alasan Penolakan MOU
                     </p>
-                    <ul className="list-disc pl-5 text-[12px] text-[#6B6B6B] space-y-1">
-                      <li>
-                        MoU belum ditandatangani oleh pihak yang berwenang.
-                      </li>
-                      <li>
-                        Format/isi MoU tidak sesuai template yang disediakan.
-                      </li>
-                    </ul>
+                    <p className="text-[12px] text-[#3B3B3B] whitespace-pre-wrap">
+                      {layananData?.mou?.mouRejection?.alasan ||
+                        "MoU tidak memenuhi persyaratan yang ditetapkan."}
+                    </p>
                   </div>
                 )}
 
@@ -1382,62 +1320,74 @@ export default function DetailPelaksanaanMagangPage() {
                   </div>
                 </div>
 
-                {mouDecision === "ditolak" && (
-                  <div className="rounded-lg border border-[#F0CFCF] bg-[#FFF6F6] p-4 text-center">
-                    <div className="mx-auto mb-2 w-10 h-10 rounded-lg border border-[#F0C3C3] bg-[#FBECEC] flex items-center justify-center">
-                      <XCircle className="text-[#CD0300]" />
+                {/* Tampilkan section upload hanya jika: belum upload MOU ATAU MOU ditolak */}
+                {(mouDecision === "ditolak" || !layananData?.mou?.file_mou) && (
+                  <div className="rounded-lg border border-[#E8E2DB] bg-white p-4">
+                    <p className="text-sm font-semibold text-[#3B3B3B]">
+                      {mouDecision === "ditolak"
+                        ? "Upload Ulang MOU"
+                        : "Upload MOU"}
+                    </p>
+                    <p className="text-[12px] text-[#6B6B6B] mb-3">
+                      {mouDecision === "ditolak"
+                        ? "Perbaiki dan unggah ulang dokumen MOU sesuai catatan penolakan di atas"
+                        : "Unggah Dokumen MOU yang sudah dilengkapi sesuai dengan pengajuan layanan yang dipilih"}
+                    </p>
+
+                    <div
+                      className="flex flex-col items-center justify-center gap-2 rounded-md border border-dashed border-[#B9B1A9] bg-[#F3EFEB] p-6 cursor-pointer"
+                      onClick={handlePickMou}
+                    >
+                      <Upload className="text-[#6B6B6B]" />
+                      <p className="text-[12px] text-[#6B6B6B]">
+                        {mouFile
+                          ? mouFile.name
+                          : mouDecision === "ditolak"
+                          ? "Klik untuk Upload Ulang MOU"
+                          : "Klik untuk Upload MOU"}
+                      </p>
+                      {!mouFile && (
+                        <p className="text-[11px] text-[#9A948E]">
+                          Format: .pdf, .doc, .docx (Max: 10MB)
+                        </p>
+                      )}
+                      <input
+                        ref={mouInputRef}
+                        type="file"
+                        accept=".pdf,.doc,.docx"
+                        className="hidden"
+                        onChange={handleMouChange}
+                      />
                     </div>
-                    <p className="text-sm font-semibold text-[#CD0300]">
-                      MoU Ditolak
-                    </p>
-                    <p className="mt-1 text-[12px] text-[#6B6B6B]">
-                      MoU yang Anda unggah ditolak. Pastikan format dan isi MoU
-                      telah sesuai ketentuan, serta ditandatangani pihak
-                      terkait.
-                    </p>
+
+                    <div className="mt-3 justify-center flex items-center gap-2">
+                      <button
+                        className="inline-flex items-center gap-1 rounded-lg bg-[#5C3A1E] text-white px-3 py-2 text-[12px] hover:opacity-90"
+                        onClick={handleSubmitMou}
+                      >
+                        {mouDecision === "ditolak"
+                          ? "Submit Ulang MOU"
+                          : "Submit MOU"}
+                      </button>
+                    </div>
                   </div>
                 )}
 
-                <div className="rounded-lg border border-[#E8E2DB] bg-white p-4">
-                  <p className="text-sm font-semibold text-[#3B3B3B]">
-                    Upload MOU
-                  </p>
-                  <p className="text:[12px] text-[#6B6B6B] mb-3">
-                    Unggah Dokumen MOU yang sudah dilengkapi sesuai dengan
-                    pengajuan layanan yang dipilih
-                  </p>
-
-                  <div
-                    className="flex flex-col items-center justify-center gap-2 rounded-md border border-dashed border-[#B9B1A9] bg-[#F3EFEB] p-6 cursor-pointer"
-                    onClick={handlePickMou}
-                  >
-                    <Upload className="text-[#6B6B6B]" />
-                    <p className="text-[12px] text-[#6B6B6B]">
-                      {mouFile ? mouFile.name : "Klik untuk Upload MOU"}
+                {/* Tampilkan status menunggu review jika sudah upload dan status menunggu */}
+                {mouDecision === "menunggu" && layananData?.mou?.file_mou && (
+                  <div className="rounded-lg border border-[#FFF3CD] bg-[#FFF9E6] p-4 text-center">
+                    <div className="mx-auto mb-2 w-10 h-10 rounded-lg border border-[#FFE69C] bg-[#FFF3CD] flex items-center justify-center">
+                      <Info className="text-[#997404]" />
+                    </div>
+                    <p className="text-sm font-semibold text-[#997404]">
+                      MOU Menunggu Review Admin
                     </p>
-                    {!mouFile && (
-                      <p className="text-[11px] text-[#9A948E]">
-                        Format: .pdf, .doc, .docx (Max: 10MB)
-                      </p>
-                    )}
-                    <input
-                      ref={mouInputRef}
-                      type="file"
-                      accept=".pdf,.doc,.docx"
-                      className="hidden"
-                      onChange={handleMouChange}
-                    />
+                    <p className="mt-1 text-[12px] text-[#6B6B6B]">
+                      MOU yang Anda unggah sedang dalam proses review oleh
+                      admin. Mohon tunggu konfirmasi.
+                    </p>
                   </div>
-
-                  <div className="mt-3 justify-center flex items-center gap-2">
-                    <button
-                      className="inline-flex items-center gap-1 rounded-lg bg-[#5C3A1E] text-white px-3 py-2 text-[12px] hover:opacity-90"
-                      onClick={handleSubmitMou}
-                    >
-                      Submit MOU
-                    </button>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
@@ -1930,144 +1880,138 @@ export default function DetailPelaksanaanMagangPage() {
               </div>
             )}
 
-            {/* Jika Laporan Disetujui tapi Sertifikat Belum Selesai */}
-            {laporanDecision === "disetujui" &&
-              sertifikatDecision !== "selesai" && (
-                <div className="text-center py-8">
-                  <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-[#F7F4F0] border border-[#E8E2DB] flex items-center justify-center">
-                    <Award size={32} className="text-[#A99F99]" />
+            {/* Jika Laporan Sudah Disubmit tapi Sertifikat Belum Ada */}
+            {laporanSubmitted && sertifikatDecision !== "selesai" && (
+              <div className="text-center py-8">
+                <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-[#F7F4F0] border border-[#E8E2DB] flex items-center justify-center">
+                  <Award size={32} className="text-[#A99F99]" />
+                </div>
+                <h3 className="text-base font-semibold text-[#3B3B3B] mb-2">
+                  Sertifikat Belum Tersedia
+                </h3>
+                <p className="text-[12px] text-[#6B6B6B] max-w-md mx-auto">
+                  Sertifikat sedang dalam proses pembuatan. Harap tunggu
+                  beberapa saat.
+                </p>
+              </div>
+            )}
+
+            {/* Jika Sertifikat Sudah Ada (Bisa Didownload) */}
+            {sertifikatDecision === "selesai" && (
+              <div>
+                {sertifikatLoading ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin mx-auto mb-4 w-12 h-12 border-4 border-primary border-t-transparent rounded-full"></div>
+                    <p className="text-[12px] text-[#6B6B6B]">
+                      Memuat sertifikat...
+                    </p>
                   </div>
-                  <h3 className="text-base font-semibold text-[#3B3B3B] mb-2">
-                    Sertifikat Belum Tersedia
-                  </h3>
-                  <p className="text-[12px] text-[#6B6B6B] max-w-md mx-auto">
-                    Sertifikat sedang dalam proses pembuatan. Harap tunggu
-                    beberapa saat.
-                  </p>
-                </div>
-              )}
-
-            {/* Jika Sertifikat Selesai (Bisa Didownload) */}
-            {laporanSubmitted &&
-              laporanDecision === "disetujui" &&
-              sertifikatDecision === "selesai" && (
-                <div>
-                  {sertifikatLoading ? (
-                    <div className="text-center py-8">
-                      <div className="animate-spin mx-auto mb-4 w-12 h-12 border-4 border-primary border-t-transparent rounded-full"></div>
-                      <p className="text-[12px] text-[#6B6B6B]">
-                        Memuat sertifikat...
-                      </p>
+                ) : sertifikatError ? (
+                  <div className="text-center py-8">
+                    <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-red-50 border border-red-200 flex items-center justify-center">
+                      <XCircle size={32} className="text-red-500" />
                     </div>
-                  ) : sertifikatError ? (
-                    <div className="text-center py-8">
-                      <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-red-50 border border-red-200 flex items-center justify-center">
-                        <XCircle size={32} className="text-red-500" />
-                      </div>
-                      <h3 className="text-base font-semibold text-red-800 mb-2">
-                        Gagal Memuat Sertifikat
-                      </h3>
-                      <p className="text-[12px] text-red-600 max-w-md mx-auto">
-                        {sertifikatError}
-                      </p>
-                    </div>
-                  ) : sertifikatData ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-                      <div className="relative w-full h-56 md:h-64 rounded-xl overflow-hidden border border-[#E8E2DB] shadow-sm bg-gray-100 flex items-center justify-center">
-                        {sertifikatData.file_sertifikat ? (
-                          <>
-                            <iframe
-                              src={
-                                resolveFileUrl(
-                                  sertifikatData.file_sertifikat
-                                ) || ""
-                              }
-                              className="w-full h-full"
-                              title="Preview Sertifikat"
-                            />
-                            <div className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full bg-white/90 border border-[#E8E2DB] px-3 py-1 text-[11px] text-[#3B3B3B] shadow-xs">
-                              Sertifikat Preview
-                            </div>
-                          </>
-                        ) : (
-                          <div className="text-center">
-                            <Award
-                              size={48}
-                              className="mx-auto mb-2 text-gray-400"
-                            />
-                            <p className="text-[12px] text-gray-500">
-                              Preview tidak tersedia
-                            </p>
+                    <h3 className="text-base font-semibold text-red-800 mb-2">
+                      Gagal Memuat Sertifikat
+                    </h3>
+                    <p className="text-[12px] text-red-600 max-w-md mx-auto">
+                      {sertifikatError}
+                    </p>
+                  </div>
+                ) : sertifikatData ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                    <div className="relative w-full h-56 md:h-64 rounded-xl overflow-hidden border border-[#E8E2DB] shadow-sm bg-gray-100 flex items-center justify-center">
+                      {sertifikatData.file_sertifikat ? (
+                        <>
+                          <iframe
+                            src={
+                              resolveFileUrl(sertifikatData.file_sertifikat) ||
+                              ""
+                            }
+                            className="w-full h-full"
+                            title="Preview Sertifikat"
+                          />
+                          <div className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full bg-white/90 border border-[#E8E2DB] px-3 py-1 text-[11px] text-[#3B3B3B] shadow-xs">
+                            Sertifikat Preview
                           </div>
-                        )}
-                      </div>
-                      <div className="text-center">
-                        <div className="mx-auto mb-3 w-14 h-14 rounded-full border border-[#CBE6D7] bg-[#E9F7F0] flex items-center justify-center shadow-sm">
-                          <Award size={28} className="text-[#2F8A57]" />
-                        </div>
-                        <h3 className="text-base md:text-lg font-semibold text-[#3B3B3B]">
-                          Selamat, Program Magang Anda telah selesai!
-                        </h3>
-                        <p className="mt-1 text-[12px] text-[#6B6B6B]">
-                          Anda telah menyelesaikan program dan berhak
-                          mendapatkan sertifikat resmi dari Sekolah Kopi Raisa.
-                        </p>
-                        {sertifikatData.created_at && (
-                          <p className="mt-2 text-[11px] text-[#6B6B6B]">
-                            Tanggal Terbit:{" "}
-                            {formatDate(sertifikatData.created_at)}
+                        </>
+                      ) : (
+                        <div className="text-center">
+                          <Award
+                            size={48}
+                            className="mx-auto mb-2 text-gray-400"
+                          />
+                          <p className="text-[12px] text-gray-500">
+                            Preview tidak tersedia
                           </p>
-                        )}
-
-                        <div className="mt-4 justify-center flex flex-wrap items-center gap-2">
-                          {sertifikatData.file_sertifikat && (
-                            <>
-                              <button
-                                onClick={() =>
-                                  openFile(
-                                    resolveFileUrl(
-                                      sertifikatData.file_sertifikat
-                                    )
-                                  )
-                                }
-                                className="inline-flex items-center gap-1 rounded-lg border border-[#E8E2DB] px-3 py-2 text-[12px] text-[#3B3B3B] hover:bg-[#F5EFE8]"
-                              >
-                                <Eye size={16} /> Preview Sertifikat
-                              </button>
-                              <button
-                                onClick={() =>
-                                  downloadFile(
-                                    resolveFileUrl(
-                                      sertifikatData.file_sertifikat
-                                    ),
-                                    "Sertifikat_Magang.pdf"
-                                  )
-                                }
-                                className="inline-flex justify-center items-center gap-1 rounded-lg bg-[#5C3A1E] text-white px-3 py-2 text-[12px] hover:opacity-90"
-                              >
-                                <Download size={16} /> Download Sertifikat PDF
-                              </button>
-                            </>
-                          )}
                         </div>
-                      </div>
+                      )}
                     </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-[#F7F4F0] border border-[#E8E2DB] flex items-center justify-center">
-                        <Award size={32} className="text-[#A99F99]" />
+                    <div className="text-center">
+                      <div className="mx-auto mb-3 w-14 h-14 rounded-full border border-[#CBE6D7] bg-[#E9F7F0] flex items-center justify-center shadow-sm">
+                        <Award size={28} className="text-[#2F8A57]" />
                       </div>
-                      <h3 className="text-base font-semibold text-[#3B3B3B] mb-2">
-                        Sertifikat Belum Tersedia
+                      <h3 className="text-base md:text-lg font-semibold text-[#3B3B3B]">
+                        Selamat, Program Magang Anda telah selesai!
                       </h3>
-                      <p className="text-[12px] text-[#6B6B6B] max-w-md mx-auto">
-                        Sertifikat sedang dalam proses pembuatan. Harap tunggu
-                        beberapa saat.
+                      <p className="mt-1 text-[12px] text-[#6B6B6B]">
+                        Anda telah menyelesaikan program dan berhak mendapatkan
+                        sertifikat resmi dari Sekolah Kopi Raisa.
                       </p>
+                      {sertifikatData.created_at && (
+                        <p className="mt-2 text-[11px] text-[#6B6B6B]">
+                          Tanggal Terbit:{" "}
+                          {formatDate(sertifikatData.created_at)}
+                        </p>
+                      )}
+
+                      <div className="mt-4 justify-center flex flex-wrap items-center gap-2">
+                        {sertifikatData.file_sertifikat && (
+                          <>
+                            <button
+                              onClick={() =>
+                                openFile(
+                                  resolveFileUrl(sertifikatData.file_sertifikat)
+                                )
+                              }
+                              className="inline-flex items-center gap-1 rounded-lg border border-[#E8E2DB] px-3 py-2 text-[12px] text-[#3B3B3B] hover:bg-[#F5EFE8]"
+                            >
+                              <Eye size={16} /> Preview Sertifikat
+                            </button>
+                            <button
+                              onClick={() =>
+                                downloadFile(
+                                  resolveFileUrl(
+                                    sertifikatData.file_sertifikat
+                                  ),
+                                  "Sertifikat_Magang.pdf"
+                                )
+                              }
+                              className="inline-flex justify-center items-center gap-1 rounded-lg bg-[#5C3A1E] text-white px-3 py-2 text-[12px] hover:opacity-90"
+                            >
+                              <Download size={16} /> Download Sertifikat PDF
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
-                  )}
-                </div>
-              )}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-[#F7F4F0] border border-[#E8E2DB] flex items-center justify-center">
+                      <Award size={32} className="text-[#A99F99]" />
+                    </div>
+                    <h3 className="text-base font-semibold text-[#3B3B3B] mb-2">
+                      Sertifikat Belum Tersedia
+                    </h3>
+                    <p className="text-[12px] text-[#6B6B6B] max-w-md mx-auto">
+                      Sertifikat sedang dalam proses pembuatan. Harap tunggu
+                      beberapa saat.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}

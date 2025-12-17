@@ -12,13 +12,13 @@ export default function SubNavLayananAdmin() {
   }
 
   const tabs = [
-    { 
-      label: "Daftar Layanan", 
-      href: "/admin/layanan/daftar-layanan" 
+    {
+      label: "Daftar Layanan",
+      href: "/admin/layanan/daftar-layanan",
     },
-    { 
-      label: "Riwayat", 
-      href: "/admin/layanan/daftar-layanan/riwayat" 
+    {
+      label: "Kegiatan Selesai",
+      href: "/admin/layanan/daftar-layanan/riwayat",
     },
   ];
 

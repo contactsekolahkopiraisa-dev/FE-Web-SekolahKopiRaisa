@@ -94,7 +94,7 @@ export const updateMou = async (
 // APPROVE MOU (Admin approves MOU)
 export const approveMou = async (id: number): Promise<MouItem> => {
   try {
-    const response = await api.put(`/api/v1/mou/${id}/approve`);
+    const response = await api.put(`/api/v1/mou/${id}/accept`);
 
     if (response.data.success) {
       return response.data.data;

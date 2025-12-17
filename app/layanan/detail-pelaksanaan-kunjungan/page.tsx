@@ -8,6 +8,7 @@ import {
   FileText,
   FileCheck,
   XCircle,
+  CheckCircle2,
   ArrowLeft,
 } from "lucide-react";
 import Link from "next/link";
@@ -114,24 +115,25 @@ export default function DetailPelaksanaanKunjunganPage() {
           }
         }
 
-        // Check if laporan exists and set states (handle array or single object)
+        // Check if laporan exists and populate form (handle array or single object)
         const laporanList = Array.isArray(data.laporan)
           ? data.laporan
           : data.laporan
           ? [data.laporan]
           : [];
         if (laporanList.length > 0 && laporanList[0]) {
-          setLaporanSubmitted(true);
           const laporan: any = laporanList[0];
+          // Only populate form with existing data, don't set laporanSubmitted
           setLaporanForm({
             namaP4s: laporan.nama_p4s || "",
             kota: laporan.asal_kab_kota || "",
             jenisKegiatan: "Kunjungan",
-            asalPeserta: "",
-            jumlahPeserta: "",
-            tanggalPelaksanaan: "",
-            lamaPelaksanaan: "",
+            asalPeserta: data.instansi_asal || "",
+            jumlahPeserta: data.jumlah_peserta?.toString() || "",
+            tanggalPelaksanaan: data.tanggal_mulai?.split("T")[0] || "",
+            lamaPelaksanaan: "1 hari",
           });
+          // Note: File object cannot be restored from URL, just show that photo exists
         }
 
         setError(null);
@@ -234,6 +236,7 @@ export default function DetailPelaksanaanKunjunganPage() {
   >("menunggu");
 
   const [laporanSubmitted, setLaporanSubmitted] = useState<boolean>(false);
+  const [submitting, setSubmitting] = useState<boolean>(false);
 
   const [laporanForm, setLaporanForm] = useState({
     namaP4s: "",
@@ -332,6 +335,15 @@ export default function DetailPelaksanaanKunjunganPage() {
 
       setLaporanSubmitted(true);
 
+      // Refresh data to get updated laporan status
+      const updatedData = await fetchLayananById(Number(layananId), {
+        include_jenis: true,
+        include_peserta: true,
+        include_laporan: true,
+        include_rejection: true,
+      });
+      setLayananData(updatedData);
+
       await Swal.fire({
         title: "Laporan Berhasil Dikirim!",
         text: "Terima kasih telah menyelesaikan kegiatan Kunjungan.",
@@ -344,10 +356,6 @@ export default function DetailPelaksanaanKunjunganPage() {
         },
         buttonsStyling: false,
       });
-
-      setTimeout(() => {
-        router.push("/layanan");
-      }, 2000);
     } catch (error: any) {
       console.error("Error submitting laporan:", error);
       await Swal.fire({
@@ -373,18 +381,17 @@ export default function DetailPelaksanaanKunjunganPage() {
     ditolak: "Ditolak",
   };
 
-  // Status pelaksanaan dari API
-  const isPelaksanaanSelesai = layananData?.pelaksanaan?.nama_status_kode
-    ?.toLowerCase()
-    .includes("selesai");
-  const isPelaksanaanBerjalan = layananData?.pelaksanaan?.nama_status_kode
-    ?.toLowerCase()
-    .includes("berjalan");
+  // Check if laporan already submitted (handle array or single object)
+  const laporanData = Array.isArray(layananData?.laporan)
+    ? layananData.laporan[0]
+    : layananData?.laporan;
 
-  const pelaksanaanStatusText = isPelaksanaanSelesai
-    ? "Selesai"
-    : isPelaksanaanBerjalan
-    ? "Sedang Berlangsung"
+  // Check if laporan exists by checking backend data only
+  const isLaporanTerisi = !!(laporanData?.id_laporan || laporanData?.id);
+
+  // Status laporan untuk progress indicator
+  const laporanStatusText = isLaporanTerisi
+    ? "Telah Terisi"
     : "Belum Terlaksana";
 
   const decisionTextMap = {
@@ -396,11 +403,7 @@ export default function DetailPelaksanaanKunjunganPage() {
   // Step statuses untuk progress indicator
   const stepStatuses: Array<"pending" | "berjalan" | "selesai"> = [
     pengajuanDecision === "disetujui" ? "selesai" : "pending",
-    isPelaksanaanSelesai
-      ? "selesai"
-      : isPelaksanaanBerjalan
-      ? "berjalan"
-      : "pending",
+    isLaporanTerisi ? "selesai" : "pending",
   ];
 
   // Show loading state
@@ -501,6 +504,8 @@ export default function DetailPelaksanaanKunjunganPage() {
                       : "bg-[#EDE6DF] border-[#E0D8D1]"
                     : isCompleted
                     ? "bg-[#F3FBF7] border-[#CFEAD9]"
+                    : s.name === "Pengajuan" && pengajuanDecision === "ditolak"
+                    ? "bg-[#FEE2E2] border-[#F87171]"
                     : "bg-white border-[#EFEAE4]";
 
                   const iconWrapClass = isActive
@@ -511,6 +516,8 @@ export default function DetailPelaksanaanKunjunganPage() {
                       : "bg-[#DCD3CB] border-[#CFC6BE]"
                     : isCompleted
                     ? "bg-[#E9F7F0] border-[#CBE6D7]"
+                    : s.name === "Pengajuan" && pengajuanDecision === "ditolak"
+                    ? "bg-[#FCECEC] border-[#F0C3C3]"
                     : "bg-[#F4F0EC] border-[#E8E2DB]";
 
                   const iconColorClass = isActive
@@ -521,10 +528,18 @@ export default function DetailPelaksanaanKunjunganPage() {
                       : "text-[#3B3B3B]"
                     : isCompleted
                     ? "text-[#2F8A57]"
+                    : s.name === "Pengajuan" && pengajuanDecision === "ditolak"
+                    ? "text-[#CD0300]"
                     : "text-[#6B6B6B]";
 
                   const descColorClass =
-                    stepStatuses[idx] === "selesai"
+                    s.name === "Pengajuan"
+                      ? pengajuanDecision === "disetujui"
+                        ? "text-[#2F8A57]"
+                        : pengajuanDecision === "ditolak"
+                        ? "text-[#CD0300]"
+                        : "text-[#6B6B6B]"
+                      : stepStatuses[idx] === "selesai"
                       ? "text-[#2F8A57]"
                       : stepStatuses[idx] === "berjalan"
                       ? "text-[#1976D2]"
@@ -549,7 +564,7 @@ export default function DetailPelaksanaanKunjunganPage() {
                             {s.name === "Pengajuan"
                               ? pengajuanDecisionText[pengajuanDecision]
                               : s.name === "Laporan Akhir"
-                              ? pelaksanaanStatusText
+                              ? laporanStatusText
                               : decisionTextMap[stepStatuses[idx]]}
                           </p>
                         </div>
@@ -568,11 +583,93 @@ export default function DetailPelaksanaanKunjunganPage() {
                   Ringkasan Pengajuan & Dokumen
                 </p>
               </div>
-              <p className="text-[12px] text-[#6B6B6B] mb-4">
+              <p className="text-[12px] text-[#6B6B6B] mb-3">
                 Detail informasi dan Dokumen yang telah anda Submit
               </p>
 
-              <div className="rounded-lg bg-[#F7F4F0] border border-[#E8E2DB] p-4">
+              {/* Status Badge Pengajuan */}
+              {(() => {
+                const status =
+                  layananData?.pengajuan?.nama_status_kode?.toLowerCase() || "";
+                const isApproved = status.includes("disetujui");
+                const isRejected = status.includes("ditolak");
+                const isPending = status.includes("menunggu");
+
+                if (!isPending && (isApproved || isRejected)) {
+                  return (
+                    <div
+                      className={`mb-3 rounded-lg border-2 p-4 shadow-sm ${
+                        isApproved
+                          ? "bg-green-50 border-green-400"
+                          : "bg-red-100 border-red-500"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        {isApproved ? (
+                          <CheckCircle2 className="text-green-600" size={20} />
+                        ) : (
+                          <XCircle className="text-red-600" size={20} />
+                        )}
+                        <p
+                          className={`text-sm font-semibold ${
+                            isApproved ? "text-green-800" : "text-red-800"
+                          }`}
+                        >
+                          Pengajuan {isApproved ? "Disetujui" : "Ditolak"}
+                        </p>
+                      </div>
+                      <p
+                        className={`text-[12px] ${
+                          isApproved ? "text-green-700" : "text-red-700"
+                        }`}
+                      >
+                        {isApproved
+                          ? "Pengajuan Anda telah disetujui oleh admin. Silakan lanjutkan ke tahap berikutnya."
+                          : "Pengajuan Anda ditolak oleh admin. Silakan lihat alasan penolakan di bawah."}
+                      </p>
+
+                      {/* Alasan Penolakan */}
+                      {isRejected &&
+                        (() => {
+                          const rejection = layananData?.layananRejection;
+                          const alasan = Array.isArray(rejection)
+                            ? rejection[0]?.alasan
+                            : rejection?.alasan ||
+                              layananData?.pengajuanRejection?.alasan ||
+                              layananData?.rejection?.alasan ||
+                              layananData?.pengajuan?.alasan_penolakan ||
+                              layananData?.alasan_penolakan;
+
+                          return alasan ? (
+                            <div className="mt-3 rounded-lg bg-white border border-red-200 p-3">
+                              <p className="text-[12px] font-semibold text-red-800 mb-1">
+                                Alasan Penolakan:
+                              </p>
+                              <p className="text-[12px] text-red-700 whitespace-pre-wrap">
+                                {alasan}
+                              </p>
+                            </div>
+                          ) : null;
+                        })()}
+
+                      {/* Tombol Ajukan Ulang */}
+                      {isRejected && (
+                        <div className="mt-3">
+                          <Link
+                            href="/layanan"
+                            className="inline-flex items-center rounded-lg bg-[#CD0300] text-white px-4 py-2 text-[12px] hover:opacity-90 w-full justify-center"
+                          >
+                            Ajukan Ulang
+                          </Link>
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+
+              <div className="rounded-lg border border-[#E8E2DB] p-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-3">
                     {infoKiri.map((it) => (
@@ -651,69 +748,63 @@ export default function DetailPelaksanaanKunjunganPage() {
         </div>
       </div>
 
-      {/* Pengajuan Ditolak */}
-      {pengajuanDecision === "ditolak" && (
-        <div className="container mx-auto px-4 max-w-6xl mt-6 mb-8">
-          <div className="rounded-xl border border-[#F0CFCF] bg-[#FFF6F6] p-6 shadow-sm">
-            <div className="mx-auto mb-3 w-12 h-12 rounded-lg border border-[#F0C3C3] bg-[#FBECEC] flex items-center justify-center">
-              <XCircle className="text-[#CD0300]" />
-            </div>
-            <p className="text-[15px] md:text-base font-semibold text-[#CD0300] text-center">
-              Pengajuan Ditolak
-            </p>
-            <p className="mt-2 text-[12px] text-[#6B6B6B] text-center">
-              Pengajuan Anda ditolak oleh admin. Silakan perbaiki sesuai catatan
-              di bawah dan ajukan kembali.
-            </p>
+      {/* Laporan Akhir */}
+      {(() => {
+        // Check if this is admin view (URL contains /admin/)
+        const isAdminView =
+          typeof window !== "undefined" &&
+          window.location.pathname.includes("/admin/");
 
-            {/* Alasan Penolakan dari API */}
-            {(() => {
-              const rejection = layananData?.layananRejection;
-              const alasan =
-                (Array.isArray(rejection)
-                  ? rejection[0]?.alasan
-                  : rejection?.alasan) ||
-                layananData?.pengajuanRejection?.alasan ||
-                layananData?.rejection?.alasan ||
-                layananData?.pengajuan?.alasan_penolakan ||
-                layananData?.alasan_penolakan;
+        // Show for admin always, or for user only when approved
+        const shouldShowLaporan =
+          isAdminView || pengajuanDecision === "disetujui";
 
-              return alasan ? (
-                <div className="mt-4 rounded-lg border border-[#F0C3C3] bg-white p-4 text-left">
-                  <p className="text-sm font-semibold text-[#CD0300] mb-2">
-                    Alasan Penolakan:
+        if (!shouldShowLaporan) return null;
+
+        // For admin, if laporan not filled yet, show message
+        if (isAdminView && !isLaporanTerisi) {
+          return (
+            <div className="container mx-auto px-4 max-w-6xl mb-8">
+              <div className="rounded-xl border border-[#E8E2DB] bg-white p-5 md:p-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="w-5 h-5 rounded-full border border-[#E8E2DB] flex items-center justify-center">
+                    <FileCheck size={14} className="text-[#3B3B3B]" />
+                  </span>
+                  <p className="text-sm font-semibold text-[#3B3B3B]">
+                    Laporan Akhir Kegiatan
                   </p>
-                  <p className="text-[12px] text-[#3B3B3B] whitespace-pre-wrap">
-                    {alasan}
+                  <span className="ml-auto px-3 py-1 rounded-full bg-gray-100 border border-gray-300 text-gray-600 text-[11px] font-medium">
+                    Belum Terisi
+                  </span>
+                </div>
+                <div className="rounded-lg border border-[#F0EAE3] bg-[#FBF9F7] p-6 text-center">
+                  <p className="text-[14px] text-[#6B6B6B]">
+                    User belum mengisi laporan akhir kegiatan.
                   </p>
                 </div>
-              ) : null;
-            })()}
-
-            <div className="mt-4 text-center">
-              <Link
-                href="/layanan"
-                className="inline-flex items-center rounded-lg bg-[#CD0300] text-white px-4 py-2 text-[12px] hover:opacity-90"
-              >
-                Ajukan Ulang
-              </Link>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          );
+        }
 
-      {/* Laporan Akhir */}
-      {pengajuanDecision === "disetujui" && (
-        <LaporanAkhirForm
-          laporanForm={laporanForm}
-          handleLaporanChange={handleLaporanChange}
-          fotoKegiatan={fotoKegiatan}
-          handlePickFoto={handlePickFoto}
-          handleFotoChange={handleFotoChange}
-          fotoInputRef={fotoInputRef}
-          handleSubmitLaporan={handleSubmitLaporan}
-        />
-      )}
+        return (
+          <LaporanAkhirForm
+            laporanForm={laporanForm}
+            handleLaporanChange={handleLaporanChange}
+            fotoKegiatan={fotoKegiatan}
+            handlePickFoto={handlePickFoto}
+            handleFotoChange={handleFotoChange}
+            fotoInputRef={fotoInputRef}
+            handleSubmitLaporan={handleSubmitLaporan}
+            submitting={submitting}
+            isReadOnly={isAdminView ? true : isLaporanTerisi}
+            laporanData={laporanData}
+            openFile={openFile}
+            downloadFile={downloadFile}
+            isAdminView={isAdminView}
+          />
+        );
+      })()}
 
       <Footer />
     </>
@@ -754,6 +845,11 @@ function LaporanAkhirForm({
   handleFotoChange,
   fotoInputRef,
   handleSubmitLaporan,
+  submitting,
+  isReadOnly = false,
+  laporanData,
+  openFile,
+  downloadFile,
 }: any) {
   return (
     <div className="container mx-auto px-4 max-w-6xl mb-8" id="laporan-section">
@@ -765,9 +861,16 @@ function LaporanAkhirForm({
           <p className="text-sm font-semibold text-[#3B3B3B]">
             Laporan Akhir Kegiatan
           </p>
+          {isReadOnly && (
+            <span className="ml-auto px-3 py-1 rounded-full bg-green-100 border border-green-300 text-green-700 text-[11px] font-medium">
+              ✓ Telah Terisi
+            </span>
+          )}
         </div>
         <p className="text-[12px] text-[#6B6B6B] mb-4">
-          Lengkapi Formulir Laporan Akhir untuk Menyelesaikan Program
+          {isReadOnly
+            ? "Laporan akhir telah berhasil dikirim"
+            : "Lengkapi Formulir Laporan Akhir untuk Menyelesaikan Program"}
         </p>
 
         <div className="rounded-lg border border-[#F0EAE3] bg-[#FBF9F7] p-4">
@@ -809,7 +912,8 @@ function LaporanAkhirForm({
                   value={laporanForm[f.name]}
                   onChange={handleLaporanChange}
                   placeholder={f.placeholder}
-                  className="w-full rounded-lg border border-[#E8E2DB] bg-white px-3 py-2 text-[12px] text-[#3B3B3B]"
+                  disabled={isReadOnly}
+                  className="w-full rounded-lg border border-[#E8E2DB] bg-white px-3 py-2 text-[12px] text-[#3B3B3B] disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
                 />
               </div>
             ))}
@@ -824,7 +928,8 @@ function LaporanAkhirForm({
                 name="tanggalPelaksanaan"
                 value={laporanForm.tanggalPelaksanaan}
                 onChange={handleLaporanChange}
-                className="w-full rounded-lg border border-[#E8E2DB] bg-white px-3 py-2 text-[12px] text-[#3B3B3B]"
+                disabled={isReadOnly}
+                className="w-full rounded-lg border border-[#E8E2DB] bg-white px-3 py-2 text-[12px] text-[#3B3B3B] disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
               />
             </div>
 
@@ -833,57 +938,97 @@ function LaporanAkhirForm({
               <label className="block text-[12px] text-[#3B3B3B] mb-1">
                 Foto Kegiatan *
               </label>
-              <div
-                className="border border-dashed border-[#E8E2DB] rounded-lg bg-white p-4 flex flex-col items-center justify-center cursor-pointer hover:bg-[#F9F7F5]"
-                onClick={handlePickFoto}
-              >
-                {fotoKegiatan ? (
-                  <div className="text-center">
-                    <p className="text-[12px] text-[#3B3B3B]">
-                      {fotoKegiatan.name}
-                    </p>
-                    <p className="text-[11px] text-[#6B6B6B] mt-1">
-                      Klik untuk ganti
-                    </p>
+              {isReadOnly && laporanData?.foto_kegiatan ? (
+                <div className="rounded-lg border border-[#E8E2DB] bg-white p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="text-green-600" size={18} />
+                      <div>
+                        <p className="text-[12px] font-semibold text-[#3B3B3B]">
+                          Foto Kegiatan
+                        </p>
+                        <p className="text-[11px] text-[#6B6B6B]">
+                          Foto telah diupload
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => openFile(laporanData.foto_kegiatan)}
+                        className="inline-flex items-center gap-1 rounded-lg border border-[#E8E2DB] px-3 py-1.5 text-[11px] text-[#3B3B3B] hover:bg-[#F5EFE8] transition-colors"
+                      >
+                        <Eye size={14} /> Lihat
+                      </button>
+                      <button
+                        onClick={() =>
+                          downloadFile(
+                            laporanData.foto_kegiatan,
+                            "foto-kegiatan.jpg"
+                          )
+                        }
+                        className="inline-flex items-center gap-1 rounded-lg bg-primary text-white px-3 py-1.5 text-[11px] hover:opacity-90 transition-opacity"
+                      >
+                        <Download size={14} /> Download
+                      </button>
+                    </div>
                   </div>
-                ) : (
-                  <div className="flex flex-col items-center text-center text-[#6B6B6B]">
-                    <Download size={20} />
-                    <p className="text-[12px] mt-2">Upload Foto Kegiatan</p>
-                    <p className="text-[11px] text-[#A0A0A0]">
-                      Format: JPG, PNG (maks. 2MB)
-                    </p>
-                  </div>
-                )}
-                <input
-                  type="file"
-                  accept="image/*"
-                  ref={fotoInputRef}
-                  className="hidden"
-                  onChange={handleFotoChange}
-                />
-              </div>
+                </div>
+              ) : (
+                <div
+                  className={`border border-dashed border-[#E8E2DB] rounded-lg bg-white p-4 flex flex-col items-center justify-center ${
+                    isReadOnly
+                      ? "cursor-not-allowed opacity-60"
+                      : "cursor-pointer hover:bg-[#F9F7F5]"
+                  }`}
+                  onClick={isReadOnly ? undefined : handlePickFoto}
+                >
+                  {fotoKegiatan ? (
+                    <div className="text-center">
+                      <p className="text-[12px] text-[#3B3B3B]">
+                        {fotoKegiatan.name}
+                      </p>
+                      {!isReadOnly && (
+                        <p className="text-[11px] text-[#6B6B6B] mt-1">
+                          Klik untuk ganti
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center text-center text-[#6B6B6B]">
+                      <Download size={20} />
+                      <p className="text-[12px] mt-2">Upload Foto Kegiatan</p>
+                      <p className="text-[11px] text-[#A0A0A0]">
+                        Format: JPG, PNG (maks. 2MB)
+                      </p>
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    ref={fotoInputRef}
+                    className="hidden"
+                    onChange={handleFotoChange}
+                    disabled={isReadOnly}
+                  />
+                </div>
+              )}
             </div>
 
-            {/* Tombol Submit */}
-            <div className="pt-2 text-right">
-              <button
-                onClick={handleSubmitLaporan}
-                className="w-full md:w-auto bg-[#5C3A1E] text-white text-[13px] px-6 py-2 rounded-lg hover:bg-[#4C2E15] transition-colors"
-              >
-                Submit
-              </button>
-            </div>
+            {/* Tombol Submit - Hidden when read-only */}
+            {!isReadOnly && (
+              <div className="pt-2 text-right">
+                <button
+                  onClick={handleSubmitLaporan}
+                  disabled={submitting}
+                  className="w-full md:w-auto bg-[#5C3A1E] text-white text-[13px] px-6 py-2 rounded-lg hover:bg-[#4C2E15] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {submitting ? "Mengirim..." : "Submit"}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
     </div>
   );
-}
-function setLaporanSubmitted(arg0: boolean) {
-  throw new Error("Function not implemented.");
-}
-
-function setSubmitting(arg0: boolean) {
-  throw new Error("Function not implemented.");
 }

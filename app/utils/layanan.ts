@@ -88,14 +88,27 @@ export interface LayananItem {
       alasan: string;
     };
   };
-  sertifikat?: {
-    id?: number;
-    nama_status_kode?: string;
-    status?: {
-      id: number;
-      nama_status_kode: string;
-    };
-  };
+  sertifikat?:
+    | {
+        id?: number;
+        nama_status_kode?: string;
+        file_sertifikat?: string;
+        link_sertifikat?: string;
+        status?: {
+          id: number;
+          nama_status_kode: string;
+        };
+      }
+    | Array<{
+        id?: number;
+        nama_status_kode?: string;
+        file_sertifikat?: string;
+        link_sertifikat?: string;
+        status?: {
+          id: number;
+          nama_status_kode: string;
+        };
+      }>;
   laporan?: {
     length: number;
     id?: number;

@@ -345,6 +345,11 @@ export default function RiwayatKegiatanPage() {
                 jenisLayanan !== "Undangan Narasumber" &&
                 jenisLayanan !== "Kunjungan";
 
+              // Check if this layanan type has Pelaksanaan workflow
+              const hasPelaksanaanWorkflow =
+                jenisLayanan !== "Undangan Narasumber" &&
+                jenisLayanan !== "Kunjungan";
+
               return (
                 <div
                   key={item.id}
@@ -370,7 +375,7 @@ export default function RiwayatKegiatanPage() {
                     </div>
                   </div>
 
-                  {/* 3 Status Badges */}
+                  {/* Status Badges */}
                   <div className="space-y-2 mb-4 pb-4 border-b border-gray-100">
                     {/* Status Pengajuan */}
                     <div className="flex items-center gap-2">
@@ -404,19 +409,21 @@ export default function RiwayatKegiatanPage() {
                       </div>
                     )}
 
-                    {/* Status Pelaksanaan */}
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-600 w-24 flex-shrink-0">
-                        Pelaksanaan:
-                      </span>
-                      <span
-                        className={`px-2 py-0.5 rounded text-xs font-medium border ${getStatusColor(
-                          item.pelaksanaan?.nama_status_kode || "Menunggu"
-                        )}`}
-                      >
-                        {item.pelaksanaan?.nama_status_kode || "Menunggu"}
-                      </span>
-                    </div>
+                    {/* Status Pelaksanaan - Hide for Kunjungan & Undangan Narasumber */}
+                    {hasPelaksanaanWorkflow && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-600 w-24 flex-shrink-0">
+                          Pelaksanaan:
+                        </span>
+                        <span
+                          className={`px-2 py-0.5 rounded text-xs font-medium border ${getStatusColor(
+                            item.pelaksanaan?.nama_status_kode || "Menunggu"
+                          )}`}
+                        >
+                          {item.pelaksanaan?.nama_status_kode || "Menunggu"}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Tanggal Pengajuan */}

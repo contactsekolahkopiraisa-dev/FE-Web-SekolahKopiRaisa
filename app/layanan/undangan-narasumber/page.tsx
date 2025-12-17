@@ -37,6 +37,46 @@ export default function UndanganNarasumberFormPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Validasi field wajib diisi
+    if (
+      !formData.namaKegiatan ||
+      !formData.instansi ||
+      !formData.tanggalKegiatan ||
+      !formData.tempatKegiatan
+    ) {
+      await Swal.fire({
+        title: "Data Tidak Lengkap",
+        text: "Mohon lengkapi semua field yang wajib diisi",
+        icon: "warning",
+        confirmButtonText: "Tutup",
+        confirmButtonColor: "#401E12",
+      });
+      return;
+    }
+
+    // Validasi file wajib diupload
+    if (!formData.proposalFile) {
+      await Swal.fire({
+        title: "File Proposal Belum Diupload",
+        text: "Mohon upload file Proposal / Surat Permohonan",
+        icon: "warning",
+        confirmButtonText: "Tutup",
+        confirmButtonColor: "#401E12",
+      });
+      return;
+    }
+
+    if (!formData.suratUndaganNarasumberFile) {
+      await Swal.fire({
+        title: "File Surat Undangan Belum Diupload",
+        text: "Mohon upload file Surat Undangan Narasumber",
+        icon: "warning",
+        confirmButtonText: "Tutup",
+        confirmButtonColor: "#401E12",
+      });
+      return;
+    }
+
     // Validasi ukuran file (max 5MB per file)
     const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
     if (formData.proposalFile && formData.proposalFile.size > MAX_FILE_SIZE) {

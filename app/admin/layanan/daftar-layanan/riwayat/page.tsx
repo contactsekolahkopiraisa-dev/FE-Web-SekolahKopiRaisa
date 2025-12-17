@@ -7,18 +7,18 @@ import LayananHeader from "@/components/layanan/LayananHeader";
 import { fetchAllLayanan, LayananItem, formatDate } from "@/app/utils/layanan";
 import Swal from "sweetalert2";
 
-export default function RiwayatPage() {
+export default function KegiatanSelesaiPage() {
   const [layananList, setLayananList] = useState<LayananItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    loadRiwayatData();
+    loadKegiatanSelesaiData();
   }, []);
 
-  const loadRiwayatData = async () => {
+  const loadKegiatanSelesaiData = async () => {
     try {
       setIsLoading(true);
-      console.log("Loading riwayat layanan...");
+      console.log("Loading kegiatan selesai...");
       const data = await fetchAllLayanan({
         include_jenis: true,
         include_peserta: true,
@@ -26,21 +26,60 @@ export default function RiwayatPage() {
         include_sertifikat: true,
         include_laporan: true,
       });
-      console.log("Riwayat layanan loaded:", data);
+      console.log("All layanan loaded:", data);
 
-      // Debug: log full item structure
-      data.forEach((item, idx) => {
-        console.log(`Item ${idx + 1}:`, item);
+      // Filter kegiatan yang selesai berdasarkan kriteria:
+      // - Kunjungan & Undangan Narasumber: user sudah submit laporan (laporan.length > 0)
+      // - PKL, Magang, Pelatihan: admin sudah upload sertifikat (sertifikat exists)
+      const kegiatanSelesai = data.filter((item) => {
+        const jenisNama =
+          item.jenis_layanan?.nama_jenis_layanan?.toLowerCase() || "";
+
+        // Untuk Kunjungan dan Undangan Narasumber: cek apakah ada laporan
+        if (
+          jenisNama.includes("kunjungan") ||
+          jenisNama.includes("narasumber")
+        ) {
+          const hasLaporan =
+            item.laporan &&
+            (Array.isArray(item.laporan)
+              ? item.laporan.length > 0
+              : item.laporan.id);
+          console.log(
+            `${item.nama_kegiatan} (${jenisNama}): hasLaporan=${hasLaporan}`
+          );
+          return hasLaporan;
+        }
+
+        // Untuk PKL, Magang, dan Pelatihan: cek apakah admin sudah upload sertifikat
+        if (
+          jenisNama.includes("pkl") ||
+          jenisNama.includes("magang") ||
+          jenisNama.includes("pelatihan")
+        ) {
+          const sertifikat = Array.isArray(item.sertifikat)
+            ? item.sertifikat[0]
+            : item.sertifikat;
+          const hasSertifikat = sertifikat && sertifikat.id;
+          console.log(
+            `${item.nama_kegiatan} (${jenisNama}): hasSertifikat=${hasSertifikat}`
+          );
+          return hasSertifikat;
+        }
+
+        return false;
       });
 
-      // Show all data (backend belum return pelaksanaan & pengajuan status)
-      setLayananList(data);
+      console.log("Kegiatan selesai filtered:", kegiatanSelesai);
+      setLayananList(kegiatanSelesai);
     } catch (error: any) {
-      console.error("Error loading riwayat data:", error);
+      console.error("Error loading kegiatan selesai:", error);
       await Swal.fire({
         icon: "error",
         title: "Gagal Memuat Data",
-        text: error.message || "Terjadi kesalahan saat memuat data riwayat",
+        text:
+          error.message ||
+          "Terjadi kesalahan saat memuat data kegiatan selesai",
         confirmButtonColor: "#4E342E",
         customClass: { popup: "rounded-xl" },
       });
@@ -57,19 +96,19 @@ export default function RiwayatPage() {
       />
       <SubNavLayananAdmin />
       <div className="container mx-auto px-4 max-w-6xl py-6">
-        <h1 className="text-2xl font-bold mb-6">Riwayat Aktivitas</h1>
+        <h1 className="text-2xl font-bold mb-6">Kegiatan Selesai</h1>
 
         {/* Loading State */}
         {isLoading && (
           <div className="flex justify-center items-center py-20">
-            <div className="text-gray-600">Memuat data riwayat...</div>
+            <div className="text-gray-600">Memuat data kegiatan selesai...</div>
           </div>
         )}
 
         {/* Empty State */}
         {!isLoading && layananList.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20">
-            <p className="text-gray-500 text-lg">Belum ada riwayat aktivitas</p>
+            <p className="text-gray-500 text-lg">Belum ada kegiatan selesai</p>
           </div>
         )}
 
@@ -84,9 +123,8 @@ export default function RiwayatPage() {
               const title = `${namaKegiatan} - ${instansi}`;
               const submittedDate = formatDate(item.created_at);
 
-              // Use pelaksanaan status
-              const status =
-                item.pelaksanaan?.nama_status_kode || "Belum Terlaksana";
+              // Semua item di tab ini sudah selesai
+              const status = "Selesai";
 
               return (
                 <ActivityHistoryCard

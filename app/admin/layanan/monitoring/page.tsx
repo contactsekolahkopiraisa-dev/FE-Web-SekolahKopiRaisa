@@ -11,6 +11,7 @@ import {
   getStatusColor,
   formatDate,
 } from "@/app/utils/layanan";
+import { createSertifikat } from "@/app/utils/sertifikat";
 import Swal from "sweetalert2";
 
 type FilterStatus = "semua" | "disetujui" | "menunggu" | "ditolak";
@@ -68,13 +69,23 @@ export default function AdminLayananMonitoringPage() {
   const handleUploadSertifikat = async (row: LayananItem) => {
     const Swal = (await import("sweetalert2")).default;
 
-    const { value: file, isConfirmed } = await Swal.fire({
+    const { value: formData, isConfirmed } = await Swal.fire({
       title: "Upload Sertifikat",
       html: `
-        <input type="file" id="swal-cert-input" accept="application/pdf" class="hidden" />
-        <div class="flex items-center gap-3">
-          <button id="swal-cert-btn" class="px-3 py-2 text-sm rounded-md bg-amber-900 text-white hover:bg-amber-950">Pilih File</button>
-          <span id="swal-cert-name" class="text-sm text-gray-700">Belum ada file dipilih</span>
+        <div class="text-left space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Link Sertifikat (Opsional)</label>
+            <input type="url" id="swal-cert-link" placeholder="https://..." class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">File Sertifikat (PDF) <span class="text-red-500">*</span></label>
+            <input type="file" id="swal-cert-input" accept="application/pdf" class="hidden" />
+            <div class="flex items-center gap-3">
+              <button id="swal-cert-btn" class="px-3 py-2 text-sm rounded-md bg-amber-900 text-white hover:bg-amber-950">Pilih File</button>
+              <span id="swal-cert-name" class="text-sm text-gray-700">Belum ada file dipilih</span>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">Format: PDF, Maksimal 10MB</p>
+          </div>
         </div>
       `,
       focusConfirm: false,
@@ -104,27 +115,37 @@ export default function AdminLayananMonitoringPage() {
         });
       },
       preConfirm: () => {
-        const input = document.getElementById(
+        const linkInput = document.getElementById(
+          "swal-cert-link"
+        ) as HTMLInputElement | null;
+        const fileInput = document.getElementById(
           "swal-cert-input"
         ) as HTMLInputElement | null;
-        const selected = input?.files && input.files[0];
-        if (!selected) {
+        const selectedFile = fileInput?.files && fileInput.files[0];
+        const link = linkInput?.value || "";
+
+        if (!selectedFile) {
           Swal.showValidationMessage("Silakan pilih file PDF sertifikat");
           return;
         }
-        if (selected.type !== "application/pdf") {
+        if (selectedFile.type !== "application/pdf") {
           Swal.showValidationMessage("Hanya file PDF yang diperbolehkan");
           return;
         }
-        return selected;
+        if (selectedFile.size > 10 * 1024 * 1024) {
+          Swal.showValidationMessage("Ukuran file maksimal 10MB");
+          return;
+        }
+        return { file: selectedFile, link };
       },
     });
 
-    if (!isConfirmed || !file) return;
+    if (!isConfirmed || !formData) return;
 
-    // TODO: Replace with actual API upload
+    // Upload sertifikat via API
     const uploading = Swal.fire({
       title: "Mengunggah...",
+      text: "Mohon tunggu sebentar",
       allowOutsideClick: false,
       didOpen: () => {
         Swal.showLoading();
@@ -133,25 +154,35 @@ export default function AdminLayananMonitoringPage() {
     });
 
     try {
-      await new Promise((r) => setTimeout(r, 1200));
+      await createSertifikat({
+        id_layanan: row.id,
+        link_sertifikat: formData.link || undefined,
+        file_sertifikat: formData.file,
+      });
+
+      // Reload data setelah upload
+      await loadLayananData();
+
+      const jenisNama =
+        row.jenis_layanan?.nama_jenis_layanan ||
+        row.jenisLayanan?.nama_jenis_layanan ||
+        "kegiatan ini";
 
       await Swal.fire({
         icon: "success",
-        title: "Sertifikat berhasil diunggah",
-        text: `Sertifikat untuk ${row.nama_kegiatan} berhasil diunggah.`,
+        title: "Sertifikat Berhasil Diupload",
+        text: `Sertifikat untuk ${jenisNama} telah tersedia dan dapat diunduh oleh peserta.`,
         confirmButtonColor: "#4E342E",
         customClass: { popup: "rounded-xl" },
       });
-    } catch (e) {
+    } catch (error: any) {
       await Swal.fire({
         icon: "error",
-        title: "Gagal mengunggah",
-        text: "Terjadi kesalahan saat mengunggah sertifikat. Coba lagi.",
+        title: "Gagal Upload Sertifikat",
+        text: error.message || "Terjadi kesalahan saat mengunggah sertifikat",
         confirmButtonColor: "#4E342E",
         customClass: { popup: "rounded-xl" },
       });
-    } finally {
-      Swal.close();
     }
   };
 
@@ -311,7 +342,8 @@ export default function AdminLayananMonitoringPage() {
                 )}
               </div>
 
-              <div className="relative">
+              {/* Status Pelaksanaan filter - Hidden */}
+              {/* <div className="relative">
                 <button
                   onClick={() => setOpenP4s((s) => !s)}
                   className="inline-flex w-full sm:w-auto items-center gap-2 px-3 py-2 text-sm rounded-md border"
@@ -340,7 +372,7 @@ export default function AdminLayananMonitoringPage() {
                     ))}
                   </div>
                 )}
-              </div>
+              </div> */}
 
               <div className="relative">
                 <button
@@ -383,25 +415,25 @@ export default function AdminLayananMonitoringPage() {
               <table className="min-w-full text-sm">
                 <thead className="bg-primary text-white">
                   <tr>
-                    <th className="px-4 py-3 text-left font-medium whitespace-nowrap">
+                    <th className="px-4 py-3 text-center font-medium whitespace-nowrap">
                       Nama
                     </th>
-                    <th className="px-4 py-3 text-left font-medium whitespace-nowrap">
+                    <th className="px-4 py-3 text-center font-medium whitespace-nowrap">
                       Jenis Kegiatan
                     </th>
-                    <th className="px-4 py-3 text-left font-medium whitespace-nowrap">
+                    <th className="px-4 py-3 text-center font-medium whitespace-nowrap">
                       Instansi
                     </th>
-                    <th className="px-4 py-3 text-left font-medium whitespace-nowrap">
+                    <th className="px-4 py-3 text-center font-medium whitespace-nowrap">
                       Diajukan
                     </th>
-                    <th className="px-4 py-3 text-left font-medium whitespace-nowrap">
+                    <th className="px-4 py-3 text-center font-medium whitespace-nowrap">
                       Status MOU
                     </th>
-                    <th className="px-4 py-3 text-left font-medium whitespace-nowrap">
+                    <th className="px-4 py-3 text-center font-medium whitespace-nowrap">
                       Status Pengajuan
                     </th>
-                    <th className="px-4 py-3 text-left font-medium whitespace-nowrap">
+                    <th className="px-4 py-3 text-center font-medium whitespace-nowrap">
                       Aksi
                     </th>
                   </tr>
@@ -410,58 +442,103 @@ export default function AdminLayananMonitoringPage() {
                   {(activeTab === "berlangsung"
                     ? filtered
                     : filtered.filter((r) => {
-                        const pelaksanaanStatus =
-                          r.pelaksanaan?.nama_status_kode?.toLowerCase() || "";
-                        return pelaksanaanStatus.includes("selesai");
+                        const jenisNama =
+                          r.jenis_layanan?.nama_jenis_layanan || "";
+                        const isSimpleWorkflow = [
+                          "Kunjungan",
+                          "Undangan Narasumber",
+                        ].some((j) => jenisNama.includes(j));
+
+                        if (isSimpleWorkflow) {
+                          // Kunjungan & Undangan Narasumber tidak ada di tab selesai (tidak ada sertifikat)
+                          return false;
+                        } else {
+                          // For MOU workflows (PKL, Magang, Pelatihan): selesai if laporan submitted
+                          // Check if laporan exists and has valid data (not just empty object)
+                          const hasLaporan =
+                            r.laporan && (r.laporan.id || r.laporan.length > 0);
+                          return !!hasLaporan;
+                        }
                       })
                   ).map((row) => {
                     const pemohonNama = row.pemohon?.name || "N/A";
                     const jenisNama =
                       row.jenis_layanan?.nama_jenis_layanan || "N/A";
-                    const mouStatusText =
-                      row.mou?.statusKode?.nama_status_kode || "Menunggu";
+
+                    // Check if it's simple workflow (Kunjungan, Undangan Narasumber - no MOU)
+                    const isSimpleWorkflow = [
+                      "Kunjungan",
+                      "Undangan Narasumber",
+                    ].some((j) => jenisNama.includes(j));
+
+                    const mouStatusText = isSimpleWorkflow
+                      ? "-"
+                      : row.mou?.statusKode?.nama_status_kode || "Menunggu";
                     const pengajuanStatusText =
                       row.pengajuan?.nama_status_kode || "Menunggu";
-                    const pelaksanaanStatusText =
-                      row.pelaksanaan?.nama_status_kode || "Menunggu";
-                    const isPelaksanaanSelesai = pelaksanaanStatusText
-                      .toLowerCase()
-                      .includes("selesai");
+
+                    // Check if laporan has been submitted (has valid id or length)
+                    const hasLaporan =
+                      row.laporan &&
+                      (row.laporan.id ||
+                        (row.laporan.length && row.laporan.length > 0));
+
+                    // Handle sertifikat union type
+                    const sertifikat = Array.isArray(row.sertifikat)
+                      ? row.sertifikat[0]
+                      : row.sertifikat;
+
+                    // Check if sertifikat already uploaded
+                    const hasSertifikat = !!sertifikat?.file_sertifikat;
 
                     return (
                       <tr key={row.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3 text-center">
                           <div className="font-medium text-gray-900">
                             {pemohonNama}
                           </div>
                           <div className="text-xs text-gray-500">
-                            {row.jumlah_peserta} Peserta •{" "}
-                            {formatDate(row.tanggal_mulai)}
+                            {jenisNama.includes("Undangan Narasumber")
+                              ? formatDate(row.tanggal_mulai)
+                              : `${row.jumlah_peserta} Peserta • ${formatDate(
+                                  row.tanggal_mulai
+                                )}`}
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-gray-700">{jenisNama}</td>
-                        <td className="px-4 py-3 text-gray-700 whitespace-nowrap">
+                        <td className="px-4 py-3 text-center text-gray-700">
+                          {jenisNama}
+                        </td>
+                        <td className="px-4 py-3 text-center text-gray-700 whitespace-nowrap">
                           {row.instansi_asal}
                         </td>
-                        <td className="px-4 py-3 text-gray-700 whitespace-nowrap">
+                        <td className="px-4 py-3 text-center text-gray-700 whitespace-nowrap">
                           Diajukan pada {formatDate(row.created_at)}
                         </td>
-                        <td className="px-4 py-3">
-                          <Badge status={mouStatusText} />
+                        <td className="px-4 py-3 text-center">
+                          {mouStatusText === "-" ? (
+                            <span className="text-gray-500">-</span>
+                          ) : (
+                            <Badge status={mouStatusText} />
+                          )}
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3 text-center">
                           <Badge status={pengajuanStatusText} />
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3 text-center">
                           {activeTab === "selesai" ? (
-                            isPelaksanaanSelesai && (
+                            hasLaporan &&
+                            (hasSertifikat ? (
+                              <span className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                Sertifikat telah di upload
+                              </span>
+                            ) : (
                               <button
                                 onClick={() => handleUploadSertifikat(row)}
                                 className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md bg-amber-900 text-white hover:bg-amber-950"
                               >
                                 Upload Sertifikat
                               </button>
-                            )
+                            ))
                           ) : (
                             <Link href={`/admin/layanan/monitoring/${row.id}`}>
                               <button className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md border hover:bg-gray-50">
