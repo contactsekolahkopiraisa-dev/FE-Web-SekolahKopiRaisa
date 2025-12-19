@@ -48,6 +48,14 @@ export default function AdminMonitoringDetailPage() {
     sertifikat: "inactive",
   });
 
+  // Stable state untuk display status (tidak akan berubah setelah disetujui/ditolak)
+  const [displayPengajuanStatus, setDisplayPengajuanStatus] =
+    useState<string>("");
+  const [displayPelaksanaanStatus, setDisplayPelaksanaanStatus] =
+    useState<string>("");
+  const [isStatusInitialized, setIsStatusInitialized] =
+    useState<boolean>(false);
+
   // Fetch layanan data
   useEffect(() => {
     const loadData = async () => {
@@ -63,6 +71,25 @@ export default function AdminMonitoringDetailPage() {
           include_rejection: true,
         });
         setLayananData(data);
+
+        // Set initial display status ONLY if not already set (first load)
+        if (!isStatusInitialized) {
+          let pengajuanStatus = data?.pengajuan?.nama_status_kode || "";
+          const pelaksanaanStatus = data?.pelaksanaan?.nama_status_kode || "";
+
+          // NORMALISASI STATUS PENGAJUAN: Jika "Berlangsung" tapi ada progress (MOU/Pelaksanaan),
+          // maka PASTI pengajuan sudah pernah disetujui - override jadi "Disetujui"
+          if (pengajuanStatus.toLowerCase().includes("berlangsung")) {
+            if (data?.mou?.id || data?.pelaksanaan?.id || pelaksanaanStatus) {
+              pengajuanStatus = "Disetujui";
+            }
+          }
+
+          setDisplayPengajuanStatus(pengajuanStatus);
+          setDisplayPelaksanaanStatus(pelaksanaanStatus);
+          setIsStatusInitialized(true);
+        }
+
         setError(null);
       } catch (err: any) {
         console.error("Error fetching layanan:", err);
@@ -78,10 +105,15 @@ export default function AdminMonitoringDetailPage() {
   useEffect(() => {
     if (!layananData) return;
 
+    // GUNAKAN STABLE STATUS dari state, bukan langsung dari backend
     const statusPengajuan =
-      layananData?.pengajuan?.nama_status_kode?.toLowerCase() || "";
+      displayPengajuanStatus.toLowerCase() ||
+      layananData?.pengajuan?.nama_status_kode?.toLowerCase() ||
+      "";
     const statusPelaksanaan =
-      layananData?.pelaksanaan?.nama_status_kode?.toLowerCase() || "";
+      displayPelaksanaanStatus.toLowerCase() ||
+      layananData?.pelaksanaan?.nama_status_kode?.toLowerCase() ||
+      "";
     const statusMou =
       layananData?.mou?.statusKode?.nama_status_kode?.toLowerCase() || "";
 
@@ -118,8 +150,9 @@ export default function AdminMonitoringDetailPage() {
       sertifikat: "inactive",
     };
 
-    // 1. PENGAJUAN - Selalu cek dulu
+    // 1. PENGAJUAN - Gunakan stable status
     if (
+      statusPengajuan.includes("selesai") || // PENTING: Cek "selesai" dulu!
       statusPengajuan.includes("disetujui") ||
       statusPengajuan.includes("ditolak")
     ) {
@@ -187,31 +220,107 @@ export default function AdminMonitoringDetailPage() {
     }
 
     setSteps(newSteps);
-  }, [layananData]);
+  }, [layananData, displayPengajuanStatus, displayPelaksanaanStatus]);
 
-  // DISABLED: Polling can interfere with immediate state updates
-  // Uncomment if real-time sync is needed after testing
-  // useEffect(() => {
-  //   if (!params?.id || loading) return;
-  //   const pollInterval = setInterval(async () => {
-  //     try {
-  //       const data = await fetchLayananById(Number(params.id), {
-  //         include_jenis: true,
-  //         include_peserta: true,
-  //         include_mou: true,
-  //         include_sertifikat: true,
-  //         include_laporan: true,
-  //         include_rejection: true,
-  //         include_pengajuan: true,
-  //         include_pelaksanaan: true,
-  //       });
-  //       setLayananData(data);
-  //     } catch (err) {
-  //       console.error("[Admin] Error polling:", err);
-  //     }
-  //   }, 30000); // 30 seconds
-  //   return () => clearInterval(pollInterval);
-  // }, [params?.id, loading]);
+  // Auto-update display status ketika ada perubahan data yang signifikan
+  useEffect(() => {
+    if (!layananData || !isStatusInitialized) return;
+
+    const laporanData = Array.isArray(layananData?.laporan)
+      ? layananData.laporan[0]
+      : layananData?.laporan;
+    const hasLaporan = !!(laporanData?.id_laporan || laporanData?.id);
+
+    // Jika laporan sudah ada, PAKSA status pelaksanaan jadi "Selesai"
+    if (hasLaporan && displayPelaksanaanStatus !== "Selesai") {
+      console.log(
+        "[ADMIN DEBUG] Forcing pelaksanaan to Selesai because laporan exists"
+      );
+      setDisplayPelaksanaanStatus("Selesai");
+    }
+
+    // PENTING: Jika status pengajuan tiba-tiba berubah dari backend jadi "Berlangsung"
+    // tapi sudah pernah "Disetujui", PAKSA kembali ke "Disetujui"
+    const currentPengajuanFromBackend =
+      layananData?.pengajuan?.nama_status_kode?.toLowerCase() || "";
+    const currentDisplayLower = displayPengajuanStatus.toLowerCase();
+
+    // UPGRADE: Jika backend return "Selesai", upgrade display status ke "Selesai" (status tertinggi)
+    if (
+      currentPengajuanFromBackend.includes("selesai") &&
+      !currentDisplayLower.includes("selesai")
+    ) {
+      console.log(
+        "[ADMIN DEBUG] Upgrading pengajuan status to Selesai from backend"
+      );
+      setDisplayPengajuanStatus("Selesai");
+      return; // Stop further processing
+    }
+
+    // Jika backend return "berlangsung" tapi ada indikasi sudah disetujui
+    if (currentPengajuanFromBackend.includes("berlangsung")) {
+      // Cek: apakah sudah ada progress (MOU, pelaksanaan, atau display status sebelumnya "disetujui")
+      const hasProgress =
+        layananData?.mou?.id ||
+        layananData?.pelaksanaan?.id ||
+        currentDisplayLower.includes("disetujui") ||
+        currentDisplayLower.includes("selesai");
+
+      if (
+        hasProgress &&
+        !currentDisplayLower.includes("disetujui") &&
+        !currentDisplayLower.includes("selesai")
+      ) {
+        console.log(
+          "[ADMIN DEBUG] Backend returned Berlangsung but has progress - forcing back to Disetujui"
+        );
+        setDisplayPengajuanStatus("Disetujui");
+      }
+    }
+
+    // Extra defense: Jika display status sudah "Disetujui" tapi backend coba override ke apapun
+    // KECUALI "Ditolak" atau "Selesai" (status yang lebih tinggi)
+    if (
+      currentDisplayLower.includes("disetujui") &&
+      !currentPengajuanFromBackend.includes("disetujui") &&
+      !currentPengajuanFromBackend.includes("ditolak") &&
+      !currentPengajuanFromBackend.includes("selesai") // EXCEPTION: "Selesai" boleh override "Disetujui"
+    ) {
+      console.log(
+        "[ADMIN DEBUG] Protecting Disetujui status from backend override:",
+        currentPengajuanFromBackend
+      );
+      setDisplayPengajuanStatus("Disetujui");
+    }
+  }, [
+    layananData,
+    isStatusInitialized,
+    displayPengajuanStatus,
+    displayPelaksanaanStatus,
+  ]);
+
+  // Auto-refresh polling untuk sync data real-time
+  useEffect(() => {
+    if (!params?.id || loading) return;
+    const pollInterval = setInterval(async () => {
+      try {
+        const data = await fetchLayananById(Number(params.id), {
+          include_jenis: true,
+          include_peserta: true,
+          include_mou: true,
+          include_sertifikat: true,
+          include_laporan: true,
+          include_rejection: true,
+          include_pengajuan: true,
+          include_pelaksanaan: true,
+        });
+        setLayananData(data);
+      } catch (err) {
+        console.error("[Admin] Error polling:", err);
+      }
+    }, 10000); // 10 seconds - auto refresh untuk melihat perubahan dari user
+    return () => clearInterval(pollInterval);
+  }, [params?.id, loading]);
 
   // Helper: build file URL
   const resolveFileUrl = (path?: string | null): string | null => {
@@ -305,6 +414,9 @@ export default function AdminMonitoringDetailPage() {
         await acceptPengajuan(layananData.id);
 
         // Optimistic update - immediately change status in local state
+        setDisplayPengajuanStatus("Disetujui");
+        setDisplayPelaksanaanStatus("Belum Terlaksana");
+
         setLayananData((prev) =>
           prev
             ? {
@@ -406,6 +518,9 @@ export default function AdminMonitoringDetailPage() {
         await rejectPengajuan(layananData.id, text);
 
         // Optimistic update - immediately change status in local state
+        setDisplayPengajuanStatus("Ditolak");
+        setDisplayPelaksanaanStatus("Ditolak");
+
         setLayananData((prev) =>
           prev
             ? {
@@ -897,6 +1012,76 @@ export default function AdminMonitoringDetailPage() {
   const isPengajuanApproved = statusPengajuan.includes("disetujui");
   const isPengajuanRejected = statusPengajuan.includes("ditolak");
 
+  // Compute display status untuk UI yang lebih akurat
+  // PENTING: Gunakan state yang stable, bukan langsung dari backend
+  const getDisplayPengajuanStatus = () => {
+    // Jika sudah ada display status yang di-set, gunakan itu (FINAL)
+    if (displayPengajuanStatus) {
+      const lower = displayPengajuanStatus.toLowerCase();
+      // Status final tidak boleh berubah
+      if (lower.includes("ditolak")) return "Ditolak";
+      if (lower.includes("disetujui")) return "Disetujui";
+
+      // Jika backend tiba-tiba return "berlangsung" tapi sudah ada progress, override ke "Disetujui"
+      if (
+        lower.includes("berlangsung") &&
+        (layananData?.mou?.id || layananData?.pelaksanaan)
+      ) {
+        return "Disetujui";
+      }
+
+      return displayPengajuanStatus;
+    }
+
+    // Fallback ke backend (hanya untuk initial render)
+    const rawStatus = layananData?.pengajuan?.nama_status_kode || "-";
+    return rawStatus;
+  };
+
+  const getDisplayPelaksanaanStatus = () => {
+    // Untuk workflow simple (Kunjungan, Undangan Narasumber), skip pelaksanaan
+    if (isSimpleWorkflow) return "-";
+
+    const laporanData = Array.isArray(layananData?.laporan)
+      ? layananData.laporan[0]
+      : layananData?.laporan;
+    const hasLaporan = !!(laporanData?.id_laporan || laporanData?.id);
+
+    // Jika laporan sudah ada, pelaksanaan PASTI selesai (FINAL)
+    if (hasLaporan) return "Selesai";
+
+    // Gunakan stable state jika ada
+    if (displayPelaksanaanStatus) {
+      const lower = displayPelaksanaanStatus.toLowerCase();
+
+      // Status final
+      if (lower.includes("selesai")) return "Selesai";
+      if (lower.includes("ditolak")) return "Ditolak";
+
+      // Status in-progress
+      if (lower.includes("berjalan") || lower.includes("berlangsung"))
+        return "Berlangsung";
+
+      return displayPelaksanaanStatus;
+    }
+
+    // Fallback ke backend status
+    if (statusPelaksanaan.includes("selesai")) return "Selesai";
+    if (statusPelaksanaan.includes("berjalan")) return "Berlangsung";
+    if (statusPelaksanaan.includes("ditolak")) return "Ditolak";
+
+    // Untuk MOU workflow, cek apakah MOU sudah disetujui
+    if (hasMouWorkflow) {
+      const statusMou =
+        layananData?.mou?.statusKode?.nama_status_kode?.toLowerCase() || "";
+      if (statusMou.includes("disetujui")) {
+        return "Belum Terlaksana";
+      }
+    }
+
+    return layananData?.pelaksanaan?.nama_status_kode || "-";
+  };
+
   // Determine if MOU is in pending state (can approve/reject)
   const isMouPending =
     layananData?.mou?.statusKode?.nama_status_kode
@@ -997,18 +1182,18 @@ export default function AdminMonitoringDetailPage() {
                   </span>
                   <span
                     className={`px-3 py-1 text-xs font-medium rounded-full ${
-                      layananData.pengajuan?.nama_status_kode
-                        ?.toLowerCase()
+                      (getDisplayPengajuanStatus() || "")
+                        .toLowerCase()
                         .includes("disetujui")
                         ? "bg-green-100 text-green-700"
-                        : layananData.pengajuan?.nama_status_kode
-                            ?.toLowerCase()
+                        : (getDisplayPengajuanStatus() || "")
+                            .toLowerCase()
                             .includes("ditolak")
                         ? "bg-red-100 text-red-700"
                         : "bg-yellow-100 text-yellow-700"
                     }`}
                   >
-                    {layananData.pengajuan?.nama_status_kode || "-"}
+                    {getDisplayPengajuanStatus()}
                   </span>
                 </div>
                 {/* Hide status pelaksanaan untuk Kunjungan & Undangan Narasumber */}
@@ -1019,22 +1204,22 @@ export default function AdminMonitoringDetailPage() {
                     </span>
                     <span
                       className={`px-3 py-1 text-xs font-medium rounded-full ${
-                        layananData.pelaksanaan?.nama_status_kode
-                          ?.toLowerCase()
+                        (getDisplayPelaksanaanStatus() || "")
+                          .toLowerCase()
                           .includes("selesai")
                           ? "bg-green-100 text-green-700"
-                          : layananData.pelaksanaan?.nama_status_kode
-                              ?.toLowerCase()
-                              .includes("berjalan")
+                          : (getDisplayPelaksanaanStatus() || "")
+                              .toLowerCase()
+                              .includes("berlangsung")
                           ? "bg-blue-100 text-blue-700"
-                          : layananData.pelaksanaan?.nama_status_kode
-                              ?.toLowerCase()
+                          : (getDisplayPelaksanaanStatus() || "")
+                              .toLowerCase()
                               .includes("ditolak")
                           ? "bg-red-100 text-red-700"
                           : "bg-gray-100 text-gray-700"
                       }`}
                     >
-                      {layananData.pelaksanaan?.nama_status_kode || "-"}
+                      {getDisplayPelaksanaanStatus()}
                     </span>
                   </div>
                 )}
@@ -1681,64 +1866,72 @@ export default function AdminMonitoringDetailPage() {
 
                   {hasSertifikat ? (
                     // Tampilkan sertifikat yang sudah diupload
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <div className="bg-white rounded-xl border border-gray-100 p-3 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 grid place-items-center rounded-md bg-amber-200 text-amber-700">
-                            <Award size={20} />
+                    <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                      {/* File Sertifikat */}
+                      {sertifikatData?.file_sertifikat && (
+                        <div className="bg-white rounded-xl border border-gray-100 p-3 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 grid place-items-center rounded-md bg-amber-200 text-amber-700">
+                              <Award size={20} />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium">
+                                Sertifikat Kegiatan (File)
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                Sertifikat.pdf
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-sm font-medium">
-                              Sertifikat Kegiatan
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              Sertifikat.pdf
-                            </p>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => {
+                                const url = sertifikatData?.file_sertifikat;
+                                if (url) {
+                                  const fullUrl = url.startsWith("http")
+                                    ? url
+                                    : `${
+                                        process.env.NEXT_PUBLIC_API_URL || ""
+                                      }${url}`;
+                                  window.open(fullUrl, "_blank");
+                                }
+                              }}
+                              className="px-3 py-1.5 text-xs rounded-md border border-gray-200 hover:bg-gray-50 flex items-center gap-1"
+                            >
+                              <Eye size={14} /> Lihat
+                            </button>
+                            <button
+                              onClick={() => {
+                                const url = sertifikatData?.file_sertifikat;
+                                if (url) {
+                                  const fullUrl = url.startsWith("http")
+                                    ? url
+                                    : `${
+                                        process.env.NEXT_PUBLIC_API_URL || ""
+                                      }${url}`;
+                                  const link = document.createElement("a");
+                                  link.href = fullUrl;
+                                  link.download = "Sertifikat.pdf";
+                                  link.click();
+                                }
+                              }}
+                              className="px-3 py-1.5 text-xs rounded-md bg-gray-100 hover:bg-gray-200 flex items-center gap-1"
+                            >
+                              <Download size={14} /> Download
+                            </button>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => {
-                              const url = sertifikatData?.file_sertifikat;
-                              if (url) {
-                                const fullUrl = url.startsWith("http")
-                                  ? url
-                                  : `${
-                                      process.env.NEXT_PUBLIC_API_URL || ""
-                                    }${url}`;
-                                window.open(fullUrl, "_blank");
-                              }
-                            }}
-                            className="px-3 py-1.5 text-xs rounded-md border border-gray-200 hover:bg-gray-50 flex items-center gap-1"
-                          >
-                            <Eye size={14} /> Lihat
-                          </button>
-                          <button
-                            onClick={() => {
-                              const url = sertifikatData?.file_sertifikat;
-                              if (url) {
-                                const fullUrl = url.startsWith("http")
-                                  ? url
-                                  : `${
-                                      process.env.NEXT_PUBLIC_API_URL || ""
-                                    }${url}`;
-                                const link = document.createElement("a");
-                                link.href = fullUrl;
-                                link.download = "Sertifikat.pdf";
-                                link.click();
-                              }
-                            }}
-                            className="px-3 py-1.5 text-xs rounded-md bg-gray-100 hover:bg-gray-200 flex items-center gap-1"
-                          >
-                            <Download size={14} /> Download
-                          </button>
-                        </div>
-                      </div>
+                      )}
+
+                      {/* Link Sertifikat */}
                       {sertifikatData?.link_sertifikat && (
-                        <div className="mt-3 bg-white rounded-lg border border-gray-100 p-3">
-                          <p className="text-xs text-gray-500 mb-1">
-                            Link Sertifikat:
-                          </p>
+                        <div className="bg-white rounded-lg border border-gray-100 p-3">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Award size={16} className="text-amber-700" />
+                            <p className="text-xs font-medium text-gray-700">
+                              Link Sertifikat:
+                            </p>
+                          </div>
                           <a
                             href={sertifikatData.link_sertifikat}
                             target="_blank"
@@ -1747,6 +1940,16 @@ export default function AdminMonitoringDetailPage() {
                           >
                             {sertifikatData.link_sertifikat}
                           </a>
+                          <div className="mt-2">
+                            <a
+                              href={sertifikatData.link_sertifikat}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md bg-blue-600 text-white hover:bg-blue-700"
+                            >
+                              <Eye size={14} /> Buka Link
+                            </a>
+                          </div>
                         </div>
                       )}
                     </div>

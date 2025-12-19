@@ -211,6 +211,58 @@ export default function DetailPelaksanaanPKLPage() {
     fetchData();
   }, [layananId]);
 
+  // Auto-refresh polling untuk sync data real-time
+  useEffect(() => {
+    if (!layananId) return;
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const data = await fetchLayananById(Number(layananId), {
+          include_jenis: true,
+          include_peserta: true,
+          include_mou: true,
+          include_sertifikat: true,
+          include_laporan: true,
+          include_rejection: true,
+          include_pengajuan: true,
+          include_pelaksanaan: true,
+        });
+
+        // Update decision states from polling
+        if (data.pengajuan?.nama_status_kode) {
+          setPengajuanDecision(
+            mapStatusToDecision(
+              data.pengajuan.nama_status_kode,
+              "pengajuan"
+            ) as typeof pengajuanDecision
+          );
+        }
+        if (data.mou?.statusKode?.nama_status_kode) {
+          setMouDecision(
+            mapStatusToDecision(
+              data.mou.statusKode.nama_status_kode,
+              "mou"
+            ) as typeof mouDecision
+          );
+        }
+        if (data.pelaksanaan?.nama_status_kode) {
+          setPelaksanaanDecision(
+            mapStatusToDecision(
+              data.pelaksanaan.nama_status_kode,
+              "pelaksanaan"
+            ) as typeof pelaksanaanDecision
+          );
+        }
+
+        setLayananData(data);
+      } catch (e) {
+        console.error("Error polling layanan data:", e);
+      }
+    }, 10000); // 10 seconds - auto refresh untuk melihat perubahan dari admin
+
+    return () => clearInterval(pollInterval);
+  }, [layananId]);
+
   // Helper function to map API status to component decision states
   const mapStatusToDecision = (
     statusKode: string,
@@ -668,11 +720,6 @@ export default function DetailPelaksanaanPKLPage() {
         id_layanan: Number(layananId),
         nama_p4s: laporanForm.namaP4s,
         asal_kab_kota: laporanForm.kota,
-        jenis_kegiatan: laporanForm.jenisKegiatan,
-        asal_peserta: laporanForm.asalPeserta,
-        jumlah_peserta: laporanForm.jumlahPeserta,
-        tanggal_pelaksanaan: laporanForm.tanggalPelaksanaan,
-        lama_pelaksanaan: laporanForm.lamaPelaksanaan,
         foto_kegiatan: fotoKegiatan,
       });
 
@@ -1116,7 +1163,7 @@ export default function DetailPelaksanaanPKLPage() {
         </div>
       </div>
       {pengajuanDecision === "ditolak" && (
-        <div className="container mx-auto px-4 max-w-6xl mt-6 mb-8">
+        <div className="container mx-auto px-4 max-w-6xl mt-4 mb-6">
           <div className="rounded-xl border border-[#F0CFCF] bg-[#FFF6F6] p-6 shadow-sm">
             <div className="mx-auto mb-3 w-12 h-12 rounded-lg border border-[#F0C3C3] bg-[#FBECEC] flex items-center justify-center">
               <XCircle className="text-[#CD0300]" />
@@ -1410,7 +1457,7 @@ export default function DetailPelaksanaanPKLPage() {
               </div>
 
               {/* Input link logbook */}
-              <div className="mt-6 rounded-lg border border-[#F0EAE3] bg-[#FBF9F7] p-4">
+              <div className="mt-4 rounded-lg border border-[#F0EAE3] bg-[#FBF9F7] p-4">
                 <h3 className="text-sm font-semibold text-[#3B3B3B] mb-3">
                   Link Logbook
                 </h3>
@@ -1849,11 +1896,14 @@ export default function DetailPelaksanaanPKLPage() {
                       {sertifikatError}
                     </p>
                   </div>
-                ) : sertifikatData && sertifikatData.file_sertifikat ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-                    <div className="relative w-full h-56 md:h-64 rounded-xl overflow-hidden border border-[#E8E2DB] shadow-sm bg-gray-100 flex items-center justify-center">
-                      {sertifikatData.file_sertifikat ? (
-                        <>
+                ) : sertifikatData &&
+                  (sertifikatData.file_sertifikat ||
+                    sertifikatData.link_sertifikat) ? (
+                  <div>
+                    {/* Display File if exists */}
+                    {sertifikatData.file_sertifikat && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center mb-6">
+                        <div className="relative w-full h-56 md:h-64 rounded-xl overflow-hidden border border-[#E8E2DB] shadow-sm bg-gray-100 flex items-center justify-center">
                           <iframe
                             src={
                               resolveFileUrl(sertifikatData.file_sertifikat) ||
@@ -1865,40 +1915,27 @@ export default function DetailPelaksanaanPKLPage() {
                           <div className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full bg-white/90 border border-[#E8E2DB] px-3 py-1 text-[11px] text-[#3B3B3B] shadow-xs">
                             Sertifikat Preview
                           </div>
-                        </>
-                      ) : (
-                        <div className="text-center">
-                          <Award
-                            size={48}
-                            className="mx-auto mb-2 text-gray-400"
-                          />
-                          <p className="text-[12px] text-gray-500">
-                            Preview tidak tersedia
-                          </p>
                         </div>
-                      )}
-                    </div>
-                    <div className="text-center">
-                      <div className="mx-auto mb-3 w-14 h-14 rounded-full border border-[#CBE6D7] bg-[#E9F7F0] flex items-center justify-center shadow-sm">
-                        <Award size={28} className="text-[#2F8A57]" />
-                      </div>
-                      <h3 className="text-base md:text-lg font-semibold text-[#3B3B3B]">
-                        Selamat, Program PKL Anda telah selesai!
-                      </h3>
-                      <p className="mt-1 text-[12px] text-[#6B6B6B]">
-                        Anda telah menyelesaikan program dan berhak mendapatkan
-                        sertifikat resmi dari Sekolah Kopi Raisa.
-                      </p>
-                      {sertifikatData.created_at && (
-                        <p className="mt-2 text-[11px] text-[#6B6B6B]">
-                          Tanggal Terbit:{" "}
-                          {formatDate(sertifikatData.created_at)}
-                        </p>
-                      )}
+                        <div className="text-center">
+                          <div className="mx-auto mb-3 w-14 h-14 rounded-full border border-[#CBE6D7] bg-[#E9F7F0] flex items-center justify-center shadow-sm">
+                            <Award size={28} className="text-[#2F8A57]" />
+                          </div>
+                          <h3 className="text-base md:text-lg font-semibold text-[#3B3B3B]">
+                            Selamat, Program PKL Anda telah selesai!
+                          </h3>
+                          <p className="mt-1 text-[12px] text-[#6B6B6B]">
+                            Anda telah menyelesaikan program dan berhak
+                            mendapatkan sertifikat resmi dari Sekolah Kopi
+                            Raisa.
+                          </p>
+                          {sertifikatData.created_at && (
+                            <p className="mt-2 text-[11px] text-[#6B6B6B]">
+                              Tanggal Terbit:{" "}
+                              {formatDate(sertifikatData.created_at)}
+                            </p>
+                          )}
 
-                      <div className="mt-4 justify-center flex flex-wrap items-center gap-2">
-                        {sertifikatData.file_sertifikat && (
-                          <>
+                          <div className="mt-4 justify-center flex flex-wrap items-center gap-2">
                             <button
                               onClick={() =>
                                 openFile(
@@ -1922,10 +1959,42 @@ export default function DetailPelaksanaanPKLPage() {
                             >
                               <Download size={16} /> Download Sertifikat PDF
                             </button>
-                          </>
-                        )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    )}
+
+                    {/* Display Link if exists */}
+                    {sertifikatData.link_sertifikat && (
+                      <div className="rounded-lg border border-[#E3F2FD] bg-[#F0F8FF] p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Award size={20} className="text-[#1976D2]" />
+                          <p className="text-sm font-semibold text-[#1565C0]">
+                            Link Sertifikat Online
+                          </p>
+                        </div>
+                        <p className="text-[12px] text-[#424242] mb-3">
+                          Akses sertifikat Anda secara online melalui link
+                          berikut:
+                        </p>
+                        <a
+                          href={sertifikatData.link_sertifikat}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-blue-600 hover:text-blue-800 hover:underline break-all block mb-3"
+                        >
+                          {sertifikatData.link_sertifikat}
+                        </a>
+                        <a
+                          href={sertifikatData.link_sertifikat}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 rounded-lg bg-[#1976D2] text-white px-4 py-2 text-[12px] hover:bg-[#1565C0]"
+                        >
+                          <Eye size={16} /> Buka Link Sertifikat
+                        </a>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="text-center py-8">

@@ -36,6 +36,8 @@ export default function RiwayatKegiatanPage() {
   const [statusKodeList, setStatusKodeList] = useState<StatusKode[]>([]);
   const [showKategoriDropdown, setShowKategoriDropdown] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 6;
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -79,6 +81,11 @@ export default function RiwayatKegiatanPage() {
 
     return () => clearInterval(intervalId);
   }, [authorized]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterKategori, filterStatusValue]);
 
   const loadStatusKode = async () => {
     try {
@@ -168,6 +175,12 @@ export default function RiwayatKegiatanPage() {
 
     return true;
   });
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredLayanan.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const paginatedLayanan = filteredLayanan.slice(startIndex, endIndex);
 
   // Check if any layanan in the list has MOU workflow
   const hasAnyMouWorkflow = layananList.some((item) => {
@@ -329,151 +342,198 @@ export default function RiwayatKegiatanPage() {
 
         {/* Layanan Cards Grid */}
         {!isLoading && filteredLayanan.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filteredLayanan.map((item) => {
-              // Prioritas: jenis_layanan > nama_kegiatan > "Layanan Tidak Diketahui"
-              const jenisLayanan =
-                item.jenis_layanan?.nama_jenis_layanan ||
-                item.nama_kegiatan ||
-                "Layanan Tidak Diketahui";
-              const slug = item.jenis_layanan
-                ? getSlugFromJenisLayanan(item.jenis_layanan.nama_jenis_layanan)
-                : "";
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {paginatedLayanan.map((item) => {
+                // Prioritas: jenis_layanan > nama_kegiatan > "Layanan Tidak Diketahui"
+                const jenisLayanan =
+                  item.jenis_layanan?.nama_jenis_layanan ||
+                  item.nama_kegiatan ||
+                  "Layanan Tidak Diketahui";
+                const slug = item.jenis_layanan
+                  ? getSlugFromJenisLayanan(
+                      item.jenis_layanan.nama_jenis_layanan
+                    )
+                  : "";
 
-              // Check if this layanan type has MOU workflow
-              const hasMouWorkflow =
-                jenisLayanan !== "Undangan Narasumber" &&
-                jenisLayanan !== "Kunjungan";
+                // Check if this layanan type has MOU workflow
+                const hasMouWorkflow =
+                  jenisLayanan !== "Undangan Narasumber" &&
+                  jenisLayanan !== "Kunjungan";
 
-              // Check if this layanan type has Pelaksanaan workflow
-              const hasPelaksanaanWorkflow =
-                jenisLayanan !== "Undangan Narasumber" &&
-                jenisLayanan !== "Kunjungan";
+                // Check if this layanan type has Pelaksanaan workflow
+                const hasPelaksanaanWorkflow =
+                  jenisLayanan !== "Undangan Narasumber" &&
+                  jenisLayanan !== "Kunjungan";
 
-              return (
-                <div
-                  key={item.id}
-                  className="rounded-xl border border-gray-200 bg-white p-5 hover:shadow-md transition-shadow"
-                >
-                  <div className="flex items-start justify-between gap-4 mb-3">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-xs text-gray-500 font-mono">
-                          #{item.id}
+                return (
+                  <div
+                    key={item.id}
+                    className="rounded-xl border border-gray-200 bg-white p-5 hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-start justify-between gap-4 mb-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-xs text-gray-500 font-mono">
+                            #{item.id}
+                          </span>
+                        </div>
+                        <h3 className="text-base font-semibold text-gray-900 line-clamp-1">
+                          {jenisLayanan}
+                        </h3>
+                        {/* Tampilkan nama_kegiatan sebagai subtitle jika berbeda dari title */}
+                        {item.jenis_layanan?.nama_jenis_layanan &&
+                          item.nama_kegiatan && (
+                            <p className="text-sm text-gray-700 mt-1 line-clamp-1">
+                              {item.nama_kegiatan}
+                            </p>
+                          )}
+                      </div>
+                    </div>
+
+                    {/* Status Badges */}
+                    <div className="space-y-2 mb-4 pb-4 border-b border-gray-100">
+                      {/* Status Pengajuan */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-600 w-24 flex-shrink-0">
+                          Pengajuan:
+                        </span>
+                        <span
+                          className={`px-2 py-0.5 rounded text-xs font-medium border ${getStatusColor(
+                            item.pengajuan?.nama_status_kode || "Menunggu"
+                          )}`}
+                        >
+                          {item.pengajuan?.nama_status_kode || "Menunggu"}
                         </span>
                       </div>
-                      <h3 className="text-base font-semibold text-gray-900 line-clamp-1">
-                        {jenisLayanan}
-                      </h3>
-                      {/* Tampilkan nama_kegiatan sebagai subtitle jika berbeda dari title */}
-                      {item.jenis_layanan?.nama_jenis_layanan &&
-                        item.nama_kegiatan && (
-                          <p className="text-sm text-gray-700 mt-1 line-clamp-1">
-                            {item.nama_kegiatan}
-                          </p>
-                        )}
-                    </div>
-                  </div>
 
-                  {/* Status Badges */}
-                  <div className="space-y-2 mb-4 pb-4 border-b border-gray-100">
-                    {/* Status Pengajuan */}
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-600 w-24 flex-shrink-0">
-                        Pengajuan:
-                      </span>
-                      <span
-                        className={`px-2 py-0.5 rounded text-xs font-medium border ${getStatusColor(
-                          item.pengajuan?.nama_status_kode || "Menunggu"
-                        )}`}
+                      {/* Status MOU - Only show for layanan types that have MOU workflow */}
+                      {hasMouWorkflow && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-600 w-24 flex-shrink-0">
+                            MOU:
+                          </span>
+                          <span
+                            className={`px-2 py-0.5 rounded text-xs font-medium border ${getStatusColor(
+                              item.mou?.statusKode?.nama_status_kode ||
+                                "Belum Terlaksana"
+                            )}`}
+                          >
+                            {item.mou?.statusKode?.nama_status_kode ||
+                              "Belum Terlaksana"}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Status Pelaksanaan - Hide for Kunjungan & Undangan Narasumber */}
+                      {hasPelaksanaanWorkflow && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-600 w-24 flex-shrink-0">
+                            Pelaksanaan:
+                          </span>
+                          <span
+                            className={`px-2 py-0.5 rounded text-xs font-medium border ${getStatusColor(
+                              item.pelaksanaan?.nama_status_kode || "Menunggu"
+                            )}`}
+                          >
+                            {item.pelaksanaan?.nama_status_kode || "Menunggu"}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Tanggal Pengajuan */}
+                    <div className="flex items-center gap-2 text-xs text-gray-600 mb-3 pb-3 border-b border-gray-100">
+                      <span className="font-medium">Tanggal Pengajuan:</span>
+                      <span>{formatDate(item.created_at)}</span>
+                    </div>
+
+                    {/* Info Grid */}
+                    <div className="space-y-2 mb-4">
+                      <div className="flex items-center gap-2 text-xs text-gray-600">
+                        <Clock size={14} className="flex-shrink-0" />
+                        <span>
+                          {formatDate(item.tanggal_mulai)} -{" "}
+                          {formatDate(item.tanggal_selesai)}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-gray-600">
+                        <MapPin size={14} className="flex-shrink-0" />
+                        <span className="line-clamp-1">
+                          {jenisLayanan === "Undangan Narasumber"
+                            ? item.tempat_kegiatan || "-"
+                            : "Sekolah Kopi Raisa"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-gray-600">
+                        <Users size={14} className="flex-shrink-0" />
+                        <span>
+                          {item.jumlah_peserta} Peserta • {item.instansi_asal}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Action Button */}
+                    <div className="flex justify-end pt-3 border-t border-gray-100">
+                      <Link
+                        href={
+                          slug
+                            ? `/layanan/detail-pelaksanaan-${slug}?id=${item.id}`
+                            : "#"
+                        }
+                        className="text-sm text-amber-900 hover:text-amber-950 font-medium hover:underline"
                       >
-                        {item.pengajuan?.nama_status_kode || "Menunggu"}
-                      </span>
-                    </div>
-
-                    {/* Status MOU - Only show for layanan types that have MOU workflow */}
-                    {hasMouWorkflow && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-600 w-24 flex-shrink-0">
-                          MOU:
-                        </span>
-                        <span
-                          className={`px-2 py-0.5 rounded text-xs font-medium border ${getStatusColor(
-                            item.mou?.statusKode?.nama_status_kode ||
-                              "Belum Terlaksana"
-                          )}`}
-                        >
-                          {item.mou?.statusKode?.nama_status_kode ||
-                            "Belum Terlaksana"}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Status Pelaksanaan - Hide for Kunjungan & Undangan Narasumber */}
-                    {hasPelaksanaanWorkflow && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-600 w-24 flex-shrink-0">
-                          Pelaksanaan:
-                        </span>
-                        <span
-                          className={`px-2 py-0.5 rounded text-xs font-medium border ${getStatusColor(
-                            item.pelaksanaan?.nama_status_kode || "Menunggu"
-                          )}`}
-                        >
-                          {item.pelaksanaan?.nama_status_kode || "Menunggu"}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Tanggal Pengajuan */}
-                  <div className="flex items-center gap-2 text-xs text-gray-600 mb-3 pb-3 border-b border-gray-100">
-                    <span className="font-medium">Tanggal Pengajuan:</span>
-                    <span>{formatDate(item.created_at)}</span>
-                  </div>
-
-                  {/* Info Grid */}
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-center gap-2 text-xs text-gray-600">
-                      <Clock size={14} className="flex-shrink-0" />
-                      <span>
-                        {formatDate(item.tanggal_mulai)} -{" "}
-                        {formatDate(item.tanggal_selesai)}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-gray-600">
-                      <MapPin size={14} className="flex-shrink-0" />
-                      <span className="line-clamp-1">
-                        {jenisLayanan === "Undangan Narasumber"
-                          ? item.tempat_kegiatan || "-"
-                          : "Sekolah Kopi Raisa"}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-gray-600">
-                      <Users size={14} className="flex-shrink-0" />
-                      <span>
-                        {item.jumlah_peserta} Peserta • {item.instansi_asal}
-                      </span>
+                        Lihat Detail →
+                      </Link>
                     </div>
                   </div>
+                );
+              })}
+            </div>
 
-                  {/* Action Button */}
-                  <div className="flex justify-end pt-3 border-t border-gray-100">
-                    <Link
-                      href={
-                        slug
-                          ? `/layanan/detail-pelaksanaan-${slug}?id=${item.id}`
-                          : "#"
-                      }
-                      className="text-sm text-amber-900 hover:text-amber-950 font-medium hover:underline"
-                    >
-                      Lihat Detail →
-                    </Link>
-                  </div>
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 mt-8">
+                <button
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                  }
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 text-sm rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                    (page) => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`px-3 py-2 text-sm rounded-lg ${
+                          currentPage === page
+                            ? "bg-amber-900 text-white"
+                            : "bg-white border border-gray-300 hover:bg-gray-50"
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    )
+                  )}
                 </div>
-              );
-            })}
-          </div>
+
+                <button
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                  }
+                  disabled={currentPage === totalPages}
+                  className="px-4 py-2 text-sm rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
       <div className="mt-auto">

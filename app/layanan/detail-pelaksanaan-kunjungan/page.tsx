@@ -182,7 +182,7 @@ export default function DetailPelaksanaanKunjunganPage() {
       } catch (e) {
         console.error("Error polling layanan data:", e);
       }
-    }, 15000); // Poll every 15 seconds
+    }, 10000); // 10 seconds - auto refresh untuk melihat perubahan dari admin
 
     return () => clearInterval(pollInterval);
   }, [layananId]);
@@ -453,7 +453,7 @@ export default function DetailPelaksanaanKunjunganPage() {
   return (
     <>
       <div className="min-h-screen bg-[#FCFBF7] pt-16 md:pt-20">
-        <div className="container mx-auto px-5 max-w-5l py-15"> 
+        <div className="container mx-auto px-5 max-w-5l py-15">
           <div className="mb-4">
             <Link
               href="/layanan"
@@ -469,7 +469,7 @@ export default function DetailPelaksanaanKunjunganPage() {
           </h1>
 
           {/* PROGRES KEGIATAN + DOKUMEN */}
-          <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* PROGRES */}
             <div className="rounded-xl border border-[#E8E2DB] bg-white p-4 md:p-6">
               <div className="flex flex-col items-center gap-2 text-center">
