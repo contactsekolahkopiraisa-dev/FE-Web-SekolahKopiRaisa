@@ -6,7 +6,7 @@ import { Calendar, Plus } from "lucide-react";
 import CalendarPicker from "@/components/CalenderPickerFilter";
 import Link from "next/link";
 import {
-  fetchLaporanPenjualanByPeriode,
+  fetchLaporanPenjualanUMKMByPeriode,
   LaporanPenjualanData,
 } from "@/app/utils/laporan-penjualan";
 import {
@@ -19,7 +19,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-export default function LaporanPenjualanUmkm() {
+export default function LaporanPenjualanSemuaUmkm() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [laporanData, setLaporanData] = useState<LaporanPenjualanData | null>(
@@ -44,14 +44,14 @@ export default function LaporanPenjualanUmkm() {
         const bulan = selectedDate.getMonth(); // 0-11
         const tahun = selectedDate.getFullYear();
 
-        const result = await fetchLaporanPenjualanByPeriode(bulan, tahun);
+        const result = await fetchLaporanPenjualanUMKMByPeriode(bulan, tahun);
 
         console.log("API Response:", result);
 
-        if (result && result.data) {
+        if (result && result.data && result.data.totalSummary) {
           setLaporanData(result.data);
         } else {
-          setError("Data tidak ditemukan");
+          setError("Data tidak ditemukan untuk periode ini");
           setLaporanData(null);
         }
       } catch (err: any) {
@@ -149,14 +149,14 @@ export default function LaporanPenjualanUmkm() {
         <p className="text-red-500 mt-4">{error}</p>
       ) : laporanData ? (
         <div>
-          {/* Summary Cards */}
+          {/* totalSummary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div className="bg-gray-200 p-6 rounded-lg">
               <h3 className="text-sm text-gray-600 mb-2">
                 Jumlah Produk Terjual
               </h3>
               <p className="text-3xl font-bold">
-                {laporanData.summary.jumlahProdukTerjual}
+                {laporanData.totalSummary.totalJumlahProdukTerjual}
               </p>
               <p className="text-xs text-gray-500 mt-1">
                 {laporanData.periode}
@@ -166,7 +166,7 @@ export default function LaporanPenjualanUmkm() {
             <div className="bg-gray-200 p-6 rounded-lg">
               <h3 className="text-sm text-gray-600 mb-2">Laba Bersih</h3>
               <p className="text-3xl font-bold">
-                {laporanData.summary.labaBersih}
+                {laporanData.totalSummary.totalLabaBersih}
               </p>
               <p className="text-xs text-gray-500 mt-1">
                 {laporanData.periode}
@@ -176,7 +176,7 @@ export default function LaporanPenjualanUmkm() {
             <div className="bg-gray-200 p-6 rounded-lg">
               <h3 className="text-sm text-gray-600 mb-2">Laba Kotor</h3>
               <p className="text-3xl font-bold">
-                {laporanData.summary.labaKotor}
+                {laporanData.totalSummary.totalLabaKotor}
               </p>
               <p className="text-xs text-gray-500 mt-1">
                 {laporanData.periode}
@@ -229,7 +229,7 @@ export default function LaporanPenjualanUmkm() {
               <h2 className="text-lg font-semibold">TOP PRODUK UMKM</h2>
             </div>
 
-            {laporanData.topProducts.length > 0 ? (
+            {(laporanData?.topProducts ?? []).length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-200">

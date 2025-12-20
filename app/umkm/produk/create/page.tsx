@@ -9,8 +9,9 @@ import { useRouter } from "next/navigation";
 import Popup from "@/components/Popup";
 import ProductListAdmin from "@/components/product/ProductListAdmin";
 import ConfirmModal from "@/components/ConfirmModal";
+import { getUserId } from "@/app/utils/auth";
 
-export default function AdminCreateProductPage() {
+export default function UMKMCreateProductPage() {
   // State for product data
   const [product, setProduct] = useState({
     name: "",
@@ -95,7 +96,7 @@ export default function AdminCreateProductPage() {
       formData.append("weight", product.weight.toString());
       formData.append("stock", product.stock.toString());
       if (imageFile) {
-        formData.append("productFile", imageFile); // ⬅️ Ini ditambahkan
+        formData.append("productFile", imageFile);
       }
       const response = await createProduct(formData);
 
@@ -110,11 +111,11 @@ export default function AdminCreateProductPage() {
         );
 
         // Langsung redirect tanpa delay
-        router.push("/admin/product");
+        router.push("/umkm/product");
       }
     } catch (error: any) {
       if (error.type === "validation") {
-        setErrors(error.errors); // ✅ Ambil langsung dari backend
+        setErrors(error.errors);
         setShowConfirmModal(false);
         console.error("Validation errors:", error.errors);
       } else {
@@ -132,15 +133,53 @@ export default function AdminCreateProductPage() {
     const loadPartners = async () => {
       setIsLoadingPartners(true);
       try {
+        // Dapatkan user_id dari user yang sedang login
+        const currentUserId = getUserId();
+
+        // Validasi jika user_id tidak ditemukan
+        if (currentUserId === null) {
+          console.error("User ID tidak ditemukan. Silakan login kembali.");
+          setMessage("User ID tidak ditemukan. Silakan login kembali.");
+          setPopupType("error");
+          setShowPopup(true);
+          setIsLoadingPartners(false);
+          return;
+        }
+
         const response = await fetchAllPartner();
         const rawData = response.data;
-        const formattedData = rawData.map((item: any) => ({
+
+        // Filter partner berdasarkan user_id yang sedang login
+        const filteredPartners = rawData.filter(
+          (item: any) => item.user_id === currentUserId
+        );
+
+        const formattedData = filteredPartners.map((item: any) => ({
           id: item.id,
           name: item.name,
         }));
+
         setPartners(formattedData);
+
+        // Otomatis set partner pertama (atau satu-satunya partner) yang dimiliki user
+        if (formattedData.length > 0) {
+          setProduct((prev) => ({
+            ...prev,
+            partnerName: formattedData[0].id,
+          }));
+        } else {
+          // Jika tidak ada partner ditemukan
+          setMessage(
+            "Anda belum memiliki mitra. Silakan buat mitra terlebih dahulu."
+          );
+          setPopupType("error");
+          setShowPopup(true);
+        }
       } catch (error) {
         console.error("Failed to fetch partners:", error);
+        setMessage("Gagal memuat data mitra.");
+        setPopupType("error");
+        setShowPopup(true);
       } finally {
         setIsLoadingPartners(false);
       }
@@ -233,20 +272,29 @@ export default function AdminCreateProductPage() {
                   <LoaderCircle className="animate-spin w-4" />
                   <span>Memuat daftar mitra...</span>
                 </div>
+              ) : partners.length === 0 ? (
+                <div className="w-full p-2 border border-red-300 bg-red-50 rounded-xl text-red-600 text-sm">
+                  Tidak ada mitra tersedia. Silakan buat mitra terlebih dahulu.
+                </div>
               ) : (
                 <select
                   name="partnerName"
                   value={product.partnerName}
                   onChange={handleInputChange}
-                  className="w-full p-2 border border-gray-300 rounded-xl"
+                  className="w-full p-2 border border-gray-300 rounded-xl bg-gray-50"
+                  disabled={partners.length === 1}
                 >
-                  <option value="">Pilih Mitra</option>
                   {partners.map((partner) => (
                     <option key={partner.id} value={partner.id}>
                       {partner.name}
                     </option>
                   ))}
                 </select>
+              )}
+              {partners.length === 1 && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Mitra telah dipilih secara otomatis
+                </p>
               )}
             </div>
 
@@ -319,7 +367,8 @@ export default function AdminCreateProductPage() {
             <button
               type="button"
               onClick={() => setShowConfirmModal(true)}
-              className="cursor-pointer w-full bg-primary text-white py-2 px-4 text-sm font-medium rounded-xl hover:-translate-y-1 duration-150 ease-in flex justify-center items-center gap-2 disabled:opacity-50"
+              disabled={partners.length === 0}
+              className="cursor-pointer w-full bg-primary text-white py-2 px-4 text-sm font-medium rounded-xl hover:-translate-y-1 duration-150 ease-in flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
             >
               Simpan Produk
             </button>
@@ -330,13 +379,13 @@ export default function AdminCreateProductPage() {
         <div className="w-full md:w-1/2 max-w-100">
           <h2 className="text-lg font-medium mb-4">Pratinjau Produk</h2>
           <ProductListAdmin
-            id={0} // ID sementara, karena produk belum dibuat
-            image={imagePreview || "/assets/noimage.png"} // ganti dengan URL gambar placeholder lokal jika belum ada gambar
+            id={0}
+            image={imagePreview || "/assets/noimage.png"}
             name={product.name || "Nama Produk"}
             price={product.price ? Number(product.price) : 0}
             stock={Number(product.stock) || 0}
-            sold={product.stock ? 0 : 0} // Sementara, karena belum ada data penjualan
-            weight={product.weight ? Number(product.weight) : 0} // Sementara, karena belum ada data berat
+            sold={product.stock ? 0 : 0}
+            weight={product.weight ? Number(product.weight) : 0}
             partner={
               partners.length > 0
                 ? {

@@ -1,130 +1,76 @@
-// app/utils/partner.ts
+// app/utils/laporan-penjualan.ts
 import api from "./api";
 
-export const fetchAllPartner = async () => {
-  try {
-    const response = await api.get("/api/v1/partner");
-    return response.data;
-  } catch (error: any) {
-    if (error.response) {
-      const { data } = error.response;
+// Interface untuk tipe data laporan penjualan
+export interface LaporanPenjualanData {
+  partner: {
+    id: number;
+    nama: string;
+    owner: string;
+  };
+  periode: string;
+  totalSummary: {
+    totalJumlahProdukTerjual: number;
+    totalLabaBersih: string;
+    totalLabaBersihRaw: number;
+    totalLabaKotor: string;
+    totalLabaKotorRaw: number;
+    totalPajak: string;
+    totalPajakRaw: number;
+    totalPersentasePajak: string;
+  };
+  chart: Array<{
+    tanggal: number;
+    totalPenjualan: number;
+  }>;
+  topProducts: Array<{
+    namaProduk: string;
+    namaUMKM: string;
+    jumlahTerjual: number;
+    totalPendapatan: number;
+  }>;
+}
 
-      if (data.errors && typeof data.errors === "object") {
-        throw {
-          type: "validation",
-          message: data.message || "Validasi gagal!",
-          errors: data.errors,
-        };
-      }
+export interface LaporanPenjualanResponse {
+  message: string;
+  data: LaporanPenjualanData;
+}
 
-      if (data.errors && typeof data.errors === "string") {
-        throw {
-          type: "general",
-          message: data.errors,
-        };
-      }
-
-      throw {
-        type: "general",
-        message: data.message || "Terjadi kesalahan!",
-      };
-    }
-
-    throw {
-      type: "network",
-      message: "Tidak dapat terhubung ke server. Coba lagi nanti.",
-    };
-  }
-};
-
-export const fetchPartnerById = async (id: number) => {
-  try {
-    const response = await api.get(`/api/v1/partner/${id}`);
-    return response.data;
-  } catch (error: any) {
-    if (error.response) {
-      const { data } = error.response;
-
-      if (data.errors && typeof data.errors === "object") {
-        throw {
-          type: "validation",
-          message: data.message || "Validasi gagal!",
-          errors: data.errors,
-        };
-      }
-
-      if (data.errors && typeof data.errors === "string") {
-        throw {
-          type: "general",
-          message: data.errors,
-        };
-      }
-
-      throw {
-        type: "general",
-        message: data.message || "Terjadi kesalahan!",
-      };
-    }
-  }
-};
-
-export const createPartner = async (data: {
-  name: string;
-  owner_name: string;
-  phone_number: string;
-  // address: string;
-}) => {
-  try {
-    const response = await api.post("/api/v1/partner/", data);
-    return response.data;
-  } catch (error: any) {
-    if (error.response) {
-      const { data } = error.response;
-
-      if (data.errors && typeof data.errors === "object") {
-        throw {
-          type: "validation",
-          message: data.message || "Validasi gagal!",
-          errors: data.errors,
-        };
-      }
-
-      if (data.errors && typeof data.errors === "string") {
-        throw {
-          type: "general",
-          message: data.errors,
-        };
-      }
-
-      throw {
-        type: "general",
-        message: data.message || "Terjadi kesalahan!",
-      };
-    }
-
-    throw {
-      type: "network",
-      message: "Tidak dapat terhubung ke server. Coba lagi nanti.",
-    };
-  }
-};
-
-export const updatePartner = async (
-  id: number,
-  data: {
-    name: string;
-    owner_name: string;
-    phone_number: string;
-    // address: string;
-  }
+// Fetch laporan penjualan berdasarkan periode (bulan dan tahun)
+export const fetchLaporanPenjualanByPeriode = async (
+  bulan: number, // 0-11 (JavaScript month index)
+  tahun: number
 ) => {
   try {
-    const response = await api.put(`/api/v1/partner/${id}`, data);
-    return response.data;
+    // Format periode sesuai dengan yang diharapkan API (contoh: "September 2025")
+    const bulanNames = [
+      "Januari",
+      "Februari",
+      "Maret",
+      "April",
+      "Mei",
+      "Juni",
+      "Juli",
+      "Agustus",
+      "September",
+      "Oktober",
+      "November",
+      "Desember",
+    ];
+
+    const periode = `${bulanNames[bulan]} ${tahun}`;
+
+    // Kirim request dengan query parameter periode
+    const response = await api.get("/api/v1/penjualan/my-report", {
+      params: { periode },
+    });
+
+    return response.data as LaporanPenjualanResponse;
   } catch (error: any) {
     if (error.response) {
       const { data } = error.response;
 
+      // Validasi field (errors berbentuk object)
       if (data.errors && typeof data.errors === "object") {
         throw {
           type: "validation",
@@ -133,6 +79,7 @@ export const updatePartner = async (
         };
       }
 
+      // Error umum (errors berbentuk string)
       if (data.errors && typeof data.errors === "string") {
         throw {
           type: "general",
@@ -140,11 +87,14 @@ export const updatePartner = async (
         };
       }
 
+      // Error fallback
       throw {
         type: "general",
         message: data.message || "Terjadi kesalahan!",
       };
     }
+
+    // Error koneksi/server down
     throw {
       type: "network",
       message: "Tidak dapat terhubung ke server. Coba lagi nanti.",
@@ -152,14 +102,10 @@ export const updatePartner = async (
   }
 };
 
-export const deletePartner = async (id: number) => {
-  const response = await api.delete(`/api/v1/partner/${id}`);
-  return response.data;
-};
-
-export const callPartner = async (id: number) => {
+// Untuk backward compatibility (jika masih digunakan di tempat lain)
+export const fetchAllLaporanPenjualan = async () => {
   try {
-    const response = await api.post(`/api/v1/order/contact-partner/${id}`);
+    const response = await api.get("/api/v1/penjualan/my-report");
     return response.data;
   } catch (error: any) {
     if (error.response) {
@@ -185,6 +131,144 @@ export const callPartner = async (id: number) => {
         message: data.message || "Terjadi kesalahan!",
       };
     }
+
+    throw {
+      type: "network",
+      message: "Tidak dapat terhubung ke server. Coba lagi nanti.",
+    };
+  }
+};
+
+export const fetchLaporanPenjualanUMKMByPeriode = async (
+  bulan: number, // 0-11 (JavaScript month index)
+  tahun: number
+) => {
+  try {
+    // Format periode sesuai dengan yang diharapkan API (contoh: "September 2025")
+    const bulanNames = [
+      "Januari",
+      "Februari",
+      "Maret",
+      "April",
+      "Mei",
+      "Juni",
+      "Juli",
+      "Agustus",
+      "September",
+      "Oktober",
+      "November",
+      "Desember",
+    ];
+
+    const periode = `${bulanNames[bulan]} ${tahun}`;
+
+    // Kirim request dengan query parameter periode
+    const response = await api.get("/api/v1/penjualan/admin/report", {
+      params: { periode },
+    });
+
+    return response.data as LaporanPenjualanResponse;
+  } catch (error: any) {
+    if (error.response) {
+      const { data } = error.response;
+
+      // Validasi field (errors berbentuk object)
+      if (data.errors && typeof data.errors === "object") {
+        throw {
+          type: "validation",
+          message: data.message || "Validasi gagal!",
+          errors: data.errors,
+        };
+      }
+
+      // Error umum (errors berbentuk string)
+      if (data.errors && typeof data.errors === "string") {
+        throw {
+          type: "general",
+          message: data.errors,
+        };
+      }
+
+      // Error fallback
+      throw {
+        type: "general",
+        message: data.message || "Terjadi kesalahan!",
+      };
+    }
+
+    // Error koneksi/server down
+    throw {
+      type: "network",
+      message: "Tidak dapat terhubung ke server. Coba lagi nanti.",
+    };
+  }
+};
+
+export const fetchAllLaporanPenjualanAdmin = async () => {
+  try {
+    const response = await api.get("/api/v1/penjualan/admin/report");
+    return response.data;
+  } catch (error: any) {
+    if (error.response) {
+      const { data } = error.response;
+
+      if (data.errors && typeof data.errors === "object") {
+        throw {
+          type: "validation",
+          message: data.message || "Validasi gagal!",
+          errors: data.errors,
+        };
+      }
+
+      if (data.errors && typeof data.errors === "string") {
+        throw {
+          type: "general",
+          message: data.errors,
+        };
+      }
+
+      throw {
+        type: "general",
+        message: data.message || "Terjadi kesalahan!",
+      };
+    }
+
+    throw {
+      type: "network",
+      message: "Tidak dapat terhubung ke server. Coba lagi nanti.",
+    };
+  }
+};
+
+export const fetchLaporanPenjualanById = async (id: number) => {
+  try {
+    const response = await api.get(`/api/v1/laporan-penjualan/${id}`);
+    return response.data;
+  } catch (error: any) {
+    if (error.response) {
+      const { data } = error.response;
+
+      if (data.errors && typeof data.errors === "object") {
+        throw {
+          type: "validation",
+          message: data.message || "Validasi gagal!",
+          errors: data.errors,
+        };
+      }
+
+      if (data.errors && typeof data.errors === "string") {
+        throw {
+          type: "general",
+          message: data.errors,
+        };
+      }
+
+      throw {
+        type: "general",
+        message: data.message || "Terjadi kesalahan!",
+      };
+    }
+
     throw {
       type: "network",
       message: "Tidak dapat terhubung ke server. Coba lagi nanti.",
