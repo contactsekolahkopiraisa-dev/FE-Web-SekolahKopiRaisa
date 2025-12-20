@@ -10,6 +10,7 @@ import { fetchAllJenisLayanan } from "../../utils/jenisLayanan";
 
 export default function MagangFormPage() {
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     namaPeserta: "",
     namaNIM: "",
@@ -92,6 +93,19 @@ export default function MagangFormPage() {
     });
 
     if (result.isConfirmed) {
+      setIsLoading(true);
+
+      // Tampilkan loading alert
+      Swal.fire({
+        title: "Mengirim Pengajuan...",
+        html: "Mohon tunggu sebentar",
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        didOpen: () => {
+          Swal.showLoading();
+        },
+      });
+
       try {
         const jenisList = await fetchAllJenisLayanan();
         const jenis = jenisList.find((j) =>
@@ -165,6 +179,7 @@ export default function MagangFormPage() {
 
         router.push(`/layanan/detail-pelaksanaan-magang?id=${created.id}`);
       } catch (err: any) {
+        setIsLoading(false);
         await Swal.fire({
           title: "Gagal Mengajukan",
           text: err?.message || "Terjadi kesalahan saat mengirim pengajuan",

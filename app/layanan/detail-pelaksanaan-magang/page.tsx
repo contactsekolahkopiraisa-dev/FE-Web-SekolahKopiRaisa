@@ -683,6 +683,8 @@ export default function DetailPelaksanaanMagangPage() {
     }
   };
   const handleSubmitLaporan = async () => {
+    const Swal = (await import("sweetalert2")).default;
+
     // Validasi form
     if (
       !laporanForm.namaP4s ||
@@ -694,7 +696,6 @@ export default function DetailPelaksanaanMagangPage() {
       !laporanForm.lamaPelaksanaan ||
       !fotoKegiatan
     ) {
-      const Swal = (await import("sweetalert2")).default;
       await Swal.fire({
         title: "Form Tidak Lengkap",
         text: "Mohon lengkapi semua field yang wajib diisi.",
@@ -710,7 +711,6 @@ export default function DetailPelaksanaanMagangPage() {
       return;
     }
 
-    const Swal = (await import("sweetalert2")).default;
     const result = await Swal.fire({
       title: "Yakin Mengirimkan Laporan Akhir ?",
       text: "Apakah Anda yakin ingin mengirimkan laporan akhir kegiatan ini? Setelah dikirim Anda dapat langsung mengunduh sertifikat.",
@@ -731,6 +731,7 @@ export default function DetailPelaksanaanMagangPage() {
     if (!result.isConfirmed) return;
 
     setSubmitting(true);
+
     try {
       await createLaporanLayanan({
         id_layanan: Number(layananId),

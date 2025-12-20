@@ -10,6 +10,7 @@ import { fetchAllJenisLayanan } from "../../utils/jenisLayanan";
 
 export default function UndanganNarasumberFormPage() {
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     namaKegiatan: "",
     instansi: "",
@@ -119,6 +120,19 @@ export default function UndanganNarasumberFormPage() {
     });
 
     if (result.isConfirmed) {
+      setIsLoading(true);
+
+      // Tampilkan loading alert
+      Swal.fire({
+        title: "Mengirim Pengajuan...",
+        html: "Mohon tunggu sebentar",
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        didOpen: () => {
+          Swal.showLoading();
+        },
+      });
+
       try {
         const jenisList = await fetchAllJenisLayanan();
         const jenis = jenisList.find((j) =>
@@ -190,6 +204,7 @@ export default function UndanganNarasumberFormPage() {
           `/layanan/detail-pelaksanaan-undangan-narasumber?id=${created.id}`
         );
       } catch (err: any) {
+        setIsLoading(false);
         await Swal.fire({
           title: "Gagal Mengajukan",
           text: err?.message || "Terjadi kesalahan saat mengirim pengajuan",

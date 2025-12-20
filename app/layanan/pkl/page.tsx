@@ -10,6 +10,7 @@ import { fetchAllJenisLayanan } from "../../utils/jenisLayanan";
 
 export default function PKLFormPage() {
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     namaPeserta: "",
     namaNIM: "",
@@ -92,6 +93,19 @@ export default function PKLFormPage() {
     });
 
     if (result.isConfirmed) {
+      setIsLoading(true);
+
+      // Tampilkan loading alert
+      Swal.fire({
+        title: "Mengirim Pengajuan...",
+        html: "Mohon tunggu sebentar",
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        didOpen: () => {
+          Swal.showLoading();
+        },
+      });
+
       try {
         const jenisList = await fetchAllJenisLayanan();
         // Display name in form header is "Praktek Kerja Lapangan"
@@ -170,6 +184,7 @@ export default function PKLFormPage() {
 
         router.push(`/layanan/detail-pelaksanaan-pkl?id=${created.id}`);
       } catch (err: any) {
+        setIsLoading(false);
         await Swal.fire({
           title: "Gagal Mengajukan",
           text: err?.message || "Terjadi kesalahan saat mengirim pengajuan",
