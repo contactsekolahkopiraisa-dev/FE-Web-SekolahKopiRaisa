@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { fetchAllActivity } from "../utils/activity";
 import { fetchAllProduct } from "../utils/product";
 import { fetchAllPartner } from "../utils/partner";
-import { fetchAllOrder } from "../utils/order-umkm";
+import { fetchAllUMKMOrder } from "../utils/order-umkm";
 import { getUserId } from "../utils/auth"; // Import helper function
 import {
   Chart as ChartJS,
@@ -117,7 +117,7 @@ export default function UmkmDashboard() {
   // New function to fetch recent orders
   const fetchRecentOrders = async () => {
     try {
-      const response = await fetchAllOrder();
+      const response = await fetchAllUMKMOrder();
       const orders = response.data;
 
       if (Array.isArray(orders)) {

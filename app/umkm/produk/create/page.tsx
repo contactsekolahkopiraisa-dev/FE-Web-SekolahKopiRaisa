@@ -3,30 +3,23 @@
 import { useState, useRef, ChangeEvent, useEffect } from "react";
 import Image from "next/image";
 import { LoaderCircle } from "lucide-react";
-import { fetchAllPartner } from "@/app/utils/partner";
 import { createProduct } from "@/app/utils/product";
 import { useRouter } from "next/navigation";
 import Popup from "@/components/Popup";
 import ProductListAdmin from "@/components/product/ProductListAdmin";
 import ConfirmModal from "@/components/ConfirmModal";
-import { getUserId } from "@/app/utils/auth";
 
 export default function UMKMCreateProductPage() {
   // State for product data
   const [product, setProduct] = useState({
     name: "",
-    partnerName: "",
     description: "",
     price: "",
     weight: "",
-    stock: "",
+    stock: ""
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-
-  // State for partners dropdown
-  const [partners, setPartners] = useState<{ id: string; name: string }[]>([]);
-  const [isLoadingPartners, setIsLoadingPartners] = useState(false);
 
   // State for image upload
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -35,8 +28,6 @@ export default function UMKMCreateProductPage() {
 
   // State for form submission
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitSuccess, setSubmitSuccess] = useState(false);
-  const [submitError, setSubmitError] = useState("");
 
   const [showPopup, setShowPopup] = useState(false);
   const [message, setMessage] = useState("");
@@ -69,7 +60,7 @@ export default function UMKMCreateProductPage() {
 
     setProduct((prev) => ({
       ...prev,
-      [name]: name === "price" || name === "stock" ? Number(value) : value,
+      [name]: name === "price" || name === "stock" ? Number(value) : value
     }));
 
     // Hilangkan error saat field diperbarui
@@ -85,12 +76,10 @@ export default function UMKMCreateProductPage() {
   // Handle form submission
   const handleSubmit = async () => {
     setIsSubmitting(true);
-    setSubmitError("");
 
     try {
       const formData = new FormData();
       formData.append("name", product.name);
-      formData.append("partner_id", product.partnerName);
       formData.append("description", product.description);
       formData.append("price", product.price.toString());
       formData.append("weight", product.weight.toString());
@@ -98,6 +87,7 @@ export default function UMKMCreateProductPage() {
       if (imageFile) {
         formData.append("productFile", imageFile);
       }
+
       const response = await createProduct(formData);
 
       if (response && response.message) {
@@ -106,12 +96,12 @@ export default function UMKMCreateProductPage() {
           "popup",
           JSON.stringify({
             message: response.message,
-            type: "success",
+            type: "success"
           })
         );
 
         // Langsung redirect tanpa delay
-        router.push("/umkm/product");
+        router.push("/umkm/produk");
       }
     } catch (error: any) {
       if (error.type === "validation") {
@@ -120,7 +110,7 @@ export default function UMKMCreateProductPage() {
         console.error("Validation errors:", error.errors);
       } else {
         console.error("Error:", error);
-        setMessage(error.message || "Terjadi kesalahan saat menyimpan berita.");
+        setMessage(error.message || "Terjadi kesalahan saat menyimpan produk.");
         setPopupType("error");
         setShowPopup(true);
       }
@@ -128,65 +118,6 @@ export default function UMKMCreateProductPage() {
       setIsSubmitting(false);
     }
   };
-
-  useEffect(() => {
-    const loadPartners = async () => {
-      setIsLoadingPartners(true);
-      try {
-        // Dapatkan user_id dari user yang sedang login
-        const currentUserId = getUserId();
-
-        // Validasi jika user_id tidak ditemukan
-        if (currentUserId === null) {
-          console.error("User ID tidak ditemukan. Silakan login kembali.");
-          setMessage("User ID tidak ditemukan. Silakan login kembali.");
-          setPopupType("error");
-          setShowPopup(true);
-          setIsLoadingPartners(false);
-          return;
-        }
-
-        const response = await fetchAllPartner();
-        const rawData = response.data;
-
-        // Filter partner berdasarkan user_id yang sedang login
-        const filteredPartners = rawData.filter(
-          (item: any) => item.user_id === currentUserId
-        );
-
-        const formattedData = filteredPartners.map((item: any) => ({
-          id: item.id,
-          name: item.name,
-        }));
-
-        setPartners(formattedData);
-
-        // Otomatis set partner pertama (atau satu-satunya partner) yang dimiliki user
-        if (formattedData.length > 0) {
-          setProduct((prev) => ({
-            ...prev,
-            partnerName: formattedData[0].id,
-          }));
-        } else {
-          // Jika tidak ada partner ditemukan
-          setMessage(
-            "Anda belum memiliki mitra. Silakan buat mitra terlebih dahulu."
-          );
-          setPopupType("error");
-          setShowPopup(true);
-        }
-      } catch (error) {
-        console.error("Failed to fetch partners:", error);
-        setMessage("Gagal memuat data mitra.");
-        setPopupType("error");
-        setShowPopup(true);
-      } finally {
-        setIsLoadingPartners(false);
-      }
-    };
-
-    loadPartners();
-  }, []);
 
   return (
     <div className="mx-auto bg-tertiary p-6 rounded-lg shadow-md">
@@ -265,41 +196,6 @@ export default function UMKMCreateProductPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Nama Mitra
-              </label>
-              {isLoadingPartners ? (
-                <div className="flex items-center gap-2">
-                  <LoaderCircle className="animate-spin w-4" />
-                  <span>Memuat daftar mitra...</span>
-                </div>
-              ) : partners.length === 0 ? (
-                <div className="w-full p-2 border border-red-300 bg-red-50 rounded-xl text-red-600 text-sm">
-                  Tidak ada mitra tersedia. Silakan buat mitra terlebih dahulu.
-                </div>
-              ) : (
-                <select
-                  name="partnerName"
-                  value={product.partnerName}
-                  onChange={handleInputChange}
-                  className="w-full p-2 border border-gray-300 rounded-xl bg-gray-50"
-                  disabled={partners.length === 1}
-                >
-                  {partners.map((partner) => (
-                    <option key={partner.id} value={partner.id}>
-                      {partner.name}
-                    </option>
-                  ))}
-                </select>
-              )}
-              {partners.length === 1 && (
-                <p className="text-xs text-gray-500 mt-1">
-                  Mitra telah dipilih secara otomatis
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Deskripsi Produk
               </label>
               <textarea
@@ -367,8 +263,7 @@ export default function UMKMCreateProductPage() {
             <button
               type="button"
               onClick={() => setShowConfirmModal(true)}
-              disabled={partners.length === 0}
-              className="cursor-pointer w-full bg-primary text-white py-2 px-4 text-sm font-medium rounded-xl hover:-translate-y-1 duration-150 ease-in flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+              className="cursor-pointer w-full bg-primary text-white py-2 px-4 text-sm font-medium rounded-xl hover:-translate-y-1 duration-150 ease-in flex justify-center items-center gap-2"
             >
               Simpan Produk
             </button>
@@ -384,19 +279,9 @@ export default function UMKMCreateProductPage() {
             name={product.name || "Nama Produk"}
             price={product.price ? Number(product.price) : 0}
             stock={Number(product.stock) || 0}
-            sold={product.stock ? 0 : 0}
+            sold={0}
             weight={product.weight ? Number(product.weight) : 0}
-            partner={
-              partners.length > 0
-                ? {
-                    name:
-                      partners.find(
-                        (p) => p.id.toString() === product.partnerName
-                      )?.name || "Pilih Mitra",
-                    id: Number(product.partnerName) || 0,
-                  }
-                : { name: "Pilih Mitra" }
-            }
+            partner={{ name: "Mitra Anda", id: 0 }}
             onEdit={() => {}}
             onDelete={() => {}}
           />
