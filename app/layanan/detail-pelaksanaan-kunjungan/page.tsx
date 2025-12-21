@@ -13,12 +13,12 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { fetchLayananById, LayananItem, formatDate } from "../../utils/layanan";
 import { createLaporanLayanan } from "../../utils/laporan";
 
-export default function DetailPelaksanaanKunjunganPage() {
+function DetailPelaksanaanKunjunganContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const layananId = searchParams.get("id");
@@ -1034,5 +1034,26 @@ function LaporanAkhirForm({
         </div>
       </div>
     </div>
+  );
+}
+
+// Loading fallback component
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen bg-[#FCFBF7] pt-24 md:pt-28 flex items-center justify-center">
+      <div className="text-center">
+        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#5C3A1E]"></div>
+        <p className="mt-4 text-[#3B3B3B]">Memuat halaman...</p>
+      </div>
+    </div>
+  );
+}
+
+// Main export with Suspense wrapper
+export default function DetailPelaksanaanKunjunganPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <DetailPelaksanaanKunjunganContent />
+    </Suspense>
   );
 }

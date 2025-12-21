@@ -11,14 +11,14 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Footer from "@/components/main/Footer";
 import { useRouter } from "next/navigation";
 import { fetchLayananById, LayananItem, formatDate } from "../../utils/layanan";
 import { createLaporanLayanan } from "../../utils/laporan";
 
-export default function DetailPelaksanaanUndanganNarasumberPage() {
+function DetailPelaksanaanUndanganNarasumberContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const layananId = searchParams.get("id");
@@ -1027,5 +1027,23 @@ function DocItem({ name, file }: { name: string; file: string }) {
         </button>
       </div>
     </div>
+  );
+}
+
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen bg-[#FCFBF7] pt-24 md:pt-28 flex items-center justify-center">
+      <div className="text-center">
+        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#5C3A1E]"></div>
+        <p className="mt-4 text-[#3B3B3B]">Memuat halaman...</p>
+      </div>
+    </div>
+  );
+}
+export default function DetailPelaksanaanUndanganNarasumberPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <DetailPelaksanaanUndanganNarasumberContent />
+    </Suspense>
   );
 }

@@ -1,0 +1,25 @@
+{
+  "pages": {
+    "/layanan/riwayat/page": [
+      "static/chunks/[turbopack]_browser_dev_hmr-client_hmr-client_ts_f038bc4a._.js",
+      "static/chunks/_8e157b53._.js",
+      "static/chunks/node_modules_next_88c919fe._.js",
+      "static/chunks/node_modules_axios_lib_99999129._.js",
+      "static/chunks/node_modules_framer-motion_dist_es_a96fefdc._.js",
+      "static/chunks/node_modules_63c8bee3._.js",
+      "static/chunks/app_globals_73c37791.css",
+      "static/chunks/app_layout_tsx_f0e4c1a2._.js",
+      "static/chunks/node_modules_sweetalert2_dist_sweetalert2_all_38007009.js",
+      "static/chunks/_a3cfdf85._.js",
+      "static/chunks/node_modules_lucide-react_dist_esm_icons_1a2d7c8e._.js",
+      "static/chunks/app_layanan_riwayat_page_tsx_3c5812ad._.js",
+      "static/chunks/[turbopack]_browser_dev_hmr-client_hmr-client_ts_49a6ea35._.js",
+      "static/chunks/node_modules_next_dist_compiled_2ce9398a._.js",
+      "static/chunks/node_modules_next_dist_client_43e3ffb8._.js",
+      "static/chunks/node_modules_next_dist_3bfaed20._.js",
+      "static/chunks/node_modules_@swc_helpers_cjs_00636ac3._.js",
+      "static/chunks/_e69f0d32._.js",
+      "static/chunks/_be317ff2._.js"
+    ]
+  }
+}

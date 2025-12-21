@@ -1,0 +1,11 @@
+{
+  "/admin/layanan/monitoring/[id]/page": "app/admin/layanan/monitoring/[id]/page.js",
+  "/admin/layanan/monitoring/page": "app/admin/layanan/monitoring/page.js",
+  "/admin/page": "app/admin/page.js",
+  "/layanan/detail-pelaksanaan-magang/page": "app/layanan/detail-pelaksanaan-magang/page.js",
+  "/layanan/magang/page": "app/layanan/magang/page.js",
+  "/layanan/page": "app/layanan/page.js",
+  "/layanan/riwayat/page": "app/layanan/riwayat/page.js",
+  "/login/page": "app/login/page.js",
+  "/page": "app/page.js"
+}
