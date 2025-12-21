@@ -33,7 +33,7 @@
     "email": "^0.2.6",
     "framer-motion": "^11.18.2",
     "lucide-react": "^0.485.0",
-    "next": "15.2.4",
+    "next": "^16.1.0",
     "postcss": "^8.5.3",
     "prisma": "^6.19.1",
     "quill": "^2.0.3",
