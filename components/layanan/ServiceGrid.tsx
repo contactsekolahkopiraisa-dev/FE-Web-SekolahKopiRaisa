@@ -1,5 +1,10 @@
 import ServiceCard from "./ServiceCard";
 
+interface ServiceActivity {
+  category: string;
+  items: string[];
+}
+
 interface Service {
   id: number;
   icon: React.ReactNode;
@@ -8,6 +13,9 @@ interface Service {
   duration: string;
   target: string;
   route: string;
+  image?: string;
+  fullDescription?: string[];
+  activities?: ServiceActivity[];
 }
 
 interface ServiceGridProps {
@@ -29,6 +37,9 @@ export default function ServiceGrid({ services }: ServiceGridProps) {
               duration={service.duration}
               target={service.target}
               route={service.route}
+              image={service.image}
+              fullDescription={service.fullDescription}
+              activities={service.activities}
             />
           ))}
         </div>

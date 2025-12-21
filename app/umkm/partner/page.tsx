@@ -1,13 +1,15 @@
 "use client";
 import { Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   fetchAllPartner,
   deletePartner,
   callPartner,
 } from "@/app/utils/partner";
-import PartnerTable, { PartnerListProps } from "@/components/partner/PartnerTable";
+import PartnerTable, {
+  PartnerListProps,
+} from "@/components/partner/PartnerTable";
 import Popup from "@/components/Popup";
 import ConfirmModal from "@/components/ConfirmModal";
 
@@ -21,7 +23,7 @@ export default function AdminPartnerPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [partnerToDelete, setPartnerToDelete] = useState<number | null>(null);
-  
+
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(15);
@@ -213,7 +215,7 @@ export default function AdminPartnerPage() {
                       <th className="px-2 sm:px-4 py-3 text-left font-medium whitespace-nowrap">
                         No. Telpon
                       </th>
-                      
+
                       <th className="px-2 sm:px-4 py-3 text-left font-medium whitespace-nowrap">
                         Produk Terdaftar
                       </th>
@@ -234,7 +236,7 @@ export default function AdminPartnerPage() {
                         <td className="px-2 sm:px-4 py-3">
                           <div className="h-6 bg-gray-300 rounded-xl w-24"></div>
                         </td>
-                      
+
                         <td className="px-2 sm:px-4 py-3">
                           <div className="h-4 bg-gray-300 rounded w-36"></div>
                         </td>
@@ -269,9 +271,8 @@ export default function AdminPartnerPage() {
           <div className="flex flex-col items-center space-y-4 mt-5">
             {/* Pagination Info */}
             <div className="text-sm text-gray-600">
-              Menampilkan {startIndex + 1}-
-              {Math.min(endIndex, data.length)} dari{" "}
-              {data.length} mitra
+              Menampilkan {startIndex + 1}-{Math.min(endIndex, data.length)}{" "}
+              dari {data.length} mitra
             </div>
 
             {/* Pagination Controls */}

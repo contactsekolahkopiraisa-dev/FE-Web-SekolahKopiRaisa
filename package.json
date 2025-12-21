@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev --turbopack -p 2000",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -32,7 +32,7 @@
     "clsx": "^2.1.1",
     "framer-motion": "^11.18.2",
     "lucide-react": "^0.485.0",
-    "next": "15.2.4",
+    "next": "15.2.8",
     "postcss": "^8.5.3",
     "quill": "^2.0.3",
     "react": "^18.2.0",
@@ -41,7 +41,7 @@
     "react-dropzone": "^14.3.8",
     "react-loading-skeleton": "^3.5.0",
     "react-quill": "^2.0.0",
-    "sweetalert2": "^11.24.0",
+    "sweetalert2": "^11.26.3",
     "swiper": "^11.2.6",
     "zustand": "^5.0.3"
   },
