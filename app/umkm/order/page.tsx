@@ -524,20 +524,6 @@ export default function UMKMOrderPage() {
           </div>
         </div>
 
-        {/* Button Hubungi Mitra untuk Pending Orders */}
-        {(() => {
-          const pendingPartners = ordersData
-            .filter((o) => o.status === "PENDING")
-            .flatMap(
-              (o: any) => o.orderItems?.map((item: any) => item.partner) || []
-            )
-            .filter((p) => p && p.id)
-            .reduce((unique: any[], curr: any) => {
-              if (!unique.find((p) => p.id === curr.id)) unique.push(curr);
-              return unique;
-            }, []);
-        })()}
-
         <OrderTable
           order={currentOrders}
           onView={handleViewOrder}

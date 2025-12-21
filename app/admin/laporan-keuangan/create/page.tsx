@@ -75,9 +75,9 @@ export default function CreateLaporanKeuanganAdmin() {
             jumlah_pengeluaran: parseFloat(
               jumlahPengeluaran.replace(/[^0-9]/g, "")
             ),
-            keterangan: keterangan,
-          },
-        ],
+            keterangan: keterangan
+          }
+        ]
       };
 
       console.log("Data yang dikirim:", formData);
@@ -101,16 +101,18 @@ export default function CreateLaporanKeuanganAdmin() {
       console.error("Error:", error);
       setShowConfirmModal(false);
 
-      // Handle error berdasarkan type - sesuai dengan struktur di page.tsx
+      // Handle error berdasarkan type
       if (error.type === "validation") {
         setMessage(error.message);
         // Convert errors object to single error messages per field
         if (error.errors) {
           const formattedErrors: Record<string, string> = {};
           Object.entries(error.errors).forEach(([field, messages]) => {
-            formattedErrors[field] = Array.isArray(messages)
-              ? messages.join(", ")
-              : messages;
+            if (Array.isArray(messages)) {
+              formattedErrors[field] = messages.join(", ");
+            } else {
+              formattedErrors[field] = String(messages);
+            }
           });
           setErrors(formattedErrors);
         }

@@ -100,7 +100,7 @@ export default function LaporanPenjualanUmkm() {
       "September",
       "Oktober",
       "November",
-      "Desember",
+      "Desember"
     ];
     return `${
       bulanNames[selectedDate.getMonth()]
@@ -108,13 +108,14 @@ export default function LaporanPenjualanUmkm() {
   };
 
   // Format currency untuk tampilan
-  const formatCurrency = (value: number) => {
+  const formatCurrency = (value: number | string) => {
+    const numValue = typeof value === "string" ? parseFloat(value) : value;
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
       currency: "IDR",
       minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
+      maximumFractionDigits: 0
+    }).format(numValue);
   };
 
   return (
@@ -149,14 +150,14 @@ export default function LaporanPenjualanUmkm() {
         <p className="text-red-500 mt-4">{error}</p>
       ) : laporanData ? (
         <div>
-          {/* Summary Cards */}
+          {/* totalSummary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div className="bg-gray-200 p-6 rounded-lg">
               <h3 className="text-sm text-gray-600 mb-2">
                 Jumlah Produk Terjual
               </h3>
               <p className="text-3xl font-bold">
-                {laporanData.summary.jumlahProdukTerjual}
+                {laporanData.totalSummary.totalJumlahProdukTerjual}
               </p>
               <p className="text-xs text-gray-500 mt-1">
                 {laporanData.periode}
@@ -166,7 +167,7 @@ export default function LaporanPenjualanUmkm() {
             <div className="bg-gray-200 p-6 rounded-lg">
               <h3 className="text-sm text-gray-600 mb-2">Laba Bersih</h3>
               <p className="text-3xl font-bold">
-                {laporanData.summary.labaBersih}
+                {laporanData.totalSummary.totalLabaBersih}
               </p>
               <p className="text-xs text-gray-500 mt-1">
                 {laporanData.periode}
@@ -176,7 +177,7 @@ export default function LaporanPenjualanUmkm() {
             <div className="bg-gray-200 p-6 rounded-lg">
               <h3 className="text-sm text-gray-600 mb-2">Laba Kotor</h3>
               <p className="text-3xl font-bold">
-                {laporanData.summary.labaKotor}
+                {laporanData.totalSummary.totalLabaKotor}
               </p>
               <p className="text-xs text-gray-500 mt-1">
                 {laporanData.periode}
@@ -197,18 +198,18 @@ export default function LaporanPenjualanUmkm() {
                   label={{
                     value: "Tanggal",
                     position: "insideBottom",
-                    offset: -5,
+                    offset: -5
                   }}
                 />
                 <YAxis
                   label={{
                     value: "Total Penjualan",
                     angle: -90,
-                    position: "insideLeft",
+                    position: "insideLeft"
                   }}
                 />
                 <Tooltip
-                  formatter={(value: number) => formatCurrency(value)}
+                  formatter={(value) => formatCurrency(value as number)}
                   labelFormatter={(label) => `Tanggal ${label}`}
                 />
                 <Line
