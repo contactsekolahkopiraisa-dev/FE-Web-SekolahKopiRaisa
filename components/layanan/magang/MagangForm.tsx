@@ -6,8 +6,6 @@ interface MagangFormProps {
   formData: {
     namaPeserta: string;
     namaNIM: string;
-    fakultas: string;
-    prodi: string;
     instansi: string;
     tanggalMulai: string;
     tanggalSelesai: string;
@@ -26,7 +24,7 @@ export default function MagangForm({
   onInputChange,
   onKegiatanChange,
   onFileUpload,
-  onSubmit,
+  onSubmit
 }: MagangFormProps) {
   return (
     <div className="py-8">
@@ -69,24 +67,6 @@ export default function MagangForm({
           />
 
           <FormField
-            label="Fakultas (Opsional)"
-            name="fakultas"
-            type="text"
-            value={formData.fakultas}
-            onChange={onInputChange}
-            placeholder="Masukkan nama fakultas (kosongkan jika sekolah)"
-          />
-
-          <FormField
-            label="Prodi / Jurusan"
-            name="prodi"
-            type="text"
-            value={formData.prodi}
-            onChange={onInputChange}
-            placeholder="Masukkan nama prodi atau jurusan"
-          />
-
-          <FormField
             label="Tanggal Mulai"
             name="tanggalMulai"
             type="date"
@@ -108,14 +88,12 @@ export default function MagangForm({
           />
 
           <div className="bg-gray-100 p-6 rounded-lg">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">
-              Upload Dokumen
-            </h3>
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Upload Dokumen</h3>
 
             <div className="mb-4">
               <FileUpload
                 label="Proposal / Surat Permohonan"
-                onFileChange={(file) => onFileUpload("proposalFile", file)}
+                onFileChange={(file) => onFileUpload('proposalFile', file)}
                 file={formData.proposalFile}
               />
             </div>
@@ -123,9 +101,7 @@ export default function MagangForm({
             <div>
               <FileUpload
                 label="Surat Pengantar"
-                onFileChange={(file) =>
-                  onFileUpload("suratPengantarFile", file)
-                }
+                onFileChange={(file) => onFileUpload('suratPengantarFile', file)}
                 file={formData.suratPengantarFile}
               />
             </div>
@@ -144,3 +120,5 @@ export default function MagangForm({
     </div>
   );
 }
+
+

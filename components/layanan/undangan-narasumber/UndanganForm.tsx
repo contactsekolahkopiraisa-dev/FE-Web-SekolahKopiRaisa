@@ -19,7 +19,7 @@ export default function UndanganForm({
   formData,
   onInputChange,
   onFileUpload,
-  onSubmit,
+  onSubmit
 }: UndanganFormProps) {
   return (
     <div className="py-8">
@@ -60,7 +60,7 @@ export default function UndanganForm({
             onChange={onInputChange}
           />
 
-          <FormField
+           <FormField
             label="Tempat Kegiatan"
             name="tempatKegiatan"
             type="text"
@@ -72,19 +72,17 @@ export default function UndanganForm({
             <div>
               <FileUpload
                 label="Proposal / Surat Permohonan"
-                onFileChange={(file) => onFileUpload("proposalFile", file)}
+                onFileChange={(file) => onFileUpload('proposalFile', file)}
                 file={formData.proposalFile}
               />
             </div>
-          </div>
+          </div> 
 
           <div className="bg-gray-100 p-6 rounded-lg">
             <div>
               <FileUpload
                 label="Surat Undangan Narasumber"
-                onFileChange={(file) =>
-                  onFileUpload("suratUndaganNarasumberFile", file)
-                }
+                onFileChange={(file) => onFileUpload('suratUndaganNarasumberFile', file)}
                 file={formData.suratUndaganNarasumberFile}
               />
             </div>
@@ -103,3 +101,5 @@ export default function UndanganForm({
     </div>
   );
 }
+
+

@@ -587,7 +587,7 @@ export default function Navbar({ navbarItems }: { navbarItems: NavbarItem[] }) {
                       }}
                     >
                       <Image
-                        src={user.image || "/assets/user.png"}
+                        src={user.image || "/assets/avatar.png"}
                         alt="avatar"
                         width={40}
                         height={40}
