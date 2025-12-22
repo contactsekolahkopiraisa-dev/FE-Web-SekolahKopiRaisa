@@ -2,46 +2,29 @@ import type { ReactNode } from "react";
 import Sidebar from "../../components/main/Sidebar";
 import {
   LayoutDashboard,
-  CalendarCheck,
-  Building,
-  FileText,
+  Wallet,
   Package,
-  Handshake,
   NotepadText,
+  FileText,
 } from "lucide-react";
 
 export default function UmkmLayout({ children }: { children: ReactNode }) {
   const sidebarItems = [
     { icon: <LayoutDashboard size={20} />, text: "Dashboard", href: "/umkm" },
     {
-      icon: <CalendarCheck size={20} />,
-      text: "Kegiatan",
-      href: "/umkm/activity",
-    },
-    {
       icon: <Package size={20} />,
       text: "Produk",
-      href: "/umkm/product",
+      href: "/umkm/produk",
     },
     {
-      icon: <Handshake size={20} />,
-      text: "Mitra",
-      href: "/umkm/partner",
-    },
-    {
-        icon: <Handshake size={20} />,
-        text: "UMKM",
-        href: "/umkm/partner",
-      },
-    {
-      icon: <NotepadText size={20} />,
+      icon: <FileText size={20} />,
       text: "Order",
       href: "/umkm/order",
     },
     {
-      icon: <Handshake size={20} />,
-      text: "Laporan Keuangan",
-      href: "/umkm/partner",
+      icon: <Wallet size={20} />,
+      text: "Laporan Penjualan",
+      href: "/umkm/laporan-penjualan",
     },
   ];
 

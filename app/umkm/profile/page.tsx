@@ -1,15 +1,58 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
-import { Mail, Pen, Phone, TriangleAlert, User } from "lucide-react";
-import { UserItem } from "@/app/types/userType";
-import { getUser, updateUser } from "@/app/utils/user";
+import { Mail, MapPin, Phone, TriangleAlert, User } from "lucide-react";
+import { getProfile, getProfileById, updateProfile } from "@/app/utils/profile";
 import Popup from "@/components/Popup";
 import ConfirmModal from "@/components/ConfirmModal";
 
+interface Address {
+  id_address: number;
+  id_umkm: number;
+  id_desa: number;
+  alamat: string;
+  kode_pos: string;
+  desa: {
+    id_desa: number;
+    id_kecamatan: number;
+    nama_desa: string;
+    kecamatan: {
+      id_kecamatan: number;
+      id_kabupaten: number;
+      nama_kecamatan: string;
+      kabupaten: {
+        id_kabupaten: number;
+        id_provinsi: number;
+        nama_kabupaten: string;
+        provinsi: {
+          id_provinsi: number;
+          nama_provinsi: string;
+        };
+      };
+    };
+  };
+}
+
+interface UserProfile {
+  id: number;
+  name: string;
+  image: string | null;
+  email: string;
+  phone_number: string;
+}
+
+interface UMKMData {
+  id_umkm: number;
+  id_user: number;
+  nama_umkm: string;
+  ktp: string;
+  addresses: Address[];
+  User: UserProfile;
+}
+
 export default function AdminProfile() {
-  const [user, setUser] = useState<UserItem | null>(null);
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [umkmData, setUmkmData] = useState<UMKMData | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [emailErrorOnEdit, setEmailErrorOnEdit] = useState(false);
 
@@ -29,49 +72,38 @@ export default function AdminProfile() {
   ) => {
     const { name, value } = e.target;
     setUser((prev) => (prev ? { ...prev, [name]: value } : null));
-
-    // Hapus error untuk field yang sedang diedit
     setErrors((prevErrors) => ({ ...prevErrors, [name]: "" }));
   };
 
   const handleCancel = () => {
     setIsEditing(false);
     setEmailErrorOnEdit(false);
-    setErrors({}); // Reset errors
-    // Reset user data by fetching from server again
-    const fetchUser = async () => {
-      try {
-        const data = await getUser();
-        if (data) setUser(data);
-      } catch (error) {
-        console.error("Gagal mendapatkan user:", error);
-      }
-    };
+    setErrors({});
     fetchUser();
   };
 
   const handleSave = async () => {
     try {
-      const response = await updateUser({
-        name: user?.name || "",
-        phone_number: user?.phone_number || "",
-        file: imageFile,
+      const response = await updateProfile({
+        name: user?.name,
+        phone_number: user?.phone_number,
+        media: imageFile
       });
 
       if (response) {
-        setErrors({}); // Reset errors
+        setErrors({});
         setEmailErrorOnEdit(false);
-        setIsEditing(false); // Pindah ke sini
+        setIsEditing(false);
         setImageUrl(response.image || imageUrl);
         setImageFile(null);
         setMessage(response.message);
         setPopupType("success");
         setShowPopup(true);
+        fetchUser();
       }
     } catch (error: any) {
       if (error.type === "validation") {
-        setErrors(error.errors); // Tampilkan error validasi
-        // Jangan setIsEditing(false) di sini, biar user tetap bisa edit
+        setErrors(error.errors);
       } else {
         setMessage(error.message || "Terjadi kesalahan saat menyimpan profil.");
         setPopupType("error");
@@ -80,20 +112,43 @@ export default function AdminProfile() {
     }
   };
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const data = await getUser();
-        if (data) {
-          setUser(data);
-          setImageUrl(data.image || "/assets/user.png");
+  const fetchUser = async () => {
+    try {
+      // Ambil ID UMKM dari localStorage atau session
+      const storedIdUmkm = localStorage.getItem("id_umkm");
+
+      if (storedIdUmkm) {
+        const idUmkm = parseInt(storedIdUmkm);
+        console.log("UMKM ID:", idUmkm);
+
+        // Langsung ambil data lengkap berdasarkan ID UMKM
+        const detailedData = await getProfileById(idUmkm);
+        console.log("Detailed API Response:", detailedData);
+
+        if (detailedData) {
+          setUmkmData(detailedData);
+          setUser(detailedData.User);
+          setImageUrl(detailedData.User.image || "/assets/user.png");
+          console.log("User data:", detailedData.User);
+          console.log("Addresses:", detailedData.addresses);
         }
-      } catch (error) {
-        console.error("Gagal mendapatkan user:", error);
+      } else {
+        console.error("ID UMKM tidak ditemukan di localStorage");
+        setMessage("Sesi Anda telah berakhir. Silakan login kembali.");
+        setPopupType("error");
+        setShowPopup(true);
       }
-    };
+    } catch (error) {
+      console.error("Gagal mendapatkan user:", error);
+    }
+  };
+
+  useEffect(() => {
     fetchUser();
   }, []);
+
+  // Get the first address or null
+  const primaryAddress = umkmData?.addresses?.[0] || null;
 
   return (
     <div className="min-h-screen bg-secondary py-8 p-4 pt-20">
@@ -106,7 +161,6 @@ export default function AdminProfile() {
           />
         )}
 
-        {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-lg font-medium text-gray-800 mb-2">
             Profil Saya
@@ -114,19 +168,17 @@ export default function AdminProfile() {
           <p className="text-gray-600">Kelola informasi profil Anda</p>
         </div>
 
-        {/* Main Content Card */}
         <div className="bg-white rounded-2xl shadow-lg border border-orange-100 overflow-hidden">
           {/* Profile Image Section */}
           <div className="bg-primary px-6 py-8">
             <div className="flex flex-col items-center space-y-4">
               <div className="relative group">
                 <div className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-white shadow-lg transition-transform">
-                  <img src={imageUrl} alt="Foto Profil" />
-                </div>
-                <div className="absolute inset-0 rounded-full  transition-all duration-200 flex items-center justify-center">
-                  <span className="text-white opacity-0  transition-opacity text-sm font-medium">
-                    📸
-                  </span>
+                  <img
+                    src={imageUrl}
+                    alt="Foto Profil"
+                    className="w-full h-full object-cover"
+                  />
                 </div>
               </div>
 
@@ -134,6 +186,7 @@ export default function AdminProfile() {
                 <input
                   type="file"
                   className="hidden"
+                  accept="image/*"
                   onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (file) {
@@ -142,10 +195,10 @@ export default function AdminProfile() {
                       setImageUrl(previewUrl);
 
                       try {
-                        const response = await updateUser({
-                          name: user?.name || "",
-                          phone_number: user?.phone_number || "",
-                          file: file,
+                        const response = await updateProfile({
+                          name: user?.name,
+                          phone_number: user?.phone_number,
+                          media: file
                         });
 
                         if (response) {
@@ -154,11 +207,11 @@ export default function AdminProfile() {
                           setMessage("Foto profil berhasil diperbarui!");
                           setPopupType("success");
                           setShowPopup(true);
+                          fetchUser();
                         }
                       } catch (error: any) {
                         if (error.type === "validation") {
-                          setErrors(error.errors); // Tampilkan error validasi
-                          // Jangan setIsEditing(false) di sini, biar user tetap bisa edit
+                          setErrors(error.errors);
                         } else {
                           setMessage(
                             error.message ||
@@ -217,7 +270,6 @@ export default function AdminProfile() {
                   name="email"
                   type="email"
                   value={user?.email || ""}
-                  onChange={handleChange}
                   disabled={true}
                   className="w-full border-2 bg-gray-50 border-gray-200 text-gray-600 rounded-xl px-4 py-3 text-sm"
                   placeholder="Email Anda"
@@ -238,7 +290,7 @@ export default function AdminProfile() {
                 </label>
                 <input
                   name="phone_number"
-                  type="number"
+                  type="tel"
                   value={user?.phone_number || ""}
                   onChange={handleChange}
                   disabled={!isEditing}
@@ -247,7 +299,7 @@ export default function AdminProfile() {
                       ? "bg-white border-gray-200 focus:border-primary"
                       : "bg-gray-50 border-gray-200 text-gray-600"
                   }`}
-                  placeholder="Contoh: +62 812 3456 7890"
+                  placeholder="Contoh: 089536841351"
                 />
                 {errors.phone_number && (
                   <p className="text-red-500 text-sm flex items-center">
@@ -256,6 +308,96 @@ export default function AdminProfile() {
                   </p>
                 )}
               </div>
+
+              {/* Address Information */}
+              {primaryAddress && (
+                <>
+                  <div className="space-y-2">
+                    <label className="flex items-center text-sm font-semibold text-gray-700">
+                      <MapPin size={15} className="mr-1" />
+                      Alamat
+                    </label>
+                    <input
+                      type="text"
+                      value={primaryAddress.alamat || ""}
+                      disabled={true}
+                      className="w-full border-2 bg-gray-50 border-gray-200 text-gray-600 rounded-xl px-4 py-3 text-sm"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-gray-700">
+                        Desa
+                      </label>
+                      <input
+                        type="text"
+                        value={primaryAddress.desa.nama_desa || ""}
+                        disabled={true}
+                        className="w-full border-2 bg-gray-50 border-gray-200 text-gray-600 rounded-xl px-4 py-3 text-sm"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-gray-700">
+                        Kecamatan
+                      </label>
+                      <input
+                        type="text"
+                        value={
+                          primaryAddress.desa.kecamatan.nama_kecamatan || ""
+                        }
+                        disabled={true}
+                        className="w-full border-2 bg-gray-50 border-gray-200 text-gray-600 rounded-xl px-4 py-3 text-sm"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-gray-700">
+                        Kabupaten
+                      </label>
+                      <input
+                        type="text"
+                        value={
+                          primaryAddress.desa.kecamatan.kabupaten
+                            .nama_kabupaten || ""
+                        }
+                        disabled={true}
+                        className="w-full border-2 bg-gray-50 border-gray-200 text-gray-600 rounded-xl px-4 py-3 text-sm"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-gray-700">
+                        Provinsi
+                      </label>
+                      <input
+                        type="text"
+                        value={
+                          primaryAddress.desa.kecamatan.kabupaten.provinsi
+                            .nama_provinsi || ""
+                        }
+                        disabled={true}
+                        className="w-full border-2 bg-gray-50 border-gray-200 text-gray-600 rounded-xl px-4 py-3 text-sm"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-gray-700">
+                      Kode Pos
+                    </label>
+                    <input
+                      type="text"
+                      value={primaryAddress.kode_pos || ""}
+                      disabled={true}
+                      className="w-full border-2 bg-gray-50 border-gray-200 text-gray-600 rounded-xl px-4 py-3 text-sm"
+                    />
+                  </div>
+                </>
+              )}
 
               {/* Action Buttons */}
               <div className="pt-4">
@@ -266,31 +408,26 @@ export default function AdminProfile() {
                       setIsEditing(true);
                       setEmailErrorOnEdit(true);
                     }}
-                    className="w-full py-2 bg-primary text-white rounded-xl font-semibold shadow-lg hover:from-orange-600 hover:to-amber-600 hover:-translate-y-0.5 hover:shadow-xl transition-all duration-200 flex items-center justify-center"
+                    className="w-full py-3 bg-primary text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
                   >
-                    <Pen size={15} className="mr-2" />
-                    Perbarui Profil
+                    ✏️ Perbarui Profil
                   </button>
                 ) : (
                   <div className="flex flex-col sm:flex-row gap-3">
                     <button
                       type="button"
-                      onClick={() => {
-                        setShowConfirmModal(true);
-                      }}
-                      className="flex-1 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-semibold shadow-lg hover:from-green-600 hover:to-emerald-600 hover:-translate-y-0.5 hover:shadow-xl transition-all duration-200 flex items-center justify-center"
+                      onClick={() => setShowConfirmModal(true)}
+                      className="flex-1 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-semibold shadow-lg hover:from-green-600 hover:to-emerald-600 hover:-translate-y-0.5 hover:shadow-xl transition-all duration-200"
                     >
-                      <span className="mr-2">💾</span>
-                      Simpan Perubahan
+                      💾 Simpan Perubahan
                     </button>
 
                     <button
                       type="button"
                       onClick={handleCancel}
-                      className="flex-1 py-3 bg-gradient-to-r from-gray-400 to-gray-500 text-white rounded-xl font-semibold shadow-lg hover:from-gray-500 hover:to-gray-600 hover:-translate-y-0.5 hover:shadow-xl transition-all duration-200 flex items-center justify-center"
+                      className="flex-1 py-3 bg-gradient-to-r from-gray-400 to-gray-500 text-white rounded-xl font-semibold shadow-lg hover:from-gray-500 hover:to-gray-600 hover:-translate-y-0.5 hover:shadow-xl transition-all duration-200"
                     >
-                      <span className="mr-2">❌</span>
-                      Batal
+                      ❌ Batal
                     </button>
                   </div>
                 )}

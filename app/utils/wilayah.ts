@@ -1,9 +1,56 @@
-// app\utils\product.ts
+// app/utils/wilayah.ts
 import api from "./api";
 
-export const fetchAllProduct = async () => {
+export const fetchProvinces = async () => {
   try {
-    const response = await api.get("/api/v1/product");
+    const response = await api.get("/api/v1/wilayah/provinces");
+    return response.data;
+  } catch (error: any) {
+    if (error.response) {
+      const { data } = error.response;
+
+      if (data.errors && typeof data.errors === "object") {
+        throw {
+          type: "validation",
+          message: data.message || "Validasi gagal!",
+          errors: data.errors,
+        };
+      }
+
+      if (data.errors && typeof data.errors === "string") {
+        throw {
+          type: "general",
+          message: data.errors,
+        };
+      }
+
+      // Error fallback
+      throw {
+        type: "general",
+        message: data.message || "Terjadi kesalahan!",
+      };
+    }
+
+    // Error koneksi/server down
+    throw {
+      type: "network",
+      message: "Tidak dapat terhubung ke server. Coba lagi nanti.",
+    };
+  }
+};
+
+////////////////////////////////////////////////////
+// Fungsi untuk fetch regencies berdasarkan provinsi (WAJIB kirim provinceCode)
+export const fetchRegencies = async (provinceCode: string) => {
+  if (!provinceCode) {
+    throw {
+      type: "validation",
+      message: "Kode provinsi wajib diisi",
+    };
+  }
+
+  try {
+    const response = await api.get(`/api/v1/wilayah/regencies/${provinceCode}`);
     return response.data;
   } catch (error: any) {
     if (error.response) {
@@ -41,9 +88,17 @@ export const fetchAllProduct = async () => {
   }
 };
 
-export const fetchProductById = async (id: number) => {
+////////////////////////////////////////////////////
+export const fetchDistricts = async (regencyCode: string) => {
+  if (!regencyCode) {
+    throw {
+      type: "validation",
+      message: "Kode kabupaten wajib diisi",
+    };
+  }
+
   try {
-    const response = await api.get(`/api/v1/product/${id}`);
+    const response = await api.get(`/api/v1/wilayah/districts/${regencyCode}`);
     return response.data;
   } catch (error: any) {
     if (error.response) {
@@ -81,13 +136,17 @@ export const fetchProductById = async (id: number) => {
   }
 };
 
-export const createProduct = async (formData: FormData) => {
+////////////////////////////////////////////////////
+export const fetchVillages = async (districtCode: string) => {
+  if (!districtCode) {
+    throw {
+      type: "validation",
+      message: "Kode kecamatan wajib diisi",
+    };
+  }
+
   try {
-    const response = await api.post("/api/v1/product", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
+    const response = await api.get(`/api/v1/wilayah/villages/${districtCode}`);
     return response.data;
   } catch (error: any) {
     if (error.response) {
@@ -125,13 +184,17 @@ export const createProduct = async (formData: FormData) => {
   }
 };
 
-export const updateProduct = async (id: number, formData: FormData) => {
+////////////////////////////////////////////////////
+export const fetchValidate = async (villageCode: string) => {
+  if (!villageCode) {
+    throw {
+      type: "validation",
+      message: "Kode desa wajib diisi",
+    };
+  }
+
   try {
-    const response = await api.put(`/api/v1/product/${id}`, formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
+    const response = await api.get(`/api/v1/wilayah/validate/${villageCode}`);
     return response.data;
   } catch (error: any) {
     if (error.response) {
@@ -167,9 +230,4 @@ export const updateProduct = async (id: number, formData: FormData) => {
       message: "Tidak dapat terhubung ke server. Coba lagi nanti.",
     };
   }
-};
-
-export const deleteProduct = async (id: number) => {
-  const response = await api.delete(`/api/v1/product/${id}`);
-  return response.data;
 };
