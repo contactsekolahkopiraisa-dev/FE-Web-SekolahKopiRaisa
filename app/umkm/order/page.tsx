@@ -1,7 +1,8 @@
+// app\umkm\order\page.tsx
 "use client";
 
 import OrderTable, { Order, OrderStatus } from "@/components/order/OrderTable";
-import { fetchAllOrder, updateStatusOrder } from "@/app/utils/order";
+import { fetchAllUMKMOrder, updateStatusOrder } from "@/app/utils/order-umkm";
 import { useEffect, useState } from "react";
 import OrderDetailModal from "@/components/order/OrderDetailModal";
 import { formatCurrency } from "@/app/utils/helper";
@@ -17,7 +18,7 @@ import { useRouter } from "next/navigation";
 import { callPartner } from "@/app/utils/partner";
 import Popup from "@/components/Popup";
 
-export default function AdminOrderPage() {
+export default function UMKMOrderPage() {
   const [ordersData, setOrdersData] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -34,8 +35,8 @@ export default function AdminOrderPage() {
   const [statusFilter, setStatusFilter] = useState<OrderStatus | "ALL">("ALL");
   const [contactedPartners, setContactedPartners] = useState<number[]>([]);
   const [showPopup, setShowPopup] = useState(false);
-    const [message, setMessage] = useState("");
-    const [popupType, setPopupType] = useState<"success" | "error">("success");
+  const [message, setMessage] = useState("");
+  const [popupType, setPopupType] = useState<"success" | "error">("success");
 
   const [statusSortOrder, setStatusSortOrder] = useState<"asc" | "desc">("asc");
   const [sortOption, setSortOption] = useState<"newest" | "oldest" | "az">(
@@ -48,8 +49,8 @@ export default function AdminOrderPage() {
     "PENDING",
     "PROCESSING",
     "SHIPPED",
-    "DELIVERED",
-    "CANCELED",
+    // "DELIVERED",
+    // "CANCELED",
   ];
 
   const filteredOrders =
@@ -57,81 +58,76 @@ export default function AdminOrderPage() {
       ? ordersData
       : ordersData.filter((order) => order.status === statusFilter);
 
-  const handleContactPartner = async (partnerId: number) => {
-    try {
-      const response = await callPartner(partnerId); // Panggil API
-      const url = response.data?.whatsappUrl;
-
-      if (url) {
-        window.open(url, "_blank"); // Redirect ke WhatsApp
-      }
-
-      // (Opsional) Tandai partner sudah dihubungi
-      setContactedPartners((prev) => [...prev, partnerId]);
-    } catch (err: any) {
-      alert(err.message || "Gagal menghubungi partner.");
-      console.error(err);
-    }
-  };
-
   // Fungsi map status API ke enum status frontend
-  const mapApiStatus = (apiStatus: string): OrderStatus => {
-    const lower = apiStatus.toLowerCase();
-    if (["pending", "created"].includes(lower)) return "PENDING";
-    if (["processing"].includes(lower)) return "PROCESSING";
-    if (["shipped"].includes(lower)) return "SHIPPED";
-    if (["delivered", "success", "completed", "paid"].includes(lower))
+  const mapApiStatus = (apiStatus: string | undefined | null): OrderStatus => {
+    if (!apiStatus) return "PENDING"; // Handle undefined/null
+    const upper = apiStatus.toUpperCase();
+    if (["PENDING", "CREATED"].includes(upper)) return "PENDING";
+    if (["PROCESSING"].includes(upper)) return "PROCESSING";
+    if (["SHIPPED"].includes(upper)) return "SHIPPED";
+    if (["DELIVERED", "SUCCESS", "COMPLETED", "PAID"].includes(upper))
       return "DELIVERED";
-    if (["canceled", "failed"].includes(lower)) return "CANCELED";
+    if (["CANCELED", "FAILED"].includes(upper)) return "CANCELED";
     return "PENDING"; // fallback
   };
 
-  // Ambil data order dari API
+  // Ambil data order dari API - TANPA FILTERING USER
   useEffect(() => {
     const getOrders = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        const response = await fetchAllOrder();
+        const response = await fetchAllUMKMOrder();
+        console.log("Full API response:", response);
         const rawData = response.data;
+        console.log("Raw order data:", rawData);
 
         if (!Array.isArray(rawData)) {
+          console.error("Expected array but got:", typeof rawData, rawData);
           setError("Failed to load orders: Invalid data format.");
           return;
         }
 
+        // TIDAK ADA FILTERING - Langsung proses semua data
         const processedOrders: Order[] = rawData.map((order: any) => {
           const totalQuantity =
-            order.orderItems?.reduce(
+            order.items?.reduce(
               (sum: number, item: any) => sum + (item.quantity || 0),
               0
             ) || 0;
           const totalPrice = order.payment?.amount || 0;
           const productNameString =
-            order.orderItems
-              ?.map((item: any) => item.product?.name)
+            order.items
+              ?.map((item: any) => item.name)
               .filter(Boolean)
               .join(", ") || "Produk tidak tersedia";
 
           const partnerList =
-            order.orderItems?.map((item: any) => item.partner) || [];
+            order.items?.map((item: any) => item.partner) || [];
 
           return {
-            id: order.id,
-            customerName: order.user?.name || "N/A",
+            id: order.orderId,
+            customerName: order.customerName || "N/A",
             productName: productNameString,
             totalQuantity,
             totalPrice: formatCurrency(totalPrice),
-            status: mapApiStatus(order.status),
-            createdAt: order.created_at,
-            partnerId: partnerList[0]?.id || null,
+            status: mapApiStatus(order.statusOrder),
+            createdAt: order.createdAt,
             partnerName: partnerList[0]?.name || null,
-            orderItems: order.orderItems || [], // 🟢 Tambahkan ini untuk akses partner nanti
+            orderItems: order.items || [],
           };
         });
 
+        console.log("Processed orders:", processedOrders);
         setOrdersData(processedOrders);
       } catch (err: any) {
+        console.error("Failed to fetch orders:", err);
+        console.error("Error details:", {
+          message: err?.message,
+          type: err?.type,
+          response: err?.response,
+          stack: err?.stack,
+        });
         setError(`Failed to load orders: ${err.message || "Unknown error"}`);
       } finally {
         setIsLoading(false);
@@ -229,7 +225,7 @@ export default function AdminOrderPage() {
 
   // Handler tombol lihat detail
   const handleViewOrder = (orderId: number) => {
-    router.push(`/admin/order/${orderId}`);
+    router.push(`/umkm/order/${orderId}`);
   };
 
   const handleCloseModal = () => {
@@ -249,7 +245,10 @@ export default function AdminOrderPage() {
 
     try {
       setIsSubmitting(true);
-     const response = await updateStatusOrder(pendingStatus.orderId, pendingStatus.newStatus);
+      const response = await updateStatusOrder(
+        pendingStatus.orderId,
+        pendingStatus.newStatus
+      );
 
       setOrdersData((prev) =>
         prev.map((order) =>
@@ -259,11 +258,13 @@ export default function AdminOrderPage() {
         )
       );
       setMessage(response.message);
-        setPopupType("success");
-        setShowPopup(true);
+      setPopupType("success");
+      setShowPopup(true);
     } catch (error: any) {
       console.error("Gagal update status:", error);
-      alert(error.message || "Gagal mengubah status pesanan.");
+      setMessage(error.message || "Gagal mengubah status pesanan.");
+      setPopupType("error");
+      setShowPopup(true);
     } finally {
       setIsSubmitting(false);
       setIsConfirmOpen(false);
@@ -285,10 +286,10 @@ export default function AdminOrderPage() {
         return "Diproses";
       case "SHIPPED":
         return "Dikirim";
-      case "DELIVERED":
-        return "Diterima";
-      case "CANCELED":
-        return "Dibatalkan";
+      // case "DELIVERED":
+      //   return "Diterima";
+      // case "CANCELED":
+      //   return "Dibatalkan";
       default:
         return status;
     }
@@ -316,8 +317,8 @@ export default function AdminOrderPage() {
                 <option value="PENDING">Dibuat</option>
                 <option value="PROCESSING">Diproses</option>
                 <option value="SHIPPED">Dikirim</option>
-                <option value="DELIVERED">Diterima</option>
-                <option value="CANCELED">Dibatalkan</option>
+                {/* <option value="DELIVERED">Diterima</option>
+                <option value="CANCELED">Dibatalkan</option> */}
               </select>
               <FunnelPlus
                 className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 pointer-events-none"
@@ -431,20 +432,26 @@ export default function AdminOrderPage() {
       </div>
     );
   }
+
   if (error)
     return <div className="p-4 text-center text-red-500">Error: {error}</div>;
+
   if (ordersData.length === 0)
-    return <div className="p-4 text-center">No orders found.</div>;
+    return (
+      <div className="p-4 text-center text-gray-500">
+        Belum ada pesanan yang tersedia.
+      </div>
+    );
 
   return (
     <div className="">
       {showPopup && (
-              <Popup
-                message={message}
-                type={popupType}
-                onClose={() => setShowPopup(false)}
-              />
-            )}
+        <Popup
+          message={message}
+          type={popupType}
+          onClose={() => setShowPopup(false)}
+        />
+      )}
       <ConfirmModal
         isOpen={isConfirmOpen}
         onClose={() => {
@@ -463,7 +470,14 @@ export default function AdminOrderPage() {
 
       <div className="mx-auto">
         <div className="flex flex-wrap justify-between items-center mb-4">
-          <h1 className="text-lg font-medium">List Order</h1>
+          <h1 className="text-lg font-medium">
+            List Order
+            {!isLoading && ordersData.length > 0 && (
+              <span className="text-sm text-gray-500 ml-2">
+                ({ordersData.length} pesanan)
+              </span>
+            )}
+          </h1>
 
           {/* Filters - Moved to the right */}
           <div className="flex flex-wrap gap-4 items-center">
@@ -480,8 +494,8 @@ export default function AdminOrderPage() {
                 <option value="PENDING">Dibuat</option>
                 <option value="PROCESSING">Diproses</option>
                 <option value="SHIPPED">Dikirim</option>
-                <option value="DELIVERED">Diterima</option>
-                <option value="CANCELED">Dibatalkan</option>
+                {/* <option value="DELIVERED">Diterima</option>
+                <option value="CANCELED">Dibatalkan</option> */}
               </select>
               <FunnelPlus
                 className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 pointer-events-none"
@@ -509,52 +523,6 @@ export default function AdminOrderPage() {
             </div>
           </div>
         </div>
-
-        {/* Button Hubungi Mitra untuk Pending Orders */}
-        {(() => {
-          const pendingPartners = ordersData
-            .filter((o) => o.status === "PENDING")
-            .flatMap(
-              (o: any) => o.orderItems?.map((item: any) => item.partner) || []
-            )
-            .filter((p) => p && p.id)
-            .reduce((unique: any[], curr: any) => {
-              if (!unique.find((p) => p.id === curr.id)) unique.push(curr);
-              return unique;
-            }, []);
-
-          return pendingPartners.length > 0 ? (
-            <div className="mb-4 p-4 bg-secondary rounded-xl shadow-lg">
-              <h3 className="text-sm font-medium mb-3">
-                Mitra dengan Order Pending ({pendingPartners.length} mitra)
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {pendingPartners.map((partner) => (
-                  <button
-                    key={partner.id}
-                    onClick={() => handleContactPartner(partner.id)}
-                    className={`px-3 py-1.5 text-sm rounded-xl transition-colors ${
-                      contactedPartners.includes(partner.id)
-                        ? "bg-green-100 text-green-700 border border-green-300"
-                        : "bg-blue-500 text-white hover:bg-blue-600"
-                    }`}
-                    disabled={contactedPartners.includes(partner.id)}
-                  >
-                    {contactedPartners.includes(partner.id) ? (
-                      <div className="flex items-center gap-2">
-                        <Check size={18} /> {partner.name} (Dihubungi)
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <Phone size={18} /> Hubungi {partner.name}
-                      </div>
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : null;
-        })()}
 
         <OrderTable
           order={currentOrders}

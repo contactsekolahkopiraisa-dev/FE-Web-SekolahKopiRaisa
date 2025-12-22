@@ -3,29 +3,23 @@
 import { useState, useRef, ChangeEvent, useEffect } from "react";
 import Image from "next/image";
 import { LoaderCircle } from "lucide-react";
-import { fetchAllPartner } from "@/app/utils/partner";
 import { createProduct } from "@/app/utils/product";
 import { useRouter } from "next/navigation";
 import Popup from "@/components/Popup";
 import ProductListAdmin from "@/components/product/ProductListAdmin";
 import ConfirmModal from "@/components/ConfirmModal";
 
-export default function AdminCreateProductPage() {
+export default function UMKMCreateProductPage() {
   // State for product data
   const [product, setProduct] = useState({
     name: "",
-    partnerName: "",
     description: "",
     price: "",
     weight: "",
-    stock: "",
+    stock: ""
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-
-  // State for partners dropdown
-  const [partners, setPartners] = useState<{ id: string; name: string }[]>([]);
-  const [isLoadingPartners, setIsLoadingPartners] = useState(false);
 
   // State for image upload
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -34,8 +28,6 @@ export default function AdminCreateProductPage() {
 
   // State for form submission
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitSuccess, setSubmitSuccess] = useState(false);
-  const [submitError, setSubmitError] = useState("");
 
   const [showPopup, setShowPopup] = useState(false);
   const [message, setMessage] = useState("");
@@ -68,7 +60,7 @@ export default function AdminCreateProductPage() {
 
     setProduct((prev) => ({
       ...prev,
-      [name]: name === "price" || name === "stock" ? Number(value) : value,
+      [name]: name === "price" || name === "stock" ? Number(value) : value
     }));
 
     // Hilangkan error saat field diperbarui
@@ -84,19 +76,18 @@ export default function AdminCreateProductPage() {
   // Handle form submission
   const handleSubmit = async () => {
     setIsSubmitting(true);
-    setSubmitError("");
 
     try {
       const formData = new FormData();
       formData.append("name", product.name);
-      formData.append("partner_id", product.partnerName);
       formData.append("description", product.description);
       formData.append("price", product.price.toString());
       formData.append("weight", product.weight.toString());
       formData.append("stock", product.stock.toString());
       if (imageFile) {
-        formData.append("productFile", imageFile); // ⬅️ Ini ditambahkan
+        formData.append("productFile", imageFile);
       }
+
       const response = await createProduct(formData);
 
       if (response && response.message) {
@@ -105,7 +96,7 @@ export default function AdminCreateProductPage() {
           "popup",
           JSON.stringify({
             message: response.message,
-            type: "success",
+            type: "success"
           })
         );
 
@@ -114,12 +105,12 @@ export default function AdminCreateProductPage() {
       }
     } catch (error: any) {
       if (error.type === "validation") {
-        setErrors(error.errors); // ✅ Ambil langsung dari backend
+        setErrors(error.errors);
         setShowConfirmModal(false);
         console.error("Validation errors:", error.errors);
       } else {
         console.error("Error:", error);
-        setMessage(error.message || "Terjadi kesalahan saat menyimpan berita.");
+        setMessage(error.message || "Terjadi kesalahan saat menyimpan produk.");
         setPopupType("error");
         setShowPopup(true);
       }
@@ -127,27 +118,6 @@ export default function AdminCreateProductPage() {
       setIsSubmitting(false);
     }
   };
-
-  useEffect(() => {
-    const loadPartners = async () => {
-      setIsLoadingPartners(true);
-      try {
-        const response = await fetchAllPartner();
-        const rawData = response.data;
-        const formattedData = rawData.map((item: any) => ({
-          id: item.id,
-          name: item.name,
-        }));
-        setPartners(formattedData);
-      } catch (error) {
-        console.error("Failed to fetch partners:", error);
-      } finally {
-        setIsLoadingPartners(false);
-      }
-    };
-
-    loadPartners();
-  }, []);
 
   return (
     <div className="mx-auto bg-tertiary p-6 rounded-lg shadow-md">
@@ -226,32 +196,6 @@ export default function AdminCreateProductPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Nama Mitra
-              </label>
-              {isLoadingPartners ? (
-                <div className="flex items-center gap-2">
-                  <LoaderCircle className="animate-spin w-4" />
-                  <span>Memuat daftar mitra...</span>
-                </div>
-              ) : (
-                <select
-                  name="partnerName"
-                  value={product.partnerName}
-                  onChange={handleInputChange}
-                  className="w-full p-2 border border-gray-300 rounded-xl"
-                >
-                  <option value="">Pilih Mitra</option>
-                  {partners.map((partner) => (
-                    <option key={partner.id} value={partner.id}>
-                      {partner.name}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Deskripsi Produk
               </label>
               <textarea
@@ -319,7 +263,7 @@ export default function AdminCreateProductPage() {
             <button
               type="button"
               onClick={() => setShowConfirmModal(true)}
-              className="cursor-pointer w-full bg-primary text-white py-2 px-4 text-sm font-medium rounded-xl hover:-translate-y-1 duration-150 ease-in flex justify-center items-center gap-2 disabled:opacity-50"
+              className="cursor-pointer w-full bg-primary text-white py-2 px-4 text-sm font-medium rounded-xl hover:-translate-y-1 duration-150 ease-in flex justify-center items-center gap-2"
             >
               Simpan Produk
             </button>
@@ -330,24 +274,14 @@ export default function AdminCreateProductPage() {
         <div className="w-full md:w-1/2 max-w-100">
           <h2 className="text-lg font-medium mb-4">Pratinjau Produk</h2>
           <ProductListAdmin
-            id={0} // ID sementara, karena produk belum dibuat
-            image={imagePreview || "/assets/noimage.png"} // ganti dengan URL gambar placeholder lokal jika belum ada gambar
+            id={0}
+            image={imagePreview || "/assets/noimage.png"}
             name={product.name || "Nama Produk"}
             price={product.price ? Number(product.price) : 0}
             stock={Number(product.stock) || 0}
-            sold={product.stock ? 0 : 0} // Sementara, karena belum ada data penjualan
-            weight={product.weight ? Number(product.weight) : 0} // Sementara, karena belum ada data berat
-            partner={
-              partners.length > 0
-                ? {
-                    name:
-                      partners.find(
-                        (p) => p.id.toString() === product.partnerName
-                      )?.name || "Pilih Mitra",
-                    id: Number(product.partnerName) || 0,
-                  }
-                : { name: "Pilih Mitra" }
-            }
+            sold={0}
+            weight={product.weight ? Number(product.weight) : 0}
+            partner={{ name: "Mitra Anda", id: 0 }}
             onEdit={() => {}}
             onDelete={() => {}}
           />

@@ -1,3 +1,4 @@
+// components\main\Sidebar.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -26,11 +27,13 @@ import ConfirmModal from "../ConfirmModal";
 interface SidebarItemType {
   icon: React.ReactNode;
   text: string;
-  href: string;
+  href?: string; // Ubah menjadi optional
+  subItems?: { icon?: React.ReactNode; text: string; href: string }[]; // Tambahkan subItems
 }
 interface User {
   name: string;
   image: string;
+  role?: string; // Tambahkan role di interface User
 }
 
 export default function Sidebar({ items }: { items: SidebarItemType[] }) {
@@ -59,6 +62,25 @@ export default function Sidebar({ items }: { items: SidebarItemType[] }) {
     fetchUser();
   }, []);
 
+  // Function untuk handle navigation ke profile berdasarkan role
+  const handleProfileNavigation = () => {
+    if (user?.role?.toLowerCase() === "umkm") {
+      router.push("/umkm/profile");
+    } else {
+      router.push("/admin/profile");
+    }
+  };
+
+  const [openDropdowns, setOpenDropdowns] = useState<string[]>([]);
+
+  const toggleDropdown = (text: string) => {
+    setOpenDropdowns((prev) =>
+      prev.includes(text)
+        ? prev.filter((item) => item !== text)
+        : [...prev, text]
+    );
+  };
+
   const renderSidebarContent = (isMobile = false) => (
     <div
       className={clsx(
@@ -73,12 +95,7 @@ export default function Sidebar({ items }: { items: SidebarItemType[] }) {
           isSidebarOpen ? "justify-between" : "flex-col gap-3 justify-center"
         )}
       >
-        {/* <button
-          onClick={() => router.push("/")}
-          className="flex items-center gap-2 hover:bg-gray-100 cursor-pointer rounded-sm p-2"
-        > */}
-          <Image src="/assets/logo.png" alt="Logo" width={20} height={20} />
-        {/* </button> */}
+        <Image src="/assets/logo.png" alt="Logo" width={20} height={20} />
         {isMobile ? (
           <button onClick={() => setMobileOpen(false)}>
             <X />
@@ -113,12 +130,16 @@ export default function Sidebar({ items }: { items: SidebarItemType[] }) {
         <ul className="space-y-3">
           {items.map((item) => (
             <SidebarItem
-              key={item.href}
+              key={item.text}
               icon={item.icon}
               text={item.text}
               href={item.href}
+              subItems={item.subItems}
               isActive={pathname === item.href}
               isSidebarOpen={isMobile ? true : isSidebarOpen}
+              isDropdownOpen={openDropdowns.includes(item.text)}
+              onToggleDropdown={() => toggleDropdown(item.text)}
+              pathname={pathname}
             />
           ))}
         </ul>
@@ -128,9 +149,7 @@ export default function Sidebar({ items }: { items: SidebarItemType[] }) {
       <div className="cursor-pointer px-3 py-3 bg-gray-100 flex items-center justify-between rounded-t-xl">
         <div
           className="flex items-center gap-2"
-          onClick={() => {
-            router.push("/admin/profile");
-          }}
+          onClick={handleProfileNavigation}
         >
           <Image
             src={user?.image || "/assets/avatar.png"}
@@ -142,7 +161,7 @@ export default function Sidebar({ items }: { items: SidebarItemType[] }) {
           {(isMobile || isSidebarOpen) && (
             <div>
               <p className="text-xs font-medium">{user?.name}</p>
-              <p className="text-xs text-gray-500">Admin</p>
+              <p className="text-xs text-gray-500">{user?.role || "Admin"}</p>
             </div>
           )}
         </div>
@@ -226,18 +245,83 @@ function SidebarItem({
   icon,
   text,
   href,
+  subItems,
   isActive,
   isSidebarOpen,
+  isDropdownOpen,
+  onToggleDropdown,
+  pathname,
 }: {
   icon: React.ReactNode;
   text: string;
-  href: string;
+  href?: string;
+  subItems?: { icon?: React.ReactNode; text: string; href: string }[];
   isActive: boolean;
   isSidebarOpen: boolean;
+  isDropdownOpen: boolean;
+  onToggleDropdown: () => void;
+  pathname: string;
 }) {
+  // Check if any subitem is active
+  const hasActiveSubItem = subItems?.some((sub) => pathname === sub.href);
+
+  if (subItems && subItems.length > 0) {
+    // Item with dropdown
+    return (
+      <li>
+        <div
+          className={clsx(
+            "flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 cursor-pointer text-sm",
+            hasActiveSubItem
+              ? "bg-primary text-white font-medium shadow-lg"
+              : "text-gray-700 hover:bg-gray-100 hover:text-gray-900",
+            !isSidebarOpen && "justify-center"
+          )}
+          onClick={onToggleDropdown}
+        >
+          {icon}
+          {isSidebarOpen && (
+            <>
+              <span className="flex-1">{text}</span>
+              {isDropdownOpen ? (
+                <ChevronDown size={16} />
+              ) : (
+                <ChevronRight size={16} />
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Submenu */}
+        {isSidebarOpen && isDropdownOpen && (
+          <ul className="ml-8 mt-2 space-y-2">
+            {subItems.map((subItem) => (
+              <li key={subItem.href}>
+                <Link href={subItem.href}>
+                  <div
+                    className={clsx(
+                      "flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-200 cursor-pointer text-sm",
+                      pathname === subItem.href
+                        ? "bg-primary text-white font-medium"
+                        : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                    )}
+                  >
+                    {subItem.icon && subItem.icon}
+                    <span>{subItem.text}</span>
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </li>
+    );
+  }
+
+  // Regular item without dropdown
   return (
     <li>
-      <Link href={href}>
+      <Link href={href || "#"}>
         <div
           className={clsx(
             "flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 cursor-pointer text-sm",

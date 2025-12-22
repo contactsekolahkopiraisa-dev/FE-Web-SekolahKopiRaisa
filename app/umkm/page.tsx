@@ -1,3 +1,4 @@
+// app\umkm\page.tsx
 "use client";
 
 import { CalendarCheck, Building, Store } from "lucide-react";
@@ -6,7 +7,8 @@ import { useEffect, useState } from "react";
 import { fetchAllActivity } from "../utils/activity";
 import { fetchAllProduct } from "../utils/product";
 import { fetchAllPartner } from "../utils/partner";
-import { fetchAllOrder } from "../utils/order";
+import { fetchAllUMKMOrder } from "../utils/order-umkm";
+import { getUserId } from "../utils/auth"; // Import helper function
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -38,95 +40,55 @@ ChartJS.register(
 
 export default function UmkmDashboard() {
   const [user, setUser] = useState<UserItem | null>(null);
-  const [countActivity, setCountActivity] = useState(0);
   const [counstProduct, setCountProduct] = useState(0);
-  const [countPartner, setCountPartner] = useState(0);
-
-  // New state for recent data
-  const [recentActivities, setRecentActivities] = useState<any[]>([]);
   const [recentProducts, setRecentProducts] = useState<any[]>([]);
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
-
-  // New state for chart data
-  const [weeklyActivityData, setWeeklyActivityData] = useState<any>({
-    labels: [],
-    datasets: [],
-  });
-
-  const fetchActivityCount = async () => {
-    try {
-      const response = await fetchAllActivity();
-      const rawData = response.data;
-      const imageMediaCount = rawData.reduce((total: number, item: any) => {
-        const imageCount =
-          item.newsMedia?.filter((media: any) =>
-            media.media_type?.startsWith("image/")
-          ).length || 0;
-        return total + imageCount;
-      }, 0);
-
-      setCountActivity(imageMediaCount);
-
-      // Get recent activities (last 3)
-      const sortedActivities = rawData
-        .sort(
-          (a: any, b: any) =>
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        )
-        .slice(0, 3);
-      setRecentActivities(sortedActivities);
-
-      // Prepare weekly activity data for chart
-      const last7Days = Array.from({ length: 7 }, (_, i) => {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        return date.toISOString().split("T")[0];
-      }).reverse();
-
-      const activityCounts = last7Days.map((date) => {
-        return rawData.filter((activity: any) =>
-          activity.created_at?.startsWith(date)
-        ).length;
-      });
-
-      const dayNames = last7Days.map((date) => {
-        const dayName = new Date(date).toLocaleDateString("id-ID", {
-          weekday: "short",
-        });
-        return dayName;
-      });
-
-      setWeeklyActivityData({
-        labels: dayNames,
-        datasets: [
-          {
-            label: "Kegiatan per Hari",
-            data: activityCounts,
-            backgroundColor: "rgba(59, 130, 246, 0.5)",
-            borderColor: "rgba(59, 130, 246, 1)",
-            borderWidth: 2,
-            fill: true,
-          },
-        ],
-      });
-    } catch (error) {
-      console.error("Error fetching activity count:", error);
-    }
-  };
-
-  useEffect(() => {
-    fetchActivityCount();
-  }, []);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchProductCount = async () => {
     try {
-      const response = await fetchAllProduct();
-      const products = response.data;
-      setCountProduct(Array.isArray(products) ? products.length : 0);
+      setLoading(true);
 
-      // Get recent products (last 3)
-      if (Array.isArray(products)) {
-        const sortedProducts = products
+      // Dapatkan user_id dari user yang sedang login
+      const currentUserId = getUserId();
+
+      // Validasi jika user_id tidak ditemukan
+      if (currentUserId === null) {
+        setError("User ID tidak ditemukan. Silakan login kembali.");
+        setLoading(false);
+        return;
+      }
+
+      const response = await fetchAllProduct();
+      console.log("Full API response:", response);
+      const rawData = response.data;
+      console.log("Raw product data:", rawData);
+
+      if (!Array.isArray(rawData)) {
+        console.error("Expected array but got:", typeof rawData, rawData);
+        setError("Data produk tidak valid.");
+        setLoading(false);
+        return;
+      }
+
+      // Filter produk berdasarkan partner.user_id
+      const filteredProducts = rawData.filter(
+        (item: any) => item.partner?.user_id === currentUserId
+      );
+
+      console.log(
+        "Filtered products for user_id",
+        currentUserId,
+        ":",
+        filteredProducts
+      );
+
+      setCountProduct(filteredProducts.length);
+
+      // Get recent products (last 3) dari data yang sudah difilter
+      if (filteredProducts.length > 0) {
+        const sortedProducts = filteredProducts
           .sort(
             (a: any, b: any) =>
               new Date(b.created_at).getTime() -
@@ -134,12 +96,17 @@ export default function UmkmDashboard() {
           )
           .slice(0, 3);
         setRecentProducts(sortedProducts);
+      } else {
+        setRecentProducts([]);
       }
 
-      console.log("Product count:", products.length);
-      console.log("Product data:", products);
+      console.log("Product count:", filteredProducts.length);
+      console.log("Recent products:", filteredProducts.slice(0, 3));
     } catch (error) {
       console.error("Error fetching product count:", error);
+      setError("Gagal memuat data produk. Silakan coba lagi.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -147,26 +114,10 @@ export default function UmkmDashboard() {
     fetchProductCount();
   }, []);
 
-  const fetchPartnerCount = async () => {
-    try {
-      const response = await fetchAllPartner();
-      const partners = response.data;
-      setCountPartner(Array.isArray(partners) ? partners.length : 0);
-      console.log("Partner count:", partners.length);
-      console.log("Partner data:", partners);
-    } catch (error) {
-      console.error("Error fetching partner count:", error);
-    }
-  };
-
-  useEffect(() => {
-    fetchPartnerCount();
-  }, []);
-
   // New function to fetch recent orders
   const fetchRecentOrders = async () => {
     try {
-      const response = await fetchAllOrder();
+      const response = await fetchAllUMKMOrder();
       const orders = response.data;
 
       if (Array.isArray(orders)) {
@@ -224,60 +175,6 @@ export default function UmkmDashboard() {
     return `${Math.floor(diffInDays / 30)} bulan lalu`;
   };
 
-  // Chart options
-  const barChartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: "top" as const,
-      },
-      title: {
-        display: false,
-      },
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        ticks: {
-          stepSize: 1,
-        },
-      },
-    },
-  };
-
-  // Doughnut chart data for overview
-  const overviewChartData = {
-    labels: ["Kegiatan", "Mitra", "Produk"],
-    datasets: [
-      {
-        label: "Total",
-        data: [countActivity, countPartner, counstProduct],
-        backgroundColor: [
-          "rgba(59, 130, 246, 0.8)",
-          "rgba(34, 197, 94, 0.8)",
-          "rgba(249, 115, 22, 0.8)",
-        ],
-        borderColor: [
-          "rgba(59, 130, 246, 1)",
-          "rgba(34, 197, 94, 1)",
-          "rgba(249, 115, 22, 1)",
-        ],
-        borderWidth: 2,
-      },
-    ],
-  };
-
-  const doughnutOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: "bottom" as const,
-      },
-    },
-  };
-
   return (
     <main className="container mx-auto">
       {/* Greeting */}
@@ -286,118 +183,47 @@ export default function UmkmDashboard() {
         Ini adalah ringkasan dashboardmu hari ini.
       </p>
 
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+          {error}
+        </div>
+      )}
+
       {/* Statistik Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <StatCard
-          icon={<CalendarCheck size={28} className="text-blue-500" />}
-          title="Total Kegiatan"
-          value={countActivity.toString()}
-        />
-        <StatCard
-          icon={<Building size={28} className="text-green-500" />}
-          title="Total Mitra"
-          value={countPartner.toString()}
-        />
-        <StatCard
           icon={<Store size={28} className="text-orange-500" />}
           title="Total Produk"
-          value={counstProduct.toString()}
+          value={loading ? "..." : counstProduct.toString()}
         />
-      </div>
-
-      {/* Grafik dan Konten Terbaru */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Grafik Aktivitas Mingguan */}
-        <div className="bg-tertiary p-6 rounded-xl shadow-lg">
-          <h2 className="text-lg font-medium mb-4">
-            Aktivitas 7 Hari Terakhir
-          </h2>
-          <div className="h-64">
-            <Line data={weeklyActivityData} options={barChartOptions} />
-          </div>
-        </div>
-
-        {/* Grafik Overview */}
-        <div className="bg-tertiary p-6 rounded-xl shadow-lg">
-          <h2 className="text-lg font-medium mb-4">Ringkasan Data</h2>
-          <div className="h-64">
-            <Doughnut data={overviewChartData} options={doughnutOptions} />
-          </div>
-        </div>
       </div>
 
       {/* Konten Terbaru */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        {/* Kegiatan Terbaru */}
-        <div className="bg-tertiary p-6 rounded-xl shadow-lg">
-          <h2 className="text-lg font-medium mb-4 text-gray-800">
-            Kegiatan Terbaru
-          </h2>
-          <div className="space-y-0">
-            {recentActivities.length > 0 ? (
-              recentActivities.map((activity: any, index: number) => (
-                <div
-                  key={activity.id || index}
-                  className={`flex items-center gap-3 p-3 hover:bg-gray-50 transition-colors ${
-                    index !== recentActivities.length - 1
-                      ? "border-b border-gray-200"
-                      : ""
-                  }`}
-                >
-                  {/* Activity Image */}
-                  <div className="w-12 h-12 rounded-xl overflow-hidden bg-gray-200 flex-shrink-0 shadow-sm">
-                    {activity.newsMedia && activity.newsMedia.length > 0 ? (
-                      <img
-                        src={
-                          activity.newsMedia[0].media_url ||
-                          "/placeholder-activity.jpg"
-                        }
-                        alt={activity.title || "Activity"}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.src = "/placeholder-activity.jpg";
-                        }}
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-blue-100 flex items-center justify-center">
-                        <CalendarCheck size={20} className="text-blue-500" />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Activity Info */}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate text-gray-800 mb-1">
-                      {activity.title ||
-                        activity.name ||
-                        `Kegiatan ${index + 1}`}
-                    </p>
-                    <p className="text-xs text-gray-500 flex items-center">
-                      <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-                      {formatTimeAgo(activity.created_at)}
-                    </p>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="py-12 text-gray-400 text-center">
-                <div className="w-16 h-16 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
-                  <CalendarCheck size={24} className="text-gray-300" />
-                </div>
-                <p className="text-sm">Belum ada kegiatan</p>
-              </div>
-            )}
-          </div>
-        </div>
-
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         {/* Produk Terbaru */}
         <div className="bg-tertiary p-6 rounded-xl shadow-lg">
           <h2 className="text-lg font-medium mb-4 text-gray-800">
             Produk Terbaru
           </h2>
           <div className="space-y-0">
-            {recentProducts.length > 0 ? (
+            {loading ? (
+              // Loading skeleton
+              Array.from({ length: 3 }).map((_, index) => (
+                <div
+                  key={index}
+                  className={`flex items-center gap-3 p-3 animate-pulse ${
+                    index !== 2 ? "border-b border-gray-200" : ""
+                  }`}
+                >
+                  <div className="w-12 h-12 rounded-xl bg-gray-200 flex-shrink-0"></div>
+                  <div className="flex-1">
+                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                  </div>
+                </div>
+              ))
+            ) : recentProducts.length > 0 ? (
               recentProducts.map((product: any, index: number) => (
                 <div
                   key={product.id || index}
