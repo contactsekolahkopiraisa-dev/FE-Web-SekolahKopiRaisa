@@ -10,7 +10,7 @@ import ProductListAdmin from "@/components/product/ProductListAdmin";
 import ConfirmModal from "@/components/ConfirmModal";
 
 export default function UMKMCreateProductPage() {
-  // State for product data
+  // State for product data kontol
   const [product, setProduct] = useState({
     name: "",
     description: "",
