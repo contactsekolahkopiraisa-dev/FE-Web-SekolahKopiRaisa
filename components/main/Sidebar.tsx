@@ -383,7 +383,7 @@ function SidebarItem({
     </li>
   );
 }
-}
+
 
 function SidebarGroup({
   icon,
