@@ -1,3 +1,4 @@
+// components\order\OrderTable.tsx
 "use client";
 
 import {
@@ -49,6 +50,24 @@ interface OrderTableProps {
   statusSortOrder: "asc" | "desc";
 }
 
+// ✅ Helper function to get user role from localStorage
+const getUserRole = (): string | null => {
+  if (typeof window !== "undefined") {
+    return localStorage.getItem("role");
+  }
+  return null;
+};
+
+// ✅ Helper function to filter statuses based on role
+const getAvailableStatuses = (userRole: string | null): OrderStatus[] => {
+  if (userRole === "umkm") {
+    // UMKM hanya bisa akses PENDING, PROCESSING, dan SHIPPED
+    return ["PENDING", "PROCESSING", "SHIPPED"];
+  }
+  // Role lain (admin, customer, dll) bisa akses semua status
+  return ALL_STATUSES;
+};
+
 function StatusDropdown({
   currentStatus,
   orderId,
@@ -63,6 +82,12 @@ function StatusDropdown({
   onToggle: (id: number) => void;
 }) {
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  // ✅ Get user role on component mount
+  useEffect(() => {
+    setUserRole(getUserRole());
+  }, []);
 
   // ❇️ Tutup bila klik di luar
   useEffect(() => {
@@ -80,6 +105,7 @@ function StatusDropdown({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen, onToggle]);
+
   const handleSelectStatus = (newStatus: OrderStatus) => {
     if (newStatus !== currentStatus) {
       onStatusChange(orderId, newStatus);
@@ -131,6 +157,9 @@ function StatusDropdown({
       break;
   }
 
+  // ✅ Filter status yang tersedia berdasarkan role
+  const availableStatuses = getAvailableStatuses(userRole);
+
   return (
     <div ref={dropdownRef} className="relative inline-block text-left">
       <button
@@ -145,11 +174,12 @@ function StatusDropdown({
 
       {isOpen && (
         <div
-          className="origin-top-right absolute right-0 mt-2 w-40  shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50"
+          className="origin-top-right absolute right-0 mt-2 w-40 rounded-xl shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50"
           role="menu"
         >
           <div className="py-1">
-            {ALL_STATUSES.map((status) => (
+            {/* ✅ Hanya tampilkan status yang diizinkan untuk role user */}
+            {availableStatuses.map((status) => (
               <button
                 key={status}
                 onClick={() => handleSelectStatus(status)}

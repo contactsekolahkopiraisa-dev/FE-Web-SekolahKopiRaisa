@@ -1,3 +1,4 @@
+// app\admin\layout.tsx
 import type { ReactNode } from "react";
 import Sidebar from "../../components/main/Sidebar";
 import {
@@ -11,6 +12,9 @@ import {
   HandCoins,
   StoreIcon,
   Wallet,
+  ChartNoAxesCombined,
+  Store,
+  User,
   Settings,
   List,
   BookOpenText,
@@ -57,6 +61,22 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       icon: <Wallet size={20} />,
       text: "Laporan Keuangan",
       href: "/admin/laporan-keuangan",
+    },
+    {
+      icon: <ChartNoAxesCombined size={20} />,
+      text: "Laporan Penjualan",
+      subItems: [
+        {
+          icon: <User size={16} />,
+          text: "Admin",
+          href: "/admin/laporan-penjualan/admin",
+        },
+        {
+          icon: <Store size={16} />,
+          text: "UMKM",
+          href: "/admin/laporan-penjualan/umkm",
+        },
+      ],
     },
   ];
 

@@ -1,22 +1,11 @@
+// components\main\Sidebar.tsx
 "use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import {
-  ChevronRight,
-  ChevronDown,
-  LogOut,
-  Menu,
-  Store,
-  X,
-  List,
-  PlusCircle,
-  Package,
-  Handshake,
-  NotepadText,
-} from "lucide-react";
+import { ChevronRight, ChevronDown, LogOut, Menu, X } from "lucide-react";
 import clsx from "clsx";
 import { logout } from "../../app/utils/auth";
 import { getUser } from "../../app/utils/user";
@@ -33,22 +22,24 @@ interface SidebarItemType {
   icon: React.ReactNode;
   text: string;
   href?: string;
-  children?: SidebarChildItemType[];
+  subItems?: SidebarChildItemType[];
+  children?: SidebarChildItemType[]; // Tambahkan property children
 }
+
 interface User {
   name: string;
   image: string;
+  role?: string;
 }
 
 export default function Sidebar({ items }: { items: SidebarItemType[] }) {
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [isMobileOpen, setMobileOpen] = useState(false);
-  const [isProdukOpen, setProdukOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
-
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [openDropdowns, setOpenDropdowns] = useState<string[]>([]);
 
   const handleLogout = () => {
     setShowConfirmModal(true);
@@ -66,6 +57,22 @@ export default function Sidebar({ items }: { items: SidebarItemType[] }) {
     fetchUser();
   }, []);
 
+  const handleProfileNavigation = () => {
+    if (user?.role?.toLowerCase() === "umkm") {
+      router.push("/umkm/profile");
+    } else {
+      router.push("/admin/profile");
+    }
+  };
+
+  const toggleDropdown = (text: string) => {
+    setOpenDropdowns((prev) =>
+      prev.includes(text)
+        ? prev.filter((item) => item !== text)
+        : [...prev, text]
+    );
+  };
+
   const renderSidebarContent = (isMobile = false) => (
     <div
       className={clsx(
@@ -80,12 +87,7 @@ export default function Sidebar({ items }: { items: SidebarItemType[] }) {
           isSidebarOpen ? "justify-between" : "flex-col gap-3 justify-center"
         )}
       >
-        {/* <button
-          onClick={() => router.push("/")}
-          className="flex items-center gap-2 hover:bg-gray-100 cursor-pointer rounded-sm p-2"
-        > */}
         <Image src="/assets/logo.png" alt="Logo" width={20} height={20} />
-        {/* </button> */}
         {isMobile ? (
           <button onClick={() => setMobileOpen(false)}>
             <X />
@@ -119,19 +121,23 @@ export default function Sidebar({ items }: { items: SidebarItemType[] }) {
       <nav className="flex-1 px-4 overflow-y-auto">
         <ul className="space-y-3">
           {items.map((item) => {
+            const sidebarOpen = isMobile ? true : isSidebarOpen;
             const isOpenByPath = item.href
               ? pathname.startsWith(item.href)
               : false;
-            const isOpen = isOpenByPath;
-            const sidebarOpen = isMobile ? true : isSidebarOpen;
 
-            if (item.children && item.children.length > 0) {
+            // Jika item memiliki children, render sebagai SidebarGroup
+            if (
+              (item.children && item.children.length > 0) ||
+              (item.subItems && item.subItems.length > 0)
+            ) {
+              const childrenItems = item.children || item.subItems || [];
               return (
                 <SidebarGroup
                   key={item.text}
                   icon={item.icon}
                   text={item.text}
-                  childrenItems={item.children}
+                  childrenItems={childrenItems}
                   isSidebarOpen={sidebarOpen}
                   isActiveParent={isOpenByPath}
                   pathname={pathname}
@@ -139,16 +145,22 @@ export default function Sidebar({ items }: { items: SidebarItemType[] }) {
               );
             }
 
+            // Jika tidak ada href, skip
             if (!item.href) return null;
 
+            // Render sebagai SidebarItem biasa
             return (
               <SidebarItem
-                key={item.href}
+                key={item.text}
                 icon={item.icon}
                 text={item.text}
                 href={item.href}
+                subItems={item.subItems}
                 isActive={pathname === item.href}
                 isSidebarOpen={sidebarOpen}
+                isDropdownOpen={openDropdowns.includes(item.text)}
+                onToggleDropdown={() => toggleDropdown(item.text)}
+                pathname={pathname}
               />
             );
           })}
@@ -159,9 +171,7 @@ export default function Sidebar({ items }: { items: SidebarItemType[] }) {
       <div className="cursor-pointer px-3 py-3 bg-gray-100 flex items-center justify-between rounded-t-xl">
         <div
           className="flex items-center gap-2"
-          onClick={() => {
-            router.push("/admin/profile");
-          }}
+          onClick={handleProfileNavigation}
         >
           <Image
             src={user?.image || "/assets/user.png"}
@@ -173,7 +183,7 @@ export default function Sidebar({ items }: { items: SidebarItemType[] }) {
           {(isMobile || isSidebarOpen) && (
             <div>
               <p className="text-xs font-medium">{user?.name}</p>
-              <p className="text-xs text-gray-500">Admin</p>
+              <p className="text-xs text-gray-500">{user?.role || "Admin"}</p>
             </div>
           )}
         </div>
@@ -190,6 +200,7 @@ export default function Sidebar({ items }: { items: SidebarItemType[] }) {
     <>
       {/* Desktop Sidebar */}
       <aside className="hidden md:block">{renderSidebarContent()}</aside>
+
       {showConfirmModal && (
         <ConfirmModal
           isOpen={showConfirmModal}
@@ -206,7 +217,6 @@ export default function Sidebar({ items }: { items: SidebarItemType[] }) {
 
       {/* Mobile Sidebar (overlay) */}
       <div className="md:hidden">
-        {/* Hamburger button - only show when sidebar is closed */}
         {!isMobileOpen && (
           <button
             className="fixed top-4 left-4 z-50 p-2 bg-white rounded-full shadow-lg"
@@ -216,7 +226,6 @@ export default function Sidebar({ items }: { items: SidebarItemType[] }) {
           </button>
         )}
 
-        {/* Sidebar overlay */}
         <AnimatePresence>
           {isMobileOpen && (
             <motion.div
@@ -225,7 +234,6 @@ export default function Sidebar({ items }: { items: SidebarItemType[] }) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              {/* Overlay */}
               <motion.div
                 className="absolute inset-0 bg-black"
                 initial={{ opacity: 0 }}
@@ -235,7 +243,6 @@ export default function Sidebar({ items }: { items: SidebarItemType[] }) {
                 onClick={() => setMobileOpen(false)}
               />
 
-              {/* Sidebar */}
               <motion.div
                 initial={{ x: "-100%" }}
                 animate={{ x: 0 }}
@@ -257,18 +264,79 @@ function SidebarItem({
   icon,
   text,
   href,
+  subItems,
   isActive,
   isSidebarOpen,
+  isDropdownOpen,
+  onToggleDropdown,
+  pathname
 }: {
   icon: React.ReactNode;
   text: string;
-  href: string;
+  href?: string;
+  subItems?: SidebarChildItemType[];
   isActive: boolean;
   isSidebarOpen: boolean;
+  isDropdownOpen?: boolean;
+  onToggleDropdown?: () => void;
+  pathname: string;
 }) {
+  const hasActiveSubItem = subItems?.some((sub) => pathname === sub.href);
+
+  if (subItems && subItems.length > 0) {
+    return (
+      <li>
+        <div
+          className={clsx(
+            "flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 cursor-pointer text-sm",
+            hasActiveSubItem
+              ? "bg-primary text-white font-medium shadow-lg"
+              : "text-gray-700 hover:bg-gray-100 hover:text-gray-900",
+            !isSidebarOpen && "justify-center"
+          )}
+          onClick={onToggleDropdown}
+        >
+          {icon}
+          {isSidebarOpen && (
+            <>
+              <span className="flex-1">{text}</span>
+              {isDropdownOpen ? (
+                <ChevronDown size={16} />
+              ) : (
+                <ChevronRight size={16} />
+              )}
+            </>
+          )}
+        </div>
+
+        {isSidebarOpen && isDropdownOpen && (
+          <ul className="ml-8 mt-2 space-y-2">
+            {subItems.map((subItem) => (
+              <li key={subItem.href}>
+                <Link href={subItem.href}>
+                  <div
+                    className={clsx(
+                      "flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-200 cursor-pointer text-sm",
+                      pathname === subItem.href
+                        ? "bg-primary text-white font-medium"
+                        : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                    )}
+                  >
+                    {subItem.icon && subItem.icon}
+                    <span>{subItem.text}</span>
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </li>
+    );
+  }
+
   return (
     <li>
-      <Link href={href}>
+      <Link href={href || "#"}>
         <div
           className={clsx(
             "flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 cursor-pointer text-sm",
@@ -292,7 +360,7 @@ function SidebarGroup({
   childrenItems,
   isSidebarOpen,
   isActiveParent,
-  pathname,
+  pathname
 }: {
   icon: React.ReactNode;
   text: string;

@@ -1,16 +1,18 @@
+// app\umkm\produk\page.tsx
 "use client";
 
 import ConfirmModal from "@/components/ConfirmModal";
 import Popup from "@/components/Popup";
-import ProductListAdmin from "@/components/product/ProductListAdmin";
+import ProductListUmkm from "@/components/product/ProductListUmkm";
 import { ProductItem } from "@/app/types/productType";
 
 import { deleteProduct, fetchAllProduct } from "@/app/utils/product";
+import { getUserId } from "@/app/utils/auth"; // Import helper function - UPDATED
 import { Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-export default function AdminProductPage() {
+export default function UmkmProductPage() {
   const [showPopup, setShowPopup] = useState(false);
   const [message, setMessage] = useState("");
   const [popupType, setPopupType] = useState<"success" | "error">("success");
@@ -26,11 +28,11 @@ export default function AdminProductPage() {
   const [itemsPerPage] = useState(9); // 9 items per page for grid layout
 
   const handleAddProduct = () => {
-    router.push("/admin/product/create");
+    router.push("/umkm/produk/create");
   };
 
   const handleViewProduct = (id: number) => {
-    router.push(`/admin/product/${id}`);
+    router.push(`/umkm/produk/${id}`);
   };
 
   const handleDeleteProduct = async (id: number) => {
@@ -123,6 +125,17 @@ export default function AdminProductPage() {
     const getProducts = async () => {
       try {
         setLoading(true);
+
+        // Dapatkan user_id dari user yang sedang login
+        const currentUserId = getUserId();
+
+        // Validasi jika user_id tidak ditemukan
+        if (currentUserId === null) {
+          setError("User ID tidak ditemukan. Silakan login kembali.");
+          setLoading(false);
+          return;
+        }
+
         const response = await fetchAllProduct();
         console.log("Full API response:", response);
         const rawData = response.data;
@@ -134,19 +147,32 @@ export default function AdminProductPage() {
           return;
         }
 
-        const formattedData = rawData.map((item: any) => {
+        // Filter produk berdasarkan partner.user_id
+        const filteredData = rawData.filter(
+          (item: any) => item.partner?.user_id === currentUserId
+        );
+
+        console.log(
+          "Filtered data for user_id",
+          currentUserId,
+          ":",
+          filteredData
+        );
+
+        const formattedData = filteredData.map((item: any) => {
           console.log("Processing item:", item);
           return {
             id: item.id,
             image: item.image,
             name: item.name,
             price: item.price,
-            stock: item.inventory?.stock ?? 0, // Safe access dengan nullish coalescing
+            stock: item.inventory?.stock ?? 0,
             weight: item.weight || 0,
             sold: item.sold || 0,
             partner: item.partner || { name: "Tidak Diketahui" },
           };
         });
+
         console.log("Formatted data:", formattedData);
         setProduct(formattedData);
       } catch (err: any) {
@@ -268,7 +294,7 @@ export default function AdminProductPage() {
           </div>
         ) : (
           currentProducts.map((product, index) => (
-            <ProductListAdmin
+            <ProductListUmkm
               key={product.id}
               id={product.id}
               image={product.image}

@@ -1,60 +1,118 @@
-//app/admin/laporan-keuangan/page.tsx
+// app/admin/laporan-keuangan/page.tsx
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import LaporanKeuanganTable from "@/components/laporan-keuangan/dummyLaporanKeuanganTable";
-import { dummyLaporanKeuangan, getRingkasanKeuangan } from "@/lib/dummyLaporanKeuangan";
 import { Calendar, Plus } from "lucide-react";
 import CalendarPicker from "@/components/CalenderPickerFilter";
 import Link from "next/link";
+import LaporanKeuanganTable from "@/components/laporan-keuangan/LaporanKeuanganTable";
+import { fetchAllLaporanKeuangan } from "@/app/utils/laporan-keuangan";
 
 export default function LaporanKeuanganAdmin() {
-  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date(2025, 8)); // September 2025
+  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [laporanData, setLaporanData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const calendarRef = useRef<HTMLDivElement>(null);
 
   const selectedYear = selectedDate?.getFullYear();
-  const selectedMonth = selectedDate?.getMonth();
+  const selectedMonth = selectedDate?.getMonth(); // 0-11
 
-  const { data: filteredData, totalPemasukan, totalPengeluaran, saldoAkhir } = 
-    getRingkasanKeuangan(dummyLaporanKeuangan, selectedYear, selectedMonth);
+  // 🧠 Fetch data laporan keuangan dari API
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const result = await fetchAllLaporanKeuangan();
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
+        console.log("Data dari API:", result);
 
-  const getDisplayText = () => {
-    if (!selectedDate) return "Pilih Periode";
-    const bulanNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
-    return `${bulanNames[selectedDate.getMonth()]} ${selectedDate.getFullYear()}`;
-  };
+        // API mengembalikan struktur: { status: "success", data: [...] }
+        let dataArray = [];
 
+        if (
+          result &&
+          result.status === "success" &&
+          Array.isArray(result.data)
+        ) {
+          dataArray = result.data;
+          console.log("Jumlah data:", dataArray.length);
+        } else if (Array.isArray(result)) {
+          dataArray = result;
+        } else if (result && Array.isArray(result.data)) {
+          dataArray = result.data;
+        } else {
+          console.error("Format response tidak dikenali:", result);
+          dataArray = [];
+        }
+
+        setLaporanData(dataArray);
+      } catch (err: any) {
+        console.error("Error loading data:", err);
+        setError(err.message || "Gagal memuat data laporan keuangan");
+        setLaporanData([]); // Set empty array on error
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  // 📆 Tutup kalender jika klik di luar
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (calendarRef.current && !calendarRef.current.contains(event.target as Node)) {
+      if (
+        calendarRef.current &&
+        !calendarRef.current.contains(event.target as Node)
+      ) {
         setIsCalendarOpen(false);
       }
     };
 
     if (isCalendarOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
     }
-
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isCalendarOpen]);
+
+  // 🗓️ Teks tampilan periode
+  const getDisplayText = () => {
+    if (!selectedDate) return "Pilih Periode";
+    const bulanNames = [
+      "Januari",
+      "Februari",
+      "Maret",
+      "April",
+      "Mei",
+      "Juni",
+      "Juli",
+      "Agustus",
+      "September",
+      "Oktober",
+      "November",
+      "Desember",
+    ];
+    return `${
+      bulanNames[selectedDate.getMonth()]
+    } ${selectedDate.getFullYear()}`;
+  };
+
+  // 🔗 Aksi saat tombol Edit diklik
+  const handleView = (id: number) => {
+    window.location.href = `/admin/laporan-keuangan/edit/${id}`;
+  };
 
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">Laporan Keuangan</h1>
-      
+
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        {/* Filter dengan Date Picker */}
+        {/* Filter Periode */}
         <div className="mb-6 relative" ref={calendarRef}>
           <button
             onClick={() => setIsCalendarOpen(!isCalendarOpen)}
@@ -73,88 +131,31 @@ export default function LaporanKeuanganAdmin() {
           )}
         </div>
 
+        {/* Tombol Tambah */}
         <div>
           <Link href={"/admin/laporan-keuangan/create"}>
             <button className="mb-4 px-4 py-2 bg-primary text-white rounded-xl hover:bg-primary/90 transition-colors flex items-center gap-2">
-              <Plus>
-              </Plus>
-                <p className="">Tambah Baris</p>
+              <Plus />
+              <p>Tambah Baris</p>
             </button>
           </Link>
         </div>
       </div>
 
-      {/* Card Ringkasan Keuangan */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-        <div className="bg-secondary border-2 border-secondary rounded-xl p-4 shadow-sm">
-          <h3 className="text-sm font-medium text-primary mb-1">Total Pemasukan</h3>
-          <p className="text-2xl font-bold text-primary">{formatCurrency(totalPemasukan)}</p>
-        </div>
-
-        <div className="bg-secondary border-2 border-secondary rounded-xl p-4 shadow-sm">
-          <h3 className="text-sm font-medium text-primary mb-1">Total Pengeluaran</h3>
-          <p className="text-2xl font-bold text-primary">{formatCurrency(totalPengeluaran)}</p>
-        </div>
-
-        <div className="bg-secondary border-2 border-secondary rounded-xl p-4 shadow-sm">
-          <h3 className="text-sm font-medium text-primary mb-1">Saldo Akhir</h3>
-          <p className="text-2xl font-bold text-primary">{formatCurrency(saldoAkhir)}</p>
-        </div>
-      </div>
-
-      {/* Tabel Data */}
-      <div className="bg-white shadow-lg rounded-xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 text-sm">
-            <thead className="bg-primary text-white">
-              <tr>
-                <th className="px-2 sm:px-4 py-3 text-left font-medium whitespace-nowrap">No</th>
-                <th className="px-2 sm:px-4 py-3 text-left font-medium whitespace-nowrap">Tanggal</th>
-                <th className="px-2 sm:px-4 py-3 text-left font-medium whitespace-nowrap">Keterangan</th>
-                <th className="px-2 sm:px-4 py-3 text-left font-medium whitespace-nowrap">Pemasukan</th>
-                <th className="px-2 sm:px-4 py-3 text-left font-medium whitespace-nowrap">Pengeluaran</th>
-                <th className="px-2 sm:px-4 py-3 text-left font-medium whitespace-nowrap">Edit</th>
-              </tr>
-            </thead>
-            <tbody className="text-gray-700 divide-y divide-gray-200">
-              {filteredData.length > 0 ? (
-                filteredData.map((item, index) => (
-                  <tr key={item.id} className="hover:bg-gray-50">
-                    <td className="px-2 sm:px-4 py-3 whitespace-nowrap">{index + 1}</td>
-                    <td className="px-2 sm:px-4 py-3 whitespace-nowrap">{item.tanggal}</td>
-                    <td className="px-2 sm:px-4 py-3 whitespace-nowrap">{item.keterangan}</td>
-                    <td className="px-2 sm:px-4 py-3 whitespace-nowrap text-primary font-medium">
-                      {formatCurrency(item.pemasukan)}
-                    </td>
-                    <td className="px-2 sm:px-4 py-3 whitespace-nowrap text-primary font-medium">
-                      {formatCurrency(item.pengeluaran)}
-                    </td>
-                    <td className="px-2 sm:px-4 py-3 whitespace-nowrap">
-                      <Link href={`/admin/laporan-keuangan/edit/${item.id}`}>
-                        <button
-                          className="cursor-pointer p-2 text-white rounded-xl bg-primary hover:-translate-y-1 duration-150 ease-in"
-                          title="Edit"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
-                            <path d="m15 5 4 4"/>
-                          </svg>
-                        </button>
-                      </Link>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
-                    Tidak ada data untuk periode yang dipilih
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      {/* Status Loading / Error */}
+      {loading ? (
+        <p className="text-gray-500 mt-4">Memuat data...</p>
+      ) : error ? (
+        <p className="text-red-500 mt-4">{error}</p>
+      ) : (
+        // ✅ Pass data dari parent ke child component
+        <LaporanKeuanganTable
+          selectedYear={selectedYear}
+          selectedMonth={selectedMonth}
+          onView={handleView}
+          dataSource={laporanData}
+        />
+      )}
     </div>
   );
 }

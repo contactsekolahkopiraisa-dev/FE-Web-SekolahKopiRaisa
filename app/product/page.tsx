@@ -7,7 +7,7 @@ import { ProductItem } from "../types/productType";
 import { useRouter } from "next/navigation";
 import { Box, Search } from "lucide-react";
 import Skeleton, { SkeletonTheme } from "react-loading-skeleton";
-import "react-loading-skeleton/dist/skeleton.css";
+// import "react-loading-skeleton/dist/skeleton.css";
 import Footer from "../../components/main/Footer";
 import { getUser } from "../utils/user";
 

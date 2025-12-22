@@ -36,11 +36,17 @@ export default function Login() {
       const user = await loginUser(form);
       console.log("User logged in:", user);
 
+      const role = user.user.role;
+
       if (user.user.admin) {
         router.replace("/admin");
+      } else if (role === "UMKM") {
+        router.replace("/umkm");
       } else {
         router.replace("/");
       }
+
+
     } catch (error: any) {
       if (error.type === "validation") {
         setErrors(error.errors);

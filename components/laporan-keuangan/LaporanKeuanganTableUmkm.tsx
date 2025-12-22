@@ -1,4 +1,4 @@
-// components/laporan-keuangan/LaporanKeuanganTable.tsx
+// components/laporan-keuangan/LaporanKeuanganTableUmkm.tsx
 "use client";
 
 import { PencilIcon } from "lucide-react";
@@ -22,7 +22,7 @@ interface LaporanKeuanganTableProps {
   dataSource?: LaporanKeuangan[];
 }
 
-export default function LaporanKeuanganTable({
+export default function LaporanKeuanganTableUmkm({
   selectedYear,
   selectedMonth,
   onView,
