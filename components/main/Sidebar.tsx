@@ -12,12 +12,6 @@ import { getUser } from "../../app/utils/user";
 import { AnimatePresence, motion } from "framer-motion";
 import ConfirmModal from "../ConfirmModal";
 
-interface SidebarChildItemType {
-  icon?: React.ReactNode;
-  text: string;
-  href: string;
-}
-
 interface SidebarItemType {
   icon: React.ReactNode;
   text: string;
@@ -174,7 +168,7 @@ export default function Sidebar({ items }: { items: SidebarItemType[] }) {
           onClick={handleProfileNavigation}
         >
           <Image
-            src={user?.image || "/assets/user.png"}
+            src={user?.image || "/assets/avatar.png"}
             alt="avatar"
             width={35}
             height={35}

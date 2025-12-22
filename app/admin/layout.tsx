@@ -4,7 +4,7 @@ import Sidebar from "../../components/main/Sidebar";
 import {
   LayoutDashboard,
   CalendarCheck,
-  Mails,
+  Building,
   FileText,
   Package,
   Handshake,
@@ -15,9 +15,6 @@ import {
   ChartNoAxesCombined,
   Store,
   User,
-  Settings,
-  List,
-  BookOpenText,
 } from "lucide-react";
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
@@ -47,15 +44,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       icon: <FileText size={20} />,
       text: "Order",
       href: "/admin/order",
-    },
-    {
-      icon: <Mails size={20} />,
-      text: "Layanan",
-      children: [
-        { icon: <List size={16} />, text: "Daftar Layanan", href: "/admin/layanan/daftar-layanan" },
-        { icon: <NotepadText size={16} />, text: "Monitoring", href: "/admin/layanan/monitoring" },
-        { icon: <BookOpenText size={16} />, text: "Modul", href: "/admin/layanan/modul" },
-      ],
     },
     {
       icon: <Wallet size={20} />,
