@@ -4,7 +4,7 @@ import FileUpload from "../FileUpload";
 
 interface PelatihanFormProps {
   formData: {
-    namaPeserta: string;
+    penanggungjawab: string;
     jumlahPeserta: string;
     instansi: string;
     tanggalMulai: string;
@@ -23,7 +23,7 @@ export default function PelatihanForm({
   onInputChange,
   onKegiatanChange,
   onFileUpload,
-  onSubmit
+  onSubmit,
 }: PelatihanFormProps) {
   return (
     <div className="py-8">
@@ -39,12 +39,12 @@ export default function PelatihanForm({
           />
 
           <FormField
-            label="Nama Peserta"
-            name="namaPeserta"
+            label="Penanggungjawab"
+            name="penanggungjawab"
             type="text"
-            value={formData.namaPeserta}
+            value={formData.penanggungjawab}
             onChange={onInputChange}
-            placeholder="Masukkan nama lengkap"
+            placeholder="Masukkan nama penanggungjawab"
           />
 
           <FormField
@@ -90,7 +90,9 @@ export default function PelatihanForm({
             <div>
               <FileUpload
                 label="Surat Permohonan"
-                onFileChange={(file) => onFileUpload('suratPermohonanFile', file)}
+                onFileChange={(file) =>
+                  onFileUpload("suratPermohonanFile", file)
+                }
                 file={formData.suratPermohonanFile}
               />
             </div>
@@ -109,5 +111,3 @@ export default function PelatihanForm({
     </div>
   );
 }
-
-
