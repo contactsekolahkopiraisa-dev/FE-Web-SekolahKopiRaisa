@@ -7,7 +7,7 @@ import CalendarPicker from "@/components/CalenderPickerFilter";
 import Link from "next/link";
 import {
   fetchLaporanPenjualanByPeriode,
-  LaporanPenjualanData,
+  LaporanPenjualanUMKMData,
 } from "@/app/utils/laporan-penjualan";
 import {
   LineChart,
@@ -22,7 +22,7 @@ import {
 export default function LaporanPenjualanUmkm() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  const [laporanData, setLaporanData] = useState<LaporanPenjualanData | null>(
+  const [laporanData, setLaporanData] = useState<LaporanPenjualanUMKMData | null>(
     null
   );
   const [loading, setLoading] = useState(true);
@@ -157,7 +157,7 @@ export default function LaporanPenjualanUmkm() {
                 Jumlah Produk Terjual
               </h3>
               <p className="text-3xl font-bold">
-                {laporanData.totalSummary.totalJumlahProdukTerjual}
+                {laporanData.summary.jumlahProdukTerjual}
               </p>
               <p className="text-xs text-gray-500 mt-1">
                 {laporanData.periode}
@@ -167,7 +167,7 @@ export default function LaporanPenjualanUmkm() {
             <div className="bg-gray-200 p-6 rounded-lg">
               <h3 className="text-sm text-gray-600 mb-2">Laba Bersih</h3>
               <p className="text-3xl font-bold">
-                {laporanData.totalSummary.totalLabaBersih}
+                {laporanData.summary.labaBersih}
               </p>
               <p className="text-xs text-gray-500 mt-1">
                 {laporanData.periode}
@@ -177,7 +177,7 @@ export default function LaporanPenjualanUmkm() {
             <div className="bg-gray-200 p-6 rounded-lg">
               <h3 className="text-sm text-gray-600 mb-2">Laba Kotor</h3>
               <p className="text-3xl font-bold">
-                {laporanData.totalSummary.totalLabaKotor}
+                {laporanData.summary.labaKotor}
               </p>
               <p className="text-xs text-gray-500 mt-1">
                 {laporanData.periode}
