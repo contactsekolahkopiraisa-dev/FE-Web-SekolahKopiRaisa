@@ -1,13 +1,38 @@
 // app/utils/laporan-penjualan.ts
 import api from "./api";
 
-// Interface untuk tipe data laporan penjualan
-export interface LaporanPenjualanData {
+// Interface untuk laporan penjualan UMKM (individu)
+export interface LaporanPenjualanUMKMData {
   partner: {
     id: number;
     nama: string;
     owner: string;
   };
+  periode: string;
+  summary: {
+    jumlahProdukTerjual: number;
+    labaBersih: string;
+    labaBersihRaw: number;
+    labaKotor: string;
+    labaKotorRaw: number;
+    pajak: string;
+    pajakRaw: number;
+    persentasePajak: string;
+  };
+  chart: Array<{
+    tanggal: number;
+    totalPenjualan: number;
+  }>;
+  topProducts: Array<{
+    namaProduk: string;
+    namaUMKM: string;
+    jumlahTerjual: number;
+    totalPendapatan: number;
+  }>;
+}
+
+// Interface untuk laporan penjualan Admin (semua UMKM)
+export interface LaporanPenjualanAdminData {
   periode: string;
   totalSummary: {
     totalJumlahProdukTerjual: number;
@@ -31,18 +56,31 @@ export interface LaporanPenjualanData {
   }>;
 }
 
-export interface LaporanPenjualanResponse {
+// Response interfaces
+export interface LaporanPenjualanUMKMResponse {
   message: string;
-  data: LaporanPenjualanData;
+  data: LaporanPenjualanUMKMData;
 }
 
-// Fetch laporan penjualan berdasarkan periode (bulan dan tahun)
+export interface LaporanPenjualanAdminResponse {
+  message: string;
+  data: LaporanPenjualanAdminData;
+}
+
+// Untuk backward compatibility
+export type LaporanPenjualanData = LaporanPenjualanAdminData;
+export type LaporanPenjualanResponse = LaporanPenjualanAdminResponse;
+
+// ============================================
+// UMKM APIs (untuk partner/UMKM individual)
+// ============================================
+
+// Fetch laporan penjualan UMKM berdasarkan periode
 export const fetchLaporanPenjualanByPeriode = async (
   bulan: number, // 0-11 (JavaScript month index)
   tahun: number
 ) => {
   try {
-    // Format periode sesuai dengan yang diharapkan API (contoh: "September 2025")
     const bulanNames = [
       "Januari",
       "Februari",
@@ -55,54 +93,49 @@ export const fetchLaporanPenjualanByPeriode = async (
       "September",
       "Oktober",
       "November",
-      "Desember",
+      "Desember"
     ];
 
     const periode = `${bulanNames[bulan]} ${tahun}`;
 
-    // Kirim request dengan query parameter periode
     const response = await api.get("/api/v1/penjualan/my-report", {
-      params: { periode },
+      params: { periode }
     });
 
-    return response.data as LaporanPenjualanResponse;
+    return response.data as LaporanPenjualanUMKMResponse;
   } catch (error: any) {
     if (error.response) {
       const { data } = error.response;
 
-      // Validasi field (errors berbentuk object)
       if (data.errors && typeof data.errors === "object") {
         throw {
           type: "validation",
           message: data.message || "Validasi gagal!",
-          errors: data.errors,
+          errors: data.errors
         };
       }
 
-      // Error umum (errors berbentuk string)
       if (data.errors && typeof data.errors === "string") {
         throw {
           type: "general",
-          message: data.errors,
+          message: data.errors
         };
       }
 
-      // Error fallback
       throw {
         type: "general",
-        message: data.message || "Terjadi kesalahan!",
+        message: data.message || "Terjadi kesalahan!"
       };
     }
 
-    // Error koneksi/server down
     throw {
       type: "network",
-      message: "Tidak dapat terhubung ke server. Coba lagi nanti.",
+      message: "Tidak dapat terhubung ke server. Coba lagi nanti."
     };
   }
 };
 
-// Untuk backward compatibility (jika masih digunakan di tempat lain)
+// Fetch semua laporan penjualan UMKM (tanpa filter periode)
 export const fetchAllLaporanPenjualan = async () => {
   try {
     const response = await api.get("/api/v1/penjualan/my-report");
@@ -115,36 +148,40 @@ export const fetchAllLaporanPenjualan = async () => {
         throw {
           type: "validation",
           message: data.message || "Validasi gagal!",
-          errors: data.errors,
+          errors: data.errors
         };
       }
 
       if (data.errors && typeof data.errors === "string") {
         throw {
           type: "general",
-          message: data.errors,
+          message: data.errors
         };
       }
 
       throw {
         type: "general",
-        message: data.message || "Terjadi kesalahan!",
+        message: data.message || "Terjadi kesalahan!"
       };
     }
 
     throw {
       type: "network",
-      message: "Tidak dapat terhubung ke server. Coba lagi nanti.",
+      message: "Tidak dapat terhubung ke server. Coba lagi nanti."
     };
   }
 };
 
+// ============================================
+// ADMIN APIs (untuk melihat semua UMKM)
+// ============================================
+
+// Fetch laporan penjualan semua UMKM berdasarkan periode (Admin)
 export const fetchLaporanPenjualanUMKMByPeriode = async (
-  bulan: number, // 0-11 (JavaScript month index)
+  bulan: number,
   tahun: number
 ) => {
   try {
-    // Format periode sesuai dengan yang diharapkan API (contoh: "September 2025")
     const bulanNames = [
       "Januari",
       "Februari",
@@ -157,53 +194,49 @@ export const fetchLaporanPenjualanUMKMByPeriode = async (
       "September",
       "Oktober",
       "November",
-      "Desember",
+      "Desember"
     ];
 
     const periode = `${bulanNames[bulan]} ${tahun}`;
 
-    // Kirim request dengan query parameter periode
     const response = await api.get("/api/v1/penjualan/admin/report", {
-      params: { periode },
+      params: { periode }
     });
 
-    return response.data as LaporanPenjualanResponse;
+    return response.data as LaporanPenjualanAdminResponse;
   } catch (error: any) {
     if (error.response) {
       const { data } = error.response;
 
-      // Validasi field (errors berbentuk object)
       if (data.errors && typeof data.errors === "object") {
         throw {
           type: "validation",
           message: data.message || "Validasi gagal!",
-          errors: data.errors,
+          errors: data.errors
         };
       }
 
-      // Error umum (errors berbentuk string)
       if (data.errors && typeof data.errors === "string") {
         throw {
           type: "general",
-          message: data.errors,
+          message: data.errors
         };
       }
 
-      // Error fallback
       throw {
         type: "general",
-        message: data.message || "Terjadi kesalahan!",
+        message: data.message || "Terjadi kesalahan!"
       };
     }
 
-    // Error koneksi/server down
     throw {
       type: "network",
-      message: "Tidak dapat terhubung ke server. Coba lagi nanti.",
+      message: "Tidak dapat terhubung ke server. Coba lagi nanti."
     };
   }
 };
 
+// Fetch semua laporan penjualan Admin (tanpa filter)
 export const fetchAllLaporanPenjualanAdmin = async () => {
   try {
     const response = await api.get("/api/v1/penjualan/admin/report");
@@ -216,30 +249,31 @@ export const fetchAllLaporanPenjualanAdmin = async () => {
         throw {
           type: "validation",
           message: data.message || "Validasi gagal!",
-          errors: data.errors,
+          errors: data.errors
         };
       }
 
       if (data.errors && typeof data.errors === "string") {
         throw {
           type: "general",
-          message: data.errors,
+          message: data.errors
         };
       }
 
       throw {
         type: "general",
-        message: data.message || "Terjadi kesalahan!",
+        message: data.message || "Terjadi kesalahan!"
       };
     }
 
     throw {
       type: "network",
-      message: "Tidak dapat terhubung ke server. Coba lagi nanti.",
+      message: "Tidak dapat terhubung ke server. Coba lagi nanti."
     };
   }
 };
 
+// Fetch laporan penjualan by ID
 export const fetchLaporanPenjualanById = async (id: number) => {
   try {
     const response = await api.get(`/api/v1/laporan-penjualan/${id}`);
@@ -252,26 +286,26 @@ export const fetchLaporanPenjualanById = async (id: number) => {
         throw {
           type: "validation",
           message: data.message || "Validasi gagal!",
-          errors: data.errors,
+          errors: data.errors
         };
       }
 
       if (data.errors && typeof data.errors === "string") {
         throw {
           type: "general",
-          message: data.errors,
+          message: data.errors
         };
       }
 
       throw {
         type: "general",
-        message: data.message || "Terjadi kesalahan!",
+        message: data.message || "Terjadi kesalahan!"
       };
     }
 
     throw {
       type: "network",
-      message: "Tidak dapat terhubung ke server. Coba lagi nanti.",
+      message: "Tidak dapat terhubung ke server. Coba lagi nanti."
     };
   }
 };
