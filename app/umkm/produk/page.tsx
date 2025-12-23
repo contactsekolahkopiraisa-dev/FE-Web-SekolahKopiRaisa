@@ -52,7 +52,7 @@ export default function UmkmProductPage() {
   };
 
   const handleEditProduct = (id: number) => {
-    router.push(`/admin/product/edit/${id}`);
+    router.push(`/umkm/produk/edit/${id}`);
   };
 
   // Pagination calculations

@@ -1,8 +1,12 @@
+// app\umkm\profile\page.tsx
+
 "use client";
 
 import { useEffect, useState } from "react";
 import { Mail, MapPin, Phone, TriangleAlert, User } from "lucide-react";
-import { getProfile, getProfileById, updateProfile } from "@/app/utils/profile";
+import { updateProfile } from "@/app/utils/profile";
+import { getUserId } from "@/app/utils/auth";
+import { getUser } from "@/app/utils/user";
 import Popup from "@/components/Popup";
 import ConfirmModal from "@/components/ConfirmModal";
 
@@ -39,20 +43,16 @@ interface UserProfile {
   image: string | null;
   email: string;
   phone_number: string;
+  partner?: {
+    id_umkm: number;
+    nama_umkm: string;
+    ktp: string;
+    addresses: Address[];
+  };
 }
 
-interface UMKMData {
-  id_umkm: number;
-  id_user: number;
-  nama_umkm: string;
-  ktp: string;
-  addresses: Address[];
-  User: UserProfile;
-}
-
-export default function AdminProfile() {
+export default function UMKMProfile() {
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [umkmData, setUmkmData] = useState<UMKMData | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [emailErrorOnEdit, setEmailErrorOnEdit] = useState(false);
 
@@ -66,6 +66,7 @@ export default function AdminProfile() {
 
   const [imageUrl, setImageUrl] = useState("/assets/user.png");
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -79,7 +80,7 @@ export default function AdminProfile() {
     setIsEditing(false);
     setEmailErrorOnEdit(false);
     setErrors({});
-    fetchUser();
+    fetchUserData();
   };
 
   const handleSave = async () => {
@@ -87,7 +88,7 @@ export default function AdminProfile() {
       const response = await updateProfile({
         name: user?.name,
         phone_number: user?.phone_number,
-        media: imageFile
+        media: imageFile,
       });
 
       if (response) {
@@ -99,7 +100,7 @@ export default function AdminProfile() {
         setMessage(response.message);
         setPopupType("success");
         setShowPopup(true);
-        fetchUser();
+        fetchUserData();
       }
     } catch (error: any) {
       if (error.type === "validation") {
@@ -112,43 +113,97 @@ export default function AdminProfile() {
     }
   };
 
-  const fetchUser = async () => {
+  const fetchUserData = async () => {
     try {
-      // Ambil ID UMKM dari localStorage atau session
-      const storedIdUmkm = localStorage.getItem("id_umkm");
+      setLoading(true);
 
-      if (storedIdUmkm) {
-        const idUmkm = parseInt(storedIdUmkm);
-        console.log("UMKM ID:", idUmkm);
+      // Dapatkan user_id yang sedang login
+      const currentUserId = getUserId();
 
-        // Langsung ambil data lengkap berdasarkan ID UMKM
-        const detailedData = await getProfileById(idUmkm);
-        console.log("Detailed API Response:", detailedData);
-
-        if (detailedData) {
-          setUmkmData(detailedData);
-          setUser(detailedData.User);
-          setImageUrl(detailedData.User.image || "/assets/user.png");
-          console.log("User data:", detailedData.User);
-          console.log("Addresses:", detailedData.addresses);
-        }
-      } else {
-        console.error("ID UMKM tidak ditemukan di localStorage");
+      if (currentUserId === null) {
         setMessage("Sesi Anda telah berakhir. Silakan login kembali.");
         setPopupType("error");
         setShowPopup(true);
+        setLoading(false);
+        return;
       }
-    } catch (error) {
+
+      console.log("Current User ID:", currentUserId);
+
+      // Fetch data user langsung dari API
+      const userData = await getUser();
+      console.log("Full User data from API:", userData);
+      console.log("Partner data:", userData?.partner);
+      console.log("Addresses data:", userData?.partner?.addresses);
+
+      if (userData) {
+        // Cek apakah userData memiliki struktur partner di dalamnya
+        // Jika API mengembalikan data dengan struktur berbeda, sesuaikan di sini
+        setUser(userData);
+        setImageUrl(userData.image || "/assets/user.png");
+        console.log("User profile loaded successfully");
+
+        // Debug: Cek semua properties yang ada
+        console.log("Available user properties:", Object.keys(userData));
+        if (userData.partner) {
+          console.log(
+            "Available partner properties:",
+            Object.keys(userData.partner)
+          );
+        }
+      } else {
+        setMessage("Data user tidak ditemukan.");
+        setPopupType("error");
+        setShowPopup(true);
+      }
+    } catch (error: any) {
       console.error("Gagal mendapatkan user:", error);
+      setMessage(error.message || "Terjadi kesalahan saat memuat profil.");
+      setPopupType("error");
+      setShowPopup(true);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchUser();
+    fetchUserData();
   }, []);
 
   // Get the first address or null
-  const primaryAddress = umkmData?.addresses?.[0] || null;
+  const primaryAddress = user?.partner?.addresses?.[0] || null;
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-secondary py-8 p-4 pt-20">
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-8">
+            <h1 className="text-lg font-medium text-gray-800 mb-2">
+              Profil Saya
+            </h1>
+            <p className="text-gray-600">Memuat data profil...</p>
+          </div>
+          <div className="bg-white rounded-2xl shadow-lg border border-orange-100 overflow-hidden animate-pulse">
+            <div className="bg-primary px-6 py-8">
+              <div className="flex flex-col items-center space-y-4">
+                <div className="w-32 h-32 rounded-full bg-gray-300"></div>
+                <div className="w-40 h-10 bg-gray-300 rounded-full"></div>
+              </div>
+            </div>
+            <div className="p-6 space-y-6">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="space-y-2">
+                  <div className="w-32 h-4 bg-gray-200 rounded"></div>
+                  <div className="w-full h-12 bg-gray-200 rounded-xl"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-secondary py-8 p-4 pt-20">
@@ -198,7 +253,7 @@ export default function AdminProfile() {
                         const response = await updateProfile({
                           name: user?.name,
                           phone_number: user?.phone_number,
-                          media: file
+                          media: file,
                         });
 
                         if (response) {
@@ -207,7 +262,7 @@ export default function AdminProfile() {
                           setMessage("Foto profil berhasil diperbarui!");
                           setPopupType("success");
                           setShowPopup(true);
-                          fetchUser();
+                          fetchUserData();
                         }
                       } catch (error: any) {
                         if (error.type === "validation") {
