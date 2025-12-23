@@ -22,7 +22,7 @@ export default function SignupUMKM() {
     phone_number: string;
     nik: string;
     umkm_name: string;
-    sertifikasiHalal: File | null;
+    suratIzinEdar: File | null;
     addresses: Array<{
       id_desa: string;
       alamat: string;
@@ -35,7 +35,7 @@ export default function SignupUMKM() {
     phone_number: "",
     nik: "",
     umkm_name: "",
-    sertifikasiHalal: null,
+    suratIzinEdar: null,
     addresses: [
       {
         id_desa: "",
@@ -82,7 +82,7 @@ export default function SignupUMKM() {
       phone_number: string;
       nik: string;
       umkm_name: string;
-      sertifikasiHalal: string;
+      suratIzinEdar: string;
       postal_code: string;
       province: string;
       regency: string;
@@ -307,21 +307,21 @@ const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
   const files = e.target.files;
 
   // Reset error
-  setErrors((prev) => ({ ...prev, sertifikasiHalal: "" }));
+  setErrors((prev) => ({ ...prev, suratIzinEdar: "" }));
 
   // Validasi: pastikan hanya 1 file
   if (!files || files.length === 0) {
-    setForm({ ...form, sertifikasiHalal: null });
+    setForm({ ...form, suratIzinEdar: null });
     return;
   }
 
   if (files.length > 1) {
     setErrors((prev) => ({
       ...prev,
-      sertifikasiHalal: "Hanya boleh upload 1 file",
+      suratIzinEdar: "Hanya boleh upload 1 file",
     }));
     e.target.value = "";
-    setForm({ ...form, sertifikasiHalal: null }); // ✅ Reset form state
+    setForm({ ...form, suratIzinEdar: null }); // ✅ Reset form state
     return;
   }
 
@@ -332,14 +332,14 @@ const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
   if (file.size > maxSize) {
     setErrors((prev) => ({
       ...prev,
-      sertifikasiHalal: `Ukuran file terlalu besar (${(
+      suratIzinEdar: `Ukuran file terlalu besar (${(
         file.size /
         1024 /
         1024
       ).toFixed(2)} MB). Maksimal 5MB`,
     }));
     e.target.value = "";
-    setForm({ ...form, sertifikasiHalal: null });
+    setForm({ ...form, suratIzinEdar: null });
     return;
   }
 
@@ -354,20 +354,20 @@ const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
   if (!allowedTypes.includes(file.type)) {
     setErrors((prev) => ({
       ...prev,
-      sertifikasiHalal: `Format tidak didukung (${file.type}). Gunakan PDF, JPG, atau PNG`,
+      suratIzinEdar: `Format tidak didukung (${file.type}). Gunakan PDF, JPG, atau PNG`,
     }));
     e.target.value = "";
-    setForm({ ...form, sertifikasiHalal: null });
+    setForm({ ...form, suratIzinEdar: null });
     return;
   }
 
-  setForm({ ...form, sertifikasiHalal: file });
+  setForm({ ...form, suratIzinEdar: file });
 };
 
   // ✅ PERBAIKAN: Handler hapus file
   const handleRemoveFile = () => {
-    setForm({ ...form, sertifikasiHalal: null });
-    setErrors((prev) => ({ ...prev, sertifikasiHalal: "" }));
+    setForm({ ...form, suratIzinEdar: null });
+    setErrors((prev) => ({ ...prev, suratIzinEdar: "" }));
 
     // Reset input file
     const input = document.getElementById(
@@ -450,7 +450,7 @@ const handleSubmit = async (e: React.FormEvent) => {
       phone_number: form.phone_number,
       namaUmkm: form.umkm_name.trim(),
       ktp: form.nik,
-      sertifikasiHalal: form.sertifikasiHalal || undefined,
+      suratIzinEdar: form.suratIzinEdar || undefined,
       addresses: form.addresses.map((addr) => ({
         id_desa: parseInt(addr.id_desa),
         alamat: addr.alamat.trim(),
@@ -645,13 +645,13 @@ const handleSubmit = async (e: React.FormEvent) => {
                   {/* ✅ PERBAIKAN: Upload file yang lebih jelas */}
                   <div>
                     <label className="block text-sm font-medium mb-2">
-                      Sertifikasi Halal (Opsional)
+                      Surat Izin Edar (Opsional)
                     </label>
 
-                    {!form.sertifikasiHalal ? (
+                    {!form.suratIzinEdar ? (
                       <div className="relative w-full border-2 border-dashed border-gray-300 rounded-xl p-6 hover:border-gray-400 transition-colors">
                         <input
-                          name="sertifikasiHalal"
+                          name="suratIzinEdar"
                           onChange={handleFileChange}
                           type="file"
                           accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
@@ -680,10 +680,10 @@ const handleSubmit = async (e: React.FormEvent) => {
                             />
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium text-green-800 truncate">
-                                {form.sertifikasiHalal.name}
+                                {form.suratIzinEdar.name}
                               </p>
                               <p className="text-xs text-green-600">
-                                {(form.sertifikasiHalal.size / 1024).toFixed(2)}{" "}
+                                {(form.suratIzinEdar.size / 1024).toFixed(2)}{" "}
                                 KB
                               </p>
                             </div>
@@ -700,9 +700,9 @@ const handleSubmit = async (e: React.FormEvent) => {
                       </div>
                     )}
 
-                    {errors.sertifikasiHalal && (
+                    {errors.suratIzinEdar && (
                       <p className="text-red-500 text-sm mt-1">
-                        {errors.sertifikasiHalal}
+                        {errors.suratIzinEdar}
                       </p>
                     )}
                   </div>
