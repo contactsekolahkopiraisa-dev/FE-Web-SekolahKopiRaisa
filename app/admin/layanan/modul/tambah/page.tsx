@@ -13,6 +13,8 @@ export default function TambahModulPage() {
     deskripsi: "",
   });
   const [moduleFile, setModuleFile] = useState<File | null>(null);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleInputChange = (
@@ -29,6 +31,15 @@ export default function TambahModulPage() {
     const file = e.target.files?.[0];
     if (file) {
       setModuleFile(file);
+    }
+  };
+
+  const handleLogoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setLogoFile(file);
+      const url = URL.createObjectURL(file);
+      setLogoPreview(url);
     }
   };
 
@@ -50,10 +61,28 @@ export default function TambahModulPage() {
     setIsSubmitting(true);
 
     try {
+      // Optional logo validation (<= 2MB, image types)
+      if (logoFile) {
+        const isImage = logoFile.type.startsWith("image/");
+        const isUnder2MB = logoFile.size <= 2 * 1024 * 1024;
+        if (!isImage || !isUnder2MB) {
+          await Swal.fire({
+            icon: "warning",
+            title: "Logo Tidak Valid",
+            text: "Gunakan gambar JPG/PNG maksimal 2MB.",
+            confirmButtonColor: "#4E342E",
+            customClass: { popup: "rounded-xl" },
+          });
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
       await createModul({
         judul_modul: formData.judul_modul,
         deskripsi: formData.deskripsi,
         file_modul: moduleFile,
+        logo_judul: logoFile || undefined,
       });
 
       await Swal.fire({
@@ -158,6 +187,44 @@ export default function TambahModulPage() {
                   onChange={handleModuleFileChange}
                 />
               </label>
+            </div>
+
+            {/* Logo Judul (Opsional) */}
+            <div>
+              <label className="block text-sm font-medium text-amber-900 mb-2">
+                Sampul Modul
+              </label>
+              <div className="flex items-start gap-4">
+                <label
+                  htmlFor="logo-upload"
+                  className="flex flex-col items-center justify-center w-full h-40 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 transition bg-neutral-50"
+                >
+                  <div className="flex flex-col items-center justify-center py-6">
+                    <Upload className="w-10 h-10 text-gray-400 mb-2" />
+                    <p className="text-sm text-gray-500 font-medium">
+                      {logoFile ? "Gambar Dipilih" : "Unggah Gambar (PNG/JPG)"}
+                    </p>
+                    {logoFile && (
+                      <p className="text-xs text-gray-400 mt-1">{logoFile.name}</p>
+                    )}
+                  </div>
+                  <input
+                    id="logo-upload"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleLogoFileChange}
+                  />
+                </label>
+                {logoPreview && (
+                  <img
+                    src={logoPreview}
+                    alt="Preview Logo"
+                    className="w-24 h-24 object-cover rounded-md border"
+                  />
+                )}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Maksimal 2MB. Format: JPG, PNG.</p>
             </div>
 
             {/* Action Buttons */}
