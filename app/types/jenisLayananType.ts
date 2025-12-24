@@ -41,6 +41,7 @@ export interface JenisLayananItem {
   estimasi_waktu?: string;
   id_target_peserta: number;
   image: string;
+  is_active?: boolean;
   created_at?: string;
   updated_at?: string;
   targetPeserta?: TargetPesertaItem;
@@ -55,10 +56,11 @@ export interface TargetPesertaItem {
 }
 
 export interface JenisLayananFormData {
-  nama: string;
-  deskripsi_singkat: string;
-  deskripsi_lengkap: string;
+  nama?: string;
+  deskripsi_singkat?: string;
+  deskripsi_lengkap?: string;
   durasi?: string;
-  id_target_peserta: number;
+  id_target_peserta?: number;
   image?: File;
+  is_active?: boolean;
 }

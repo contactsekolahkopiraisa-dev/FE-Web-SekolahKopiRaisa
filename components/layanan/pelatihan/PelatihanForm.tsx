@@ -65,21 +65,23 @@ export default function PelatihanForm({
             placeholder="Asal Instansi (Sekolah/Universitas)"
           />
 
-          <FormField
-            label="Tanggal Mulai"
-            name="tanggalMulai"
-            type="date"
-            value={formData.tanggalMulai}
-            onChange={onInputChange}
-          />
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <FormField
+              label="Tanggal Mulai"
+              name="tanggalMulai"
+              type="date"
+              value={formData.tanggalMulai}
+              onChange={onInputChange}
+            />
 
-          <FormField
-            label="Tanggal Selesai"
-            name="tanggalSelesai"
-            type="date"
-            value={formData.tanggalSelesai}
-            onChange={onInputChange}
-          />
+            <FormField
+              label="Tanggal Selesai"
+              name="tanggalSelesai"
+              type="date"
+              value={formData.tanggalSelesai}
+              onChange={onInputChange}
+            />
+          </div>
 
           <KegiatanSection
             kegiatan={formData.kegiatan}

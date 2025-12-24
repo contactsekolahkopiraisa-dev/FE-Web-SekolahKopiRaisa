@@ -46,6 +46,9 @@ export const createModul = async (
     if (formData.file_modul) {
       data.append("file_modul", formData.file_modul);
     }
+    if (formData.logo_judul) {
+      data.append("logo_judul", formData.logo_judul);
+    }
 
     const response = await api.post("/api/v1/modul", data, {
       headers: {
@@ -70,6 +73,9 @@ export const updateModul = async (
     data.append("deskripsi", formData.deskripsi);
     if (formData.file_modul) {
       data.append("file_modul", formData.file_modul);
+    }
+    if (formData.logo_judul) {
+      data.append("logo_judul", formData.logo_judul);
     }
 
     const response = await api.put(`/api/v1/modul/${id}`, data, {

@@ -3,17 +3,28 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { fetchAllProduct } from "@/app/utils/product";
+import { fetchAllProduct, deleteProduct } from "@/app/utils/product";
 import { ProductItem } from "@/app/types/productType";
 import { formatCurrency } from "@/app/utils/helper";
 import { SquarePen, Trash } from "lucide-react";
+import ConfirmModal from "@/components/ConfirmModal";
+import Popup from "@/components/Popup";
 
-export default function AdminProductDetailPage() {
+export default function UMKMProductDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = Number(params?.id);
   const [product, setProduct] = useState<ProductItem | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // State untuk delete confirmation
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // State untuk popup
+  const [showPopup, setShowPopup] = useState(false);
+  const [message, setMessage] = useState("");
+  const [popupType, setPopupType] = useState<"success" | "error">("success");
 
   useEffect(() => {
     const getProduct = async () => {
@@ -49,11 +60,37 @@ export default function AdminProductDetailPage() {
     router.push(`/umkm/produk/edit/${productId}`);
   };
 
-  // Handler untuk delete (bisa dilengkapi sesuai kebutuhan)
-  const handleDelete = (productId: number) => {
-    // Implementasi delete logic di sini
-    console.log("Delete product:", productId);
-    // Contoh: tampilkan modal konfirmasi, lalu panggil API delete
+  // Handler untuk delete
+  const handleDeleteClick = () => {
+    setShowConfirmModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    setIsDeleting(true);
+    try {
+      const response = await deleteProduct(id);
+
+      if (response) {
+        // Simpan ke sessionStorage untuk ditampilkan di halaman list
+        sessionStorage.setItem(
+          "popup",
+          JSON.stringify({
+            message: response.message || "Produk berhasil dihapus",
+            type: "success",
+          })
+        );
+
+        // Redirect ke halaman list produk
+        router.push("/umkm/produk");
+      }
+    } catch (error: any) {
+      setMessage(error.message || "Terjadi kesalahan saat menghapus produk");
+      setPopupType("error");
+      setShowPopup(true);
+      setShowConfirmModal(false);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   if (loading) {
@@ -152,6 +189,27 @@ export default function AdminProductDetailPage() {
 
   return (
     <div className="container mx-auto py-8 px-4 max-w-7xl">
+      {/* Popup untuk error */}
+      {showPopup && (
+        <Popup
+          message={message}
+          type={popupType}
+          onClose={() => setShowPopup(false)}
+        />
+      )}
+
+      {/* Confirm Modal untuk Delete */}
+      <ConfirmModal
+        title="Yakin Menghapus Produk?"
+        description={`Tindakan ini tidak dapat dibatalkan. Produk "${product.name}" akan secara permanen terhapus dari sistem.`}
+        isOpen={showConfirmModal}
+        isSubmitting={isDeleting}
+        onClose={() => {
+          setShowConfirmModal(false);
+        }}
+        onConfirm={handleDeleteConfirm}
+      />
+
       <div className="mb-6 flex justify-between items-center">
         <h2 className="text-2xl font-semibold text-gray-800">Detail Produk</h2>
 
@@ -167,7 +225,7 @@ export default function AdminProductDetailPage() {
           </button>
           {/* Delete Button */}
           <button
-            onClick={() => handleDelete(id)}
+            onClick={handleDeleteClick}
             className="cursor-pointer p-2 text-white rounded-xl bg-red-500 hover:bg-red-600 hover:-translate-y-1 duration-150 ease-in"
             title="Hapus Produk"
           >

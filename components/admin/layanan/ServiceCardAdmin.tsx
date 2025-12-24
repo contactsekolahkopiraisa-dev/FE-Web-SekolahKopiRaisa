@@ -52,13 +52,24 @@ export default function ServiceCardAdmin({
       : await confirmActivateService(title);
 
     if (result.isConfirmed) {
+      setPending(true);
       try {
+        // Import updateJenisLayanan at the top of file
+        const { updateJenisLayanan } = await import("@/app/utils/jenisLayanan");
+        
+        // Only send is_active flag to update the status
+        await updateJenisLayanan(id, {
+          is_active: !active,
+        });
+        
+        setActive(!active);
         await showSuccessAlert(
           active
             ? "Layanan berhasil dinonaktifkan"
             : "Layanan berhasil diaktifkan"
         );
       } catch (error) {
+        console.error("Error toggling service status:", error);
         await showErrorAlert(
           `Gagal ${active ? "menonaktifkan" : "mengaktifkan"} layanan. Silakan coba lagi.`
         );

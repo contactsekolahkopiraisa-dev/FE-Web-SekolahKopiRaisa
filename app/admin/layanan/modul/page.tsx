@@ -21,6 +21,8 @@ export default function AdminLayananModulPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modules, setModules] = useState<ModulItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 6;
 
   // Fetch modules from API
   useEffect(() => {
@@ -48,6 +50,11 @@ export default function AdminLayananModulPage() {
       setIsLoading(false);
     }
   };
+
+  // Reset to first page when modules change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [modules]);
 
   const handleView = (module: ModulItem) => {
     if (module.file_modul) {
@@ -139,10 +146,17 @@ export default function AdminLayananModulPage() {
             </Link>
           </div>
 
-          {/* Module Cards Grid */}
+          {/* Module Cards Grid with pagination */}
           {modules.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {modules.map((module) => (
+            <>
+              {(() => {
+                const totalPages = Math.ceil(modules.length / ITEMS_PER_PAGE);
+                const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+                const visible = modules.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+                return (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {visible.map((module) => (
                 <div
                   key={module.id}
                   className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100"
@@ -200,8 +214,46 @@ export default function AdminLayananModulPage() {
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
+                      ))}
+                    </div>
+
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-center gap-2 mt-8">
+                        <button
+                          onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                          disabled={currentPage === 1}
+                          className="px-4 py-2 text-sm rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Previous
+                        </button>
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                            <button
+                              key={page}
+                              onClick={() => setCurrentPage(page)}
+                              className={`px-3 py-2 text-sm rounded-lg ${
+                                currentPage === page
+                                  ? "bg-amber-900 text-white"
+                                  : "bg-white border border-gray-300 hover:bg-gray-50"
+                              }`}
+                            >
+                              {page}
+                            </button>
+                          ))}
+                        </div>
+                        <button
+                          onClick={() => setCurrentPage((p) => p + 1)}
+                          disabled={currentPage >= totalPages}
+                          className="px-4 py-2 text-sm rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Next
+                        </button>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+            </>
           )}
         </>
       )}

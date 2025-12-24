@@ -12,6 +12,7 @@ interface ServiceFormProps {
     durasi: string;
     targetPeserta: string;
     image?: string;
+    isActive?: boolean;
   };
   targetPesertaOptions?: TargetPesertaItem[];
   onSubmit: (data: any, file: File | null) => void;
@@ -38,6 +39,9 @@ export default function ServiceForm({
     initialData?.image || null
   );
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isActive, setIsActive] = useState<boolean>(
+    initialData?.isActive !== undefined ? initialData.isActive : true
+  );
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -70,7 +74,7 @@ export default function ServiceForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData, selectedFile);
+    onSubmit({ ...formData, isActive }, selectedFile);
   };
 
   return (
@@ -236,6 +240,31 @@ export default function ServiceForm({
               ))}
             </select>
             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+          </div>
+        </div>
+
+        {/* Status Aktif */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            Status Layanan
+          </label>
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={() => setIsActive(!isActive)}
+              className={`px-6 py-2.5 rounded-lg font-medium transition-all ${
+                isActive
+                  ? "bg-emerald-600 text-white shadow-sm hover:bg-emerald-700"
+                  : "bg-rose-600 text-white shadow-sm hover:bg-rose-700"
+              }`}
+            >
+              {isActive ? "Aktif" : "Nonaktif"}
+            </button>
+            <span className="text-sm text-gray-500">
+              {isActive
+                ? "Layanan ditampilkan ke pengguna"
+                : "Layanan disembunyikan dari pengguna"}
+            </span>
           </div>
         </div>
 
