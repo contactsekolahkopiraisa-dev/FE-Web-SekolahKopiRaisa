@@ -14,6 +14,8 @@ export default function EditModulPage() {
     deskripsi: "",
   });
   const [moduleFile, setModuleFile] = useState<File | null>(null);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string>("");
   const [currentFileUrl, setCurrentFileUrl] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -34,6 +36,9 @@ export default function EditModulPage() {
         deskripsi: moduleData.deskripsi,
       });
       setCurrentFileUrl(moduleData.file_modul);
+      if (moduleData.logo_judul) {
+        setLogoPreview(moduleData.logo_judul);
+      }
     } catch (error: any) {
       console.error("Error fetching module:", error);
       await Swal.fire({
@@ -76,6 +81,15 @@ export default function EditModulPage() {
     }
   };
 
+  const handleLogoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setLogoFile(file);
+      const url = URL.createObjectURL(file);
+      setLogoPreview(url);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -97,6 +111,7 @@ export default function EditModulPage() {
         judul_modul: formData.judul_modul,
         deskripsi: formData.deskripsi,
         file_modul: moduleFile || undefined,
+        logo_judul: logoFile || undefined,
       });
 
       await Swal.fire({
@@ -141,6 +156,43 @@ export default function EditModulPage() {
           </h1>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Logo Judul (Opsional) */}
+            <div>
+              <label className="block text-sm font-medium text-amber-900 mb-2">
+                Sampul Modul
+              </label>
+              <div className="flex items-start gap-4">
+                <label
+                  htmlFor="logo-upload"
+                  className="flex flex-col items-center justify-center w-full h-40 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 transition bg-neutral-50"
+                >
+                  <div className="flex flex-col items-center justify-center py-6">
+                    <Upload className="w-10 h-10 text-gray-400 mb-2" />
+                    <p className="text-sm text-gray-500 font-medium">
+                      {logoFile ? "Gambar Dipilih" : "Unggah Gambar (PNG/JPG)"}
+                    </p>
+                    {logoFile && (
+                      <p className="text-xs text-gray-400 mt-1">{logoFile.name}</p>
+                    )}
+                  </div>
+                  <input
+                    id="logo-upload"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleLogoFileChange}
+                  />
+                </label>
+                {logoPreview && (
+                  <img
+                    src={logoPreview}
+                    alt="Preview Logo"
+                    className="w-24 h-24 object-cover rounded-md border"
+                  />
+                )}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Maksimal 2MB. Format: JPG, PNG.</p>
+            </div>
             {/* Judul Modul */}
             <div>
               <label
@@ -216,7 +268,7 @@ export default function EditModulPage() {
                   <p className="text-sm text-gray-500 font-medium">
                     {moduleFile
                       ? "File Dipilih"
-                      : "Unggah File Baru (Opsional)"}
+                      : "Unggah File Baru (PDF/DOC)"}
                   </p>
                   {moduleFile && (
                     <p className="text-xs text-gray-400 mt-1">

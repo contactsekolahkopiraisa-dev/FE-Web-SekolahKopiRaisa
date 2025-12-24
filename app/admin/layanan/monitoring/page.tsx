@@ -31,6 +31,10 @@ export default function AdminLayananMonitoringPage() {
 
   const [layananList, setLayananList] = useState<LayananItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  // Pagination state (match user riwayat style)
+  const [pageBerlangsung, setPageBerlangsung] = useState(1);
+  const [pageSelesai, setPageSelesai] = useState(1);
+  const ITEMS_PER_PAGE = 6;
 
   useEffect(() => {
     loadLayananData();
@@ -239,6 +243,39 @@ export default function AdminLayananMonitoringPage() {
     });
   }, [layananList, query, filterMou, filterPengajuan, filterPas]);
 
+  // Determine which records are considered "selesai" (completed)
+  const selesaiList = useMemo(() => {
+    return filtered.filter((r) => {
+      const jenisNama = r.jenis_layanan?.nama_jenis_layanan || "";
+      const isSimpleWorkflow = [
+        "Kunjungan",
+        "Undangan Narasumber",
+      ].some((j) => jenisNama.includes(j));
+
+      if (isSimpleWorkflow) {
+        // Kunjungan & Undangan Narasumber tidak ada di tab selesai (tidak ada sertifikat)
+        return false;
+      } else {
+        // For MOU workflows (PKL, Magang, Pelatihan): selesai if laporan submitted
+        const hasLaporan = r.laporan && (r.laporan.id || r.laporan.length > 0);
+        return !!hasLaporan;
+      }
+    });
+  }, [filtered]);
+
+  // Decide current list and page state per tab
+  const currentPage = activeTab === "berlangsung" ? pageBerlangsung : pageSelesai;
+  const currentList = activeTab === "berlangsung" ? filtered : selesaiList;
+  const totalPages = Math.max(1, Math.ceil(currentList.length / ITEMS_PER_PAGE));
+  const startIdx = (currentPage - 1) * ITEMS_PER_PAGE;
+  const pageItems = currentList.slice(startIdx, startIdx + ITEMS_PER_PAGE);
+
+  // Reset page when filters/search change
+  useEffect(() => {
+    setPageBerlangsung(1);
+    setPageSelesai(1);
+  }, [query, filterMou, filterPengajuan, filterPas]);
+
   const Badge = ({ status }: { status: string }) => {
     const statusLower = status.toLowerCase();
     const isApproved =
@@ -256,7 +293,7 @@ export default function AdminLayananMonitoringPage() {
 
     return (
       <span
-        className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md border ${style}`}
+        className={`inline-flex items-center gap-1 px-3 py-1.5 text-sm font-semibold rounded-lg border ${style}`}
       >
         {status}
       </span>
@@ -446,28 +483,7 @@ export default function AdminLayananMonitoringPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y">
-                    {(activeTab === "berlangsung"
-                      ? filtered
-                      : filtered.filter((r) => {
-                          const jenisNama =
-                            r.jenis_layanan?.nama_jenis_layanan || "";
-                          const isSimpleWorkflow = [
-                            "Kunjungan",
-                            "Undangan Narasumber",
-                          ].some((j) => jenisNama.includes(j));
-
-                          if (isSimpleWorkflow) {
-                            // Kunjungan & Undangan Narasumber tidak ada di tab selesai (tidak ada sertifikat)
-                            return false;
-                          } else {
-                            // For MOU workflows (PKL, Magang, Pelatihan): selesai if laporan submitted
-                            // Check if laporan exists and has valid data (not just empty object)
-                            const hasLaporan =
-                              r.laporan && (r.laporan.id || r.laporan.length > 0);
-                            return !!hasLaporan;
-                          }
-                        })
-                    ).map((row) => {
+                    {pageItems.map((row) => {
                       const pemohonNama = row.pemohon?.name || "N/A";
                       const jenisNama =
                         row.jenis_layanan?.nama_jenis_layanan || "N/A";
@@ -560,6 +576,55 @@ export default function AdminLayananMonitoringPage() {
                   </tbody>
                 </table>
               </div>
+            </div>
+          )}
+          {/* Pagination Controls (match user riwayat style) */}
+          {!isLoading && totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-4">
+              <button
+                className="px-4 py-2 text-sm rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={currentPage === 1}
+                onClick={() => {
+                  if (activeTab === "berlangsung")
+                    setPageBerlangsung((p) => Math.max(1, p - 1));
+                  else setPageSelesai((p) => Math.max(1, p - 1));
+                }}
+              >
+                Previous
+              </button>
+
+              <div className="flex items-center gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                  (page) => (
+                    <button
+                      key={page}
+                      onClick={() => {
+                        if (activeTab === "berlangsung") setPageBerlangsung(page);
+                        else setPageSelesai(page);
+                      }}
+                      className={`px-3 py-2 text-sm rounded-lg ${
+                        currentPage === page
+                          ? "bg-amber-900 text-white"
+                          : "bg-white border border-gray-300 hover:bg-gray-50"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  )
+                )}
+              </div>
+
+              <button
+                className="px-4 py-2 text-sm rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={currentPage === totalPages}
+                onClick={() => {
+                  if (activeTab === "berlangsung")
+                    setPageBerlangsung((p) => Math.min(totalPages, p + 1));
+                  else setPageSelesai((p) => Math.min(totalPages, p + 1));
+                }}
+              >
+                Next
+              </button>
             </div>
           )}
         </div>

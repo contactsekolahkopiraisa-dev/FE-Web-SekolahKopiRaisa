@@ -69,7 +69,9 @@ export default function LayananPage() {
     try {
       setIsLoading(true);
       const data = await fetchAllJenisLayanan();
-      setServices(data);
+      // Filter hanya layanan yang aktif
+      const activeServices = data.filter((service) => service.is_active !== false);
+      setServices(activeServices);
     } catch (error: any) {
       console.error("Error loading services:", error);
     } finally {

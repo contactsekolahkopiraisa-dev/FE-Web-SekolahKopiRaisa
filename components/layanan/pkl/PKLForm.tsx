@@ -92,23 +92,25 @@ export default function PKLForm({
             placeholder="Asal Instansi (Sekolah/Universitas)"
           />
 
-          {/* Tanggal Mulai */}
-          <FormField
-            label="Tanggal Mulai"
-            name="tanggalMulai"
-            type="date"
-            value={formData.tanggalMulai}
-            onChange={onInputChange}
-          />
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {/* Tanggal Mulai */}
+            <FormField
+              label="Tanggal Mulai"
+              name="tanggalMulai"
+              type="date"
+              value={formData.tanggalMulai}
+              onChange={onInputChange}
+            />
 
-          {/* Tanggal Selesai */}
-          <FormField
-            label="Tanggal Selesai"
-            name="tanggalSelesai"
-            type="date"
-            value={formData.tanggalSelesai}
-            onChange={onInputChange}
-          />
+            {/* Tanggal Selesai */}
+            <FormField
+              label="Tanggal Selesai"
+              name="tanggalSelesai"
+              type="date"
+              value={formData.tanggalSelesai}
+              onChange={onInputChange}
+            />
+          </div>
 
           {/* Kegiatan Section */}
           <KegiatanSection

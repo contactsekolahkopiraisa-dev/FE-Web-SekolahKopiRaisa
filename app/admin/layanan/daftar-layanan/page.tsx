@@ -158,6 +158,7 @@ export default function AdminLayananPage() {
                     editHref={`/admin/layanan/daftar-layanan/${getSlugFromName(
                       s.nama_jenis_layanan
                     )}/edit`}
+                    isActive={s.is_active}
                   />
                 );
               })}

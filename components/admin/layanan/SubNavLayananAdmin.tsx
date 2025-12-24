@@ -16,10 +16,10 @@ export default function SubNavLayananAdmin() {
       label: "Daftar Layanan",
       href: "/admin/layanan/daftar-layanan",
     },
-    {
-      label: "Kegiatan Selesai",
-      href: "/admin/layanan/daftar-layanan/riwayat",
-    },
+    // {
+    //   label: "Kegiatan Selesai",
+    //   href: "/admin/layanan/daftar-layanan/riwayat",
+    // },
   ];
 
   return (
