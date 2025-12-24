@@ -15,13 +15,13 @@ import {
 } from "@/app/types/jenisLayananType";
 
 // Move titleBySlug outside component to avoid re-creation
-// IMPORTANT: These must match EXACTLY with nama_jenis_layanan from backend
+// These are used as display titles - actual matching is done with includes() check
 const titleBySlug: Record<string, string> = {
-  kunjungan: "Kunjungan test", // Matches backend: "Kunjungan test"
-  magang: "Magang gile anjay", // Matches backend: "Magang gile anjay"
-  pelatihan: "Pelatihan", // Matches backend: "Pelatihan" (not "Pelatihan Kopi")
-  "undangan-narasumber": "Undangan Narasumber", // Matches backend: "Undangan Narasumber"
-  pkl: "Praktek Kerja Lapangan (PKL)", // Matches backend: "Praktek Kerja Lapangan (PKL)"
+  kunjungan: "Kunjungan",
+  magang: "Magang",
+  pelatihan: "Pelatihan",
+  "undangan-narasumber": "Undangan Narasumber",
+  pkl: "Praktek Kerja Lapangan (PKL)",
 };
 
 export default function EditLayananPage() {
@@ -81,8 +81,8 @@ export default function EditLayananPage() {
         );
       }
 
-      const foundLayanan = allLayanan.find(
-        (l) => l.nama_jenis_layanan.toLowerCase() === targetName?.toLowerCase()
+      const foundLayanan = allLayanan.find((l) =>
+        l.nama_jenis_layanan.toLowerCase().includes(slug.toLowerCase())
       );
 
       console.log("9. Found layanan:", foundLayanan);
@@ -143,6 +143,7 @@ export default function EditLayananPage() {
         durasi: "",
         targetPeserta: "",
         image: "",
+        isActive: true,
       };
     }
 
@@ -153,6 +154,7 @@ export default function EditLayananPage() {
       durasi: jenisLayanan.estimasi_waktu || "",
       targetPeserta: jenisLayanan.id_target_peserta.toString(),
       image: jenisLayanan.image,
+      isActive: jenisLayanan.is_active !== undefined ? jenisLayanan.is_active : true,
     };
   }, [jenisLayanan]);
 
@@ -169,6 +171,7 @@ export default function EditLayananPage() {
         durasi: data.durasi,
         id_target_peserta: parseInt(data.targetPeserta),
         image: file || undefined,
+        is_active: data.isActive,
       });
 
       const Swal = (await import("sweetalert2")).default;

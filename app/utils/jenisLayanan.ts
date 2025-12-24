@@ -51,15 +51,26 @@ export const updateJenisLayanan = async (
 ): Promise<JenisLayananItem> => {
   try {
     const data = new FormData();
-    data.append("nama_jenis_layanan", formData.nama);
-    data.append("deskripsi_singkat", formData.deskripsi_singkat);
-    data.append("deskripsi_lengkap", formData.deskripsi_lengkap);
+    if (formData.nama) {
+      data.append("nama_jenis_layanan", formData.nama);
+    }
+    if (formData.deskripsi_singkat) {
+      data.append("deskripsi_singkat", formData.deskripsi_singkat);
+    }
+    if (formData.deskripsi_lengkap) {
+      data.append("deskripsi_lengkap", formData.deskripsi_lengkap);
+    }
     if (formData.durasi) {
       data.append("estimasi_waktu", formData.durasi);
     }
-    data.append("id_target_peserta", formData.id_target_peserta.toString());
+    if (formData.id_target_peserta) {
+      data.append("id_target_peserta", formData.id_target_peserta.toString());
+    }
     if (formData.image) {
       data.append("image", formData.image);
+    }
+    if (formData.is_active !== undefined) {
+      data.append("is_active", formData.is_active.toString());
     }
 
     const response = await api.put(`/api/v1/jenis-layanan/${id}`, data, {
