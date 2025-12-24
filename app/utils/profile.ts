@@ -1,6 +1,6 @@
 import api from "./api";
 
-// Get User Profile
+// Get Current User Profile (authenticated user)
 export const getProfile = async () => {
   try {
     const res = await api.get("/api/v1/auth/umkm", {
@@ -35,9 +35,9 @@ export const getProfile = async () => {
 };
 
 // Get User Profile by ID
-export const getProfileById = async (idUmkm: number) => {
+export const getProfileById = async (userId: number) => {
   try {
-    const res = await api.get(`/api/v1/auth/umkm/${idUmkm}`, {
+    const res = await api.get(`/api/v1/auth/umkm/user/${userId}`, {
       headers: { "Cache-Control": "no-store" }
     });
     return res.data.data;
@@ -65,6 +65,39 @@ export const getProfileById = async (idUmkm: number) => {
       type: "network",
       message: "Tidak dapat terhubung ke server."
     };
+  }
+};
+
+// Get User ID from localStorage/session
+export const getCurrentUserId = (): number | null => {
+  try {
+    // Coba ambil dari localStorage
+    const userId = localStorage.getItem("user_id");
+    if (userId) {
+      return parseInt(userId, 10);
+    }
+
+    // Alternatif: ambil dari session storage
+    const sessionUserId = sessionStorage.getItem("user_id");
+    if (sessionUserId) {
+      return parseInt(sessionUserId, 10);
+    }
+
+    // Alternatif: parse dari token jika ada
+    const token = localStorage.getItem("token");
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        return payload.id || payload.user_id || null;
+      } catch (e) {
+        console.error("Gagal parse token:", e);
+      }
+    }
+
+    return null;
+  } catch (error) {
+    console.error("Gagal mendapatkan user ID:", error);
+    return null;
   }
 };
 

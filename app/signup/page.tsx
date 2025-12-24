@@ -12,7 +12,7 @@ export default function Signup() {
     name: "",
     email: "",
     password: "",
-    phone_number: "",
+    phone_number: ""
   });
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Partial<typeof form>>({});
@@ -37,7 +37,7 @@ export default function Signup() {
           "popup",
           JSON.stringify({
             message: response.message,
-            type: "success",
+            type: "success"
           })
         );
 
@@ -215,7 +215,7 @@ export default function Signup() {
         style={{
           backgroundImage: "url('/assets/login_image.jpeg')",
           backgroundSize: "cover",
-          backgroundPosition: "center",
+          backgroundPosition: "center"
         }}
       ></div>
     </div>

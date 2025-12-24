@@ -1,36 +1,43 @@
+// app\umkm\profile\page.tsx
+
 "use client";
 
 import { useEffect, useState } from "react";
 import { Mail, MapPin, Phone, TriangleAlert, User } from "lucide-react";
-import { getProfile, getProfileById, updateProfile } from "@/app/utils/profile";
+import {
+  updateProfile,
+  getProfileById,
+  getCurrentUserId
+} from "@/app/utils/profile";
 import Popup from "@/components/Popup";
 import ConfirmModal from "@/components/ConfirmModal";
 
-interface Address {
-  id_address: number;
-  id_umkm: number;
+interface Desa {
   id_desa: number;
-  alamat: string;
-  kode_pos: string;
-  desa: {
-    id_desa: number;
+  nama_desa: string;
+  id_kecamatan: number;
+  kecamatan: {
     id_kecamatan: number;
-    nama_desa: string;
-    kecamatan: {
-      id_kecamatan: number;
+    nama_kecamatan: string;
+    id_kabupaten: number;
+    kabupaten: {
       id_kabupaten: number;
-      nama_kecamatan: string;
-      kabupaten: {
-        id_kabupaten: number;
+      nama_kabupaten: string;
+      id_provinsi: number;
+      provinsi: {
         id_provinsi: number;
-        nama_kabupaten: string;
-        provinsi: {
-          id_provinsi: number;
-          nama_provinsi: string;
-        };
+        nama_provinsi: string;
       };
     };
   };
+}
+
+interface Address {
+  id_address?: number;
+  alamat: string;
+  kode_pos: string;
+  id_desa: number;
+  desa: Desa;
 }
 
 interface UserProfile {
@@ -39,20 +46,11 @@ interface UserProfile {
   image: string | null;
   email: string;
   phone_number: string;
+  addresses?: Address[];
 }
 
-interface UMKMData {
-  id_umkm: number;
-  id_user: number;
-  nama_umkm: string;
-  ktp: string;
-  addresses: Address[];
-  User: UserProfile;
-}
-
-export default function AdminProfile() {
+export default function UMKMProfile() {
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [umkmData, setUmkmData] = useState<UMKMData | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [emailErrorOnEdit, setEmailErrorOnEdit] = useState(false);
 
@@ -66,6 +64,7 @@ export default function AdminProfile() {
 
   const [imageUrl, setImageUrl] = useState("/assets/user.png");
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -79,7 +78,7 @@ export default function AdminProfile() {
     setIsEditing(false);
     setEmailErrorOnEdit(false);
     setErrors({});
-    fetchUser();
+    fetchUserData();
   };
 
   const handleSave = async () => {
@@ -99,7 +98,7 @@ export default function AdminProfile() {
         setMessage(response.message);
         setPopupType("success");
         setShowPopup(true);
-        fetchUser();
+        fetchUserData();
       }
     } catch (error: any) {
       if (error.type === "validation") {
@@ -112,43 +111,97 @@ export default function AdminProfile() {
     }
   };
 
-  const fetchUser = async () => {
+  const fetchUserData = async () => {
     try {
-      // Ambil ID UMKM dari localStorage atau session
-      const storedIdUmkm = localStorage.getItem("id_umkm");
+      setLoading(true);
 
-      if (storedIdUmkm) {
-        const idUmkm = parseInt(storedIdUmkm);
-        console.log("UMKM ID:", idUmkm);
+      const currentUserId = getCurrentUserId();
 
-        // Langsung ambil data lengkap berdasarkan ID UMKM
-        const detailedData = await getProfileById(idUmkm);
-        console.log("Detailed API Response:", detailedData);
-
-        if (detailedData) {
-          setUmkmData(detailedData);
-          setUser(detailedData.User);
-          setImageUrl(detailedData.User.image || "/assets/user.png");
-          console.log("User data:", detailedData.User);
-          console.log("Addresses:", detailedData.addresses);
-        }
-      } else {
-        console.error("ID UMKM tidak ditemukan di localStorage");
+      if (currentUserId === null) {
         setMessage("Sesi Anda telah berakhir. Silakan login kembali.");
         setPopupType("error");
         setShowPopup(true);
+        setLoading(false);
+        return;
       }
-    } catch (error) {
+
+      console.log("Current User ID:", currentUserId);
+
+      const userData = await getProfileById(currentUserId);
+      console.log("Full User data from API:", userData);
+      console.log("Addresses from API:", userData?.addresses);
+
+      if (userData) {
+        // Data user ada di dalam nested object "User"
+        const userInfo = userData.User || userData;
+
+        // Pastikan semua data ter-set dengan benar
+        const profileData: UserProfile = {
+          id: userInfo.id || userData.id_user,
+          name: userInfo.name || "",
+          email: userInfo.email || "",
+          phone_number: userInfo.phone_number || "",
+          image: userInfo.image || null,
+          addresses: userData.addresses || []
+        };
+
+        console.log("Profile data to set:", profileData);
+        setUser(profileData);
+        setImageUrl(userInfo.image || "/assets/user.png");
+        console.log("User profile loaded successfully");
+      } else {
+        setMessage("Data user tidak ditemukan.");
+        setPopupType("error");
+        setShowPopup(true);
+      }
+    } catch (error: any) {
       console.error("Gagal mendapatkan user:", error);
+      setMessage(error.message || "Terjadi kesalahan saat memuat profil.");
+      setPopupType("error");
+      setShowPopup(true);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchUser();
+    fetchUserData();
   }, []);
 
   // Get the first address or null
-  const primaryAddress = umkmData?.addresses?.[0] || null;
+  const primaryAddress = user?.addresses?.[0] || null;
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-secondary py-8 p-4 pt-20">
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-8">
+            <h1 className="text-lg font-medium text-gray-800 mb-2">
+              Profil Saya
+            </h1>
+            <p className="text-gray-600">Memuat data profil...</p>
+          </div>
+          <div className="bg-white rounded-2xl shadow-lg border border-orange-100 overflow-hidden animate-pulse">
+            <div className="bg-primary px-6 py-8">
+              <div className="flex flex-col items-center space-y-4">
+                <div className="w-32 h-32 rounded-full bg-gray-300"></div>
+                <div className="w-40 h-10 bg-gray-300 rounded-full"></div>
+              </div>
+            </div>
+            <div className="p-6 space-y-6">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="space-y-2">
+                  <div className="w-32 h-4 bg-gray-200 rounded"></div>
+                  <div className="w-full h-12 bg-gray-200 rounded-xl"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-secondary py-8 p-4 pt-20">
@@ -207,7 +260,7 @@ export default function AdminProfile() {
                           setMessage("Foto profil berhasil diperbarui!");
                           setPopupType("success");
                           setShowPopup(true);
-                          fetchUser();
+                          fetchUserData();
                         }
                       } catch (error: any) {
                         if (error.type === "validation") {
@@ -310,7 +363,7 @@ export default function AdminProfile() {
               </div>
 
               {/* Address Information */}
-              {primaryAddress && (
+              {primaryAddress ? (
                 <>
                   <div className="space-y-2">
                     <label className="flex items-center text-sm font-semibold text-gray-700">
@@ -332,7 +385,7 @@ export default function AdminProfile() {
                       </label>
                       <input
                         type="text"
-                        value={primaryAddress.desa.nama_desa || ""}
+                        value={primaryAddress.desa?.nama_desa || ""}
                         disabled={true}
                         className="w-full border-2 bg-gray-50 border-gray-200 text-gray-600 rounded-xl px-4 py-3 text-sm"
                       />
@@ -345,7 +398,7 @@ export default function AdminProfile() {
                       <input
                         type="text"
                         value={
-                          primaryAddress.desa.kecamatan.nama_kecamatan || ""
+                          primaryAddress.desa?.kecamatan?.nama_kecamatan || ""
                         }
                         disabled={true}
                         className="w-full border-2 bg-gray-50 border-gray-200 text-gray-600 rounded-xl px-4 py-3 text-sm"
@@ -361,8 +414,8 @@ export default function AdminProfile() {
                       <input
                         type="text"
                         value={
-                          primaryAddress.desa.kecamatan.kabupaten
-                            .nama_kabupaten || ""
+                          primaryAddress.desa?.kecamatan?.kabupaten
+                            ?.nama_kabupaten || ""
                         }
                         disabled={true}
                         className="w-full border-2 bg-gray-50 border-gray-200 text-gray-600 rounded-xl px-4 py-3 text-sm"
@@ -376,8 +429,8 @@ export default function AdminProfile() {
                       <input
                         type="text"
                         value={
-                          primaryAddress.desa.kecamatan.kabupaten.provinsi
-                            .nama_provinsi || ""
+                          primaryAddress.desa?.kecamatan?.kabupaten?.provinsi
+                            ?.nama_provinsi || ""
                         }
                         disabled={true}
                         className="w-full border-2 bg-gray-50 border-gray-200 text-gray-600 rounded-xl px-4 py-3 text-sm"
@@ -397,6 +450,15 @@ export default function AdminProfile() {
                     />
                   </div>
                 </>
+              ) : (
+                <div className="space-y-2 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                  <p className="text-blue-700 text-sm flex items-center">
+                    <MapPin size={15} className="mr-2" />
+                    Data alamat UMKM tidak tersedia di halaman ini. Untuk
+                    mengelola data UMKM dan alamat, silakan hubungi
+                    administrator.
+                  </p>
+                </div>
               )}
 
               {/* Action Buttons */}
