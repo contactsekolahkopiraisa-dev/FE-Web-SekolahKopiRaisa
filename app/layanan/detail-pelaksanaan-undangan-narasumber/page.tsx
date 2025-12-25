@@ -835,16 +835,6 @@ function DetailPelaksanaanUndanganNarasumberContent() {
                     placeholder: "Contoh : Kota Lumajang",
                   },
                   {
-                    label: "Asal Peserta / Mitra Kerjasama",
-                    name: "asalPeserta",
-                    placeholder: "Contoh : Universitas Jember",
-                  },
-                  {
-                    label: "Jumlah Peserta",
-                    name: "jumlahPeserta",
-                    placeholder: "Contoh : 1",
-                  },
-                  {
                     label: "Lama Pelaksanaan",
                     name: "lamaPelaksanaan",
                     placeholder: "Contoh : 4 Bulan",
@@ -865,37 +855,63 @@ function DetailPelaksanaanUndanganNarasumberContent() {
                   </div>
                 ))}
 
-                {/* Jenis Kegiatan */}
+                {/* Asal Peserta / Mitra Kerjasama - Auto-filled from layananData */}
                 <div>
                   <label className="block text-[12px] text-[#3B3B3B] mb-1">
-                    Jenis Kegiatan *
+                    Asal Peserta / Mitra Kerjasama *
                   </label>
-                  <select
-                    name="jenisKegiatan"
-                    value={laporanForm.jenisKegiatan}
-                    onChange={handleLaporanChange}
-                    disabled={isLaporanTerisi}
-                    className="w-full rounded-lg border border-[#E8E2DB] bg-white px-3 py-2 text-[12px] text-[#3B3B3B] disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
-                  >
-                    <option value="">Pilih Jenis Kegiatan</option>
-                    <option value="pkl">PKL</option>
-                    <option value="Magang">Magang</option>
-                    <option value="pelatihan">Pelatihan Kopi</option>
-                  </select>
+                  <input
+                    type="text"
+                    name="asalPeserta"
+                    value={layananData?.instansi_asal || "-"}
+                    disabled
+                    className="w-full rounded-lg border border-[#E8E2DB] bg-gray-50 px-3 py-2 text-[12px] text-gray-500 cursor-not-allowed"
+                  />
                 </div>
 
-                {/* Tanggal Pelaksanaan */}
+                {/* Jumlah Peserta - Auto-filled and read-only */}
+                <div>
+                  <label className="block text-[12px] text-[#3B3B3B] mb-1">
+                    Jumlah Peserta *
+                  </label>
+                  <input
+                    type="text"
+                    name="jumlahPeserta"
+                    value="1"
+                    disabled
+                    className="w-full rounded-lg border border-[#E8E2DB] bg-gray-50 px-3 py-2 text-[12px] text-gray-500 cursor-not-allowed"
+                  />
+                </div>
+
+                {/* Tanggal Pelaksanaan - Auto-filled from layananData */}
                 <div>
                   <label className="block text-[12px] text-[#3B3B3B] mb-1">
                     Tanggal Pelaksanaan *
                   </label>
                   <input
-                    type="date"
+                    type="text"
                     name="tanggalPelaksanaan"
-                    value={laporanForm.tanggalPelaksanaan}
-                    onChange={handleLaporanChange}
-                    disabled={isLaporanTerisi}
-                    className="w-full rounded-lg border border-[#E8E2DB] bg-white px-3 py-2 text-[12px] text-[#3B3B3B] disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
+                    value={
+                      layananData?.tanggal_mulai
+                        ? formatDate(layananData.tanggal_mulai)
+                        : "-"
+                    }
+                    disabled
+                    className="w-full rounded-lg border border-[#E8E2DB] bg-gray-50 px-3 py-2 text-[12px] text-gray-500 cursor-not-allowed"
+                  />
+                </div>
+
+                {/* Jenis Kegiatan - Changed to read-only text input */}
+                <div>
+                  <label className="block text-[12px] text-[#3B3B3B] mb-1">
+                    Jenis Kegiatan *
+                  </label>
+                  <input
+                    type="text"
+                    name="jenisKegiatan"
+                    value="Undangan Narasumber"
+                    disabled
+                    className="w-full rounded-lg border border-[#E8E2DB] bg-gray-50 px-3 py-2 text-[12px] text-gray-500 cursor-not-allowed"
                   />
                 </div>
 

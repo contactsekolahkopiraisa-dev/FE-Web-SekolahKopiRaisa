@@ -143,10 +143,10 @@ export default function PelatihanFormPage() {
           );
         }
         // Penanggungjawab sebagai pesertas dengan format {urutan, nama}
-        if (formData.penanggungjawab) {
-          const peserta = [{ urutan: 1, nama: formData.penanggungjawab }];
-          data.append("pesertas", JSON.stringify(peserta));
-        }
+        // if (formData.penanggungjawab) {
+        //   const peserta = [{ urutan: 1, nama: formData.penanggungjawab }];
+        //   data.append("pesertas", JSON.stringify(peserta));
+        // }
         // File dengan nama field yang benar
         if (formData.suratPermohonanFile)
           data.append("file_surat_permohonan", formData.suratPermohonanFile);

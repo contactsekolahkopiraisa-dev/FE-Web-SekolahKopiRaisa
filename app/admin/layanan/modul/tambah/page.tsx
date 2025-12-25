@@ -13,8 +13,8 @@ export default function TambahModulPage() {
     deskripsi: "",
   });
   const [moduleFile, setModuleFile] = useState<File | null>(null);
-  const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [logoPreview, setLogoPreview] = useState<string>("");
+  const [sampulFile, setSampulFile] = useState<File | null>(null); // ✅ GANTI
+  const [sampulPreview, setSampulPreview] = useState<string>(""); // ✅ GANTI
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleInputChange = (
@@ -34,12 +34,13 @@ export default function TambahModulPage() {
     }
   };
 
-  const handleLogoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSampulFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // ✅ GANTI
     const file = e.target.files?.[0];
     if (file) {
-      setLogoFile(file);
+      setSampulFile(file); // ✅ GANTI
       const url = URL.createObjectURL(file);
-      setLogoPreview(url);
+      setSampulPreview(url); // ✅ GANTI
     }
   };
 
@@ -61,14 +62,15 @@ export default function TambahModulPage() {
     setIsSubmitting(true);
 
     try {
-      // Optional logo validation (<= 2MB, image types)
-      if (logoFile) {
-        const isImage = logoFile.type.startsWith("image/");
-        const isUnder2MB = logoFile.size <= 2 * 1024 * 1024;
+      // Validasi sampul (opsional)
+      if (sampulFile) {
+        // ✅ GANTI
+        const isImage = sampulFile.type.startsWith("image/");
+        const isUnder2MB = sampulFile.size <= 2 * 1024 * 1024;
         if (!isImage || !isUnder2MB) {
           await Swal.fire({
             icon: "warning",
-            title: "Logo Tidak Valid",
+            title: "Sampul Tidak Valid",
             text: "Gunakan gambar JPG/PNG maksimal 2MB.",
             confirmButtonColor: "#4E342E",
             customClass: { popup: "rounded-xl" },
@@ -82,7 +84,7 @@ export default function TambahModulPage() {
         judul_modul: formData.judul_modul,
         deskripsi: formData.deskripsi,
         file_modul: moduleFile,
-        logo_judul: logoFile || undefined,
+        foto_sampul: sampulFile || undefined, // ✅ GANTI
       });
 
       await Swal.fire({
@@ -119,6 +121,52 @@ export default function TambahModulPage() {
           </h1>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+
+             {/* Sampul Modul (Opsional) - ✅ GANTI */}
+            <div>
+              <label className="block text-sm font-medium text-amber-900 mb-2">
+                Sampul Modul (Opsional)
+              </label>
+              <div className="flex items-start gap-4">
+                <label
+                  htmlFor="sampul-upload" // ✅ GANTI ID
+                  className="flex flex-col items-center justify-center w-full h-40 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 transition bg-neutral-50"
+                >
+                  <div className="flex flex-col items-center justify-center py-6">
+                    <Upload className="w-10 h-10 text-gray-400 mb-2" />
+                    <p className="text-sm text-gray-500 font-medium">
+                      {sampulFile
+                        ? "Gambar Dipilih"
+                        : "Unggah Gambar (PNG/JPG)"}{" "}
+                      {/* ✅ GANTI */}
+                    </p>
+                    {sampulFile && ( // ✅ GANTI
+                      <p className="text-xs text-gray-400 mt-1">
+                        {sampulFile.name}
+                      </p>
+                    )}
+                  </div>
+                  <input
+                    id="sampul-upload" // ✅ GANTI ID
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleSampulFileChange} // ✅ GANTI
+                  />
+                </label>
+                {sampulPreview && ( // ✅ GANTI
+                  <img
+                    src={sampulPreview} // ✅ GANTI
+                    alt="Preview Sampul"
+                    className="w-24 h-24 object-cover rounded-md border"
+                  />
+                )}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Maksimal 2MB. Format: JPG, PNG.
+              </p>
+            </div>
+
             {/* Judul Modul */}
             <div>
               <label
@@ -189,43 +237,7 @@ export default function TambahModulPage() {
               </label>
             </div>
 
-            {/* Logo Judul (Opsional) */}
-            <div>
-              <label className="block text-sm font-medium text-amber-900 mb-2">
-                Sampul Modul
-              </label>
-              <div className="flex items-start gap-4">
-                <label
-                  htmlFor="logo-upload"
-                  className="flex flex-col items-center justify-center w-full h-40 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 transition bg-neutral-50"
-                >
-                  <div className="flex flex-col items-center justify-center py-6">
-                    <Upload className="w-10 h-10 text-gray-400 mb-2" />
-                    <p className="text-sm text-gray-500 font-medium">
-                      {logoFile ? "Gambar Dipilih" : "Unggah Gambar (PNG/JPG)"}
-                    </p>
-                    {logoFile && (
-                      <p className="text-xs text-gray-400 mt-1">{logoFile.name}</p>
-                    )}
-                  </div>
-                  <input
-                    id="logo-upload"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleLogoFileChange}
-                  />
-                </label>
-                {logoPreview && (
-                  <img
-                    src={logoPreview}
-                    alt="Preview Logo"
-                    className="w-24 h-24 object-cover rounded-md border"
-                  />
-                )}
-              </div>
-              <p className="text-xs text-gray-500 mt-1">Maksimal 2MB. Format: JPG, PNG.</p>
-            </div>
+           
 
             {/* Action Buttons */}
             <div className="flex gap-4 pt-6">
