@@ -111,7 +111,7 @@ export default function EditModulPage() {
         judul_modul: formData.judul_modul,
         deskripsi: formData.deskripsi,
         file_modul: moduleFile || undefined,
-        logo_judul: logoFile || undefined,
+        foto_sampul: logoFile || undefined,
       });
 
       await Swal.fire({
@@ -172,7 +172,9 @@ export default function EditModulPage() {
                       {logoFile ? "Gambar Dipilih" : "Unggah Gambar (PNG/JPG)"}
                     </p>
                     {logoFile && (
-                      <p className="text-xs text-gray-400 mt-1">{logoFile.name}</p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {logoFile.name}
+                      </p>
                     )}
                   </div>
                   <input
@@ -191,7 +193,9 @@ export default function EditModulPage() {
                   />
                 )}
               </div>
-              <p className="text-xs text-gray-500 mt-1">Maksimal 2MB. Format: JPG, PNG.</p>
+              <p className="text-xs text-gray-500 mt-1">
+                Maksimal 2MB. Format: JPG, PNG.
+              </p>
             </div>
             {/* Judul Modul */}
             <div>
@@ -266,9 +270,7 @@ export default function EditModulPage() {
                 <div className="flex flex-col items-center justify-center py-6">
                   <Upload className="w-10 h-10 text-gray-400 mb-2" />
                   <p className="text-sm text-gray-500 font-medium">
-                    {moduleFile
-                      ? "File Dipilih"
-                      : "Unggah File Baru (PDF/DOC)"}
+                    {moduleFile ? "File Dipilih" : "Unggah File Baru (PDF/DOC)"}
                   </p>
                   {moduleFile && (
                     <p className="text-xs text-gray-400 mt-1">

@@ -46,8 +46,8 @@ export const createModul = async (
     if (formData.file_modul) {
       data.append("file_modul", formData.file_modul);
     }
-    if (formData.logo_judul) {
-      data.append("logo_judul", formData.logo_judul);
+    if (formData.foto_sampul) {
+      data.append("foto_sampul", formData.foto_sampul);
     }
 
     const response = await api.post("/api/v1/modul", data, {
@@ -74,8 +74,8 @@ export const updateModul = async (
     if (formData.file_modul) {
       data.append("file_modul", formData.file_modul);
     }
-    if (formData.logo_judul) {
-      data.append("logo_judul", formData.logo_judul);
+    if (formData.foto_sampul) {
+      data.append("foto_sampul", formData.foto_sampul);
     }
 
     const response = await api.put(`/api/v1/modul/${id}`, data, {
