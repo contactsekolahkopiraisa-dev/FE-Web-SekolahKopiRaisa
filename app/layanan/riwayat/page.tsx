@@ -395,11 +395,11 @@ export default function RiwayatKegiatanPage() {
                     <div className="space-y-2 mb-4 pb-4 border-b border-gray-100">
                       {/* Status Pengajuan */}
                       <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-600 w-28 flex-shrink-0">
+                        <span className="text-xs text-gray-600 w-24 flex-shrink-0">
                           Pengajuan:
                         </span>
                         <span
-                          className={`px-3 py-1.5 rounded-md text-sm font-semibold border ${getStatusColor(
+                          className={`px-2 py-0.5 rounded text-xs font-medium border ${getStatusColor(
                             item.pengajuan?.nama_status_kode || "Menunggu"
                           )}`}
                         >
@@ -410,11 +410,11 @@ export default function RiwayatKegiatanPage() {
                       {/* Status MOU - Only show for layanan types that have MOU workflow */}
                       {hasMouWorkflow && (
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-600 w-28 flex-shrink-0">
+                          <span className="text-xs text-gray-600 w-24 flex-shrink-0">
                             MOU:
                           </span>
                           <span
-                            className={`px-3 py-1.5 rounded-md text-sm font-semibold border ${getStatusColor(
+                            className={`px-2 py-0.5 rounded text-xs font-medium border ${getStatusColor(
                               item.mou?.statusKode?.nama_status_kode ||
                                 "Belum Terlaksana"
                             )}`}

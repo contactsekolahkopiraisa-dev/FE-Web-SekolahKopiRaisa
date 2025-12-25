@@ -109,10 +109,10 @@ export default function KunjunganFormPage() {
           JSON.stringify([{ id_kegiatan: [] }])
         );
         // Penanggungjawab sebagai pesertas dengan format {urutan, nama}
-        if (formData.penanggungjawab) {
-          const peserta = [{ urutan: 1, nama: formData.penanggungjawab }];
-          data.append("pesertas", JSON.stringify(peserta));
-        }
+        // if (formData.penanggungjawab) {
+        //   const peserta = [{ urutan: 1, nama: formData.penanggungjawab }];
+        //   data.append("pesertas", JSON.stringify(peserta));
+        // }
         // File dengan nama field yang benar - backend expect file_surat_permohonan untuk kunjungan
         if (formData.suratPengantarFile)
           data.append("file_surat_permohonan", formData.suratPengantarFile);

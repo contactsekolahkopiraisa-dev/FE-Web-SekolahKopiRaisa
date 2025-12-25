@@ -57,6 +57,35 @@ function DetailPelaksanaanPelatihanContent() {
     return v;
   };
 
+  // Tambahkan fungsi helper di bagian atas component (setelah helper functions yang sudah ada)
+  const canFinishProgram = (): boolean => {
+    if (!layananData?.tanggal_selesai) return false;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset ke awal hari
+
+    const endDate = new Date(layananData.tanggal_selesai);
+    endDate.setHours(0, 0, 0, 0); // Reset ke awal hari
+
+    // Return true jika hari ini >= tanggal selesai
+    return today >= endDate;
+  };
+
+  const getDaysRemaining = (): number => {
+    if (!layananData?.tanggal_selesai) return 0;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const endDate = new Date(layananData.tanggal_selesai);
+    endDate.setHours(0, 0, 0, 0);
+
+    const diffTime = endDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    return diffDays;
+  };
+
   // Helper: bangun URL file absolut dari path relatif/absolut
   const resolveFileUrl = (path?: string | null): string | null => {
     if (!path) return null;
@@ -127,6 +156,13 @@ function DetailPelaksanaanPelatihanContent() {
           include_pengajuan: true,
           include_pelaksanaan: true,
         });
+
+        // 🔍 DEBUG: Cek response dari backend
+        console.log("=== DETAIL LAYANAN DEBUG ===");
+        console.log("Full data:", data);
+        console.log("jumlah_peserta:", data.jumlah_peserta);
+        console.log("Type of jumlah_peserta:", typeof data.jumlah_peserta);
+        console.log("===========================");
         setLayananData(data);
 
         // Set link logbook jika sudah ada
@@ -1503,8 +1539,8 @@ function DetailPelaksanaanPelatihanContent() {
                 </p>
               </div>
               <p className="text-[12px] text-[#6B6B6B] mb-4">
-                Pengajuan anda telah disetujui. Silahkan download template MOU
-                dan upload kembali setelah ditandatangani.
+                Pengajuan anda telah disetujui. Silahkan upload MoU setelah
+                ditandatangani.
               </p>
 
               <div className="grid grid-cols-1 gap-4">
@@ -1517,11 +1553,9 @@ function DetailPelaksanaanPelatihanContent() {
                   </div>
                   <ol className="list-decimal pl-5 text-[12px] text-[#6B6B6B] space-y-1">
                     <li>
-                      Unduh Template MOU sesuai dengan detail pengajuan anda.
+                      Buatlah dokumen MOU sesuai dengan ketentuan tiap instansi.
                     </li>
-                    <li>
-                      Isi data yang diperlukan sesuai petunjuk pada berkas.
-                    </li>
+                    <li>Isi data yang diperlukan.</li>
                     <li>
                       Tanda tangani berkas oleh pihak terkait yang berwenang.
                     </li>
@@ -1545,7 +1579,7 @@ function DetailPelaksanaanPelatihanContent() {
                   </div>
                 )}
 
-                <div className="rounded-lg border border-[#E8E2DB] bg-white p-4">
+                {/* <div className="rounded-lg border border-[#E8E2DB] bg-white p-4">
                   <p className="text-sm font-semibold text-[#3B3B3B] mb-2">
                     Download Template MOU
                   </p>
@@ -1557,7 +1591,7 @@ function DetailPelaksanaanPelatihanContent() {
                       <Eye size={16} /> Preview MOU
                     </button>
                   </div>
-                </div>
+                </div> */}
 
                 {/* Tampilkan section upload hanya jika: belum upload MOU ATAU MOU ditolak */}
                 {(mouDecision === "ditolak" || !layananData?.mou?.file_mou) && (
@@ -1678,7 +1712,16 @@ function DetailPelaksanaanPelatihanContent() {
                     key={m.id}
                     className="rounded-lg border border-[#E8E2DB] bg-white p-3 flex gap-3"
                   >
-                    <div className="w-20 h-20 rounded-md bg-[#F3EFEB] border border-dashed border-[#B9B1A9]" />
+                    <div className="w-20 h-20 rounded-md bg-[#F3EFEB] border border-dashed border-[#B9B1A9] overflow-hidden">
+                      <img
+                        src={m.foto_sampul || "/assets/coffee.jpg"}
+                        alt={m.judul_modul}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.src = "/assets/coffee.jpg";
+                        }}
+                      />
+                    </div>
                     <div className="flex-1">
                       <p className="text-[13px] font-semibold text-[#3B3B3B]">
                         {m.judul_modul}
@@ -1825,28 +1868,54 @@ function DetailPelaksanaanPelatihanContent() {
                   Selesaikan Program
                 </p>
                 <p className="mt-1 text-[12px] text-[#6B6B6B]">
-                  Setelah menyelesaikan semua kegiatan silahkan klik tombol
-                  dibawah untuk menyelesaikan program dan dapat mengajukan
-                  sertifikat
+                  {!canFinishProgram() && getDaysRemaining() > 0
+                    ? `Program dapat diselesaikan ${getDaysRemaining()} hari lagi (${formatDate(
+                        layananData?.tanggal_selesai || ""
+                      )})`
+                    : "Setelah menyelesaikan semua kegiatan silahkan klik tombol dibawah untuk menyelesaikan program dan dapat mengajukan sertifikat"}
                 </p>
-                <div className="mt-3 flex items-center justify-center gap-3">
+
+                {/* Peringatan jika belum sampai tanggal */}
+                {!canFinishProgram() && (
+                  <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                    <div className="flex items-center justify-center gap-2 text-amber-800">
+                      <Info size={16} />
+                      <p className="text-[12px] font-medium">
+                        Program belum mencapai tanggal selesai
+                      </p>
+                    </div>
+                    <p className="text-[11px] text-amber-700 mt-1">
+                      Anda baru dapat menyelesaikan program pada tanggal{" "}
+                      <strong>
+                        {formatDate(layananData?.tanggal_selesai || "")}
+                      </strong>
+                    </p>
+                  </div>
+                )}
+
+                <div className="mt-3 flex flex-col items-center justify-center gap-3">
                   <label className="inline-flex items-center gap-2 text-[12px] text-[#3B3B3B]">
                     <input
                       type="checkbox"
                       className="accent-primary"
                       checked={pelaksanaanAgree}
                       onChange={(e) => setPelaksanaanAgree(e.target.checked)}
+                      disabled={!canFinishProgram()}
                     />
-                    Saya telah menyelesaikan kegiatan
+                    <span
+                      className={!canFinishProgram() ? "text-gray-400" : ""}
+                    >
+                      Saya telah menyelesaikan kegiatan
+                    </span>
                   </label>
                   <button
-                    className="inline-flex items-center rounded-lg bg-[#5C3A1E] text-white px-3 py-2 text-[12px] hover:opacity-90 disabled:opacity-40"
-                    disabled={!pelaksanaanAgree}
+                    className="inline-flex items-center rounded-lg bg-[#5C3A1E] text-white px-3 py-2 text-[12px] hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+                    disabled={!pelaksanaanAgree || !canFinishProgram()}
                     onClick={async () => {
                       const Swal = (await import("sweetalert2")).default;
                       const result = await Swal.fire({
                         title: "Konfirmasi Selesaikan Program",
-                        text: "Apakah Anda yakin telah menyelesaikan semua kegiatan Program Pelatihan?",
+                        text: "Apakah Anda yakin telah menyelesaikan semua kegiatan Program Magang?",
                         icon: "question",
                         showCancelButton: true,
                         confirmButtonText: "Ya, Selesaikan",
@@ -1916,6 +1985,14 @@ function DetailPelaksanaanPelatihanContent() {
                   >
                     Selesaikan Kegiatan
                   </button>
+
+                  {/* Info tambahan jika belum bisa diselesaikan */}
+                  {!canFinishProgram() && (
+                    <p className="text-[11px] text-gray-500">
+                      Tombol akan aktif setelah{" "}
+                      {formatDate(layananData?.tanggal_selesai || "")}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -1944,92 +2021,114 @@ function DetailPelaksanaanPelatihanContent() {
 
               <div className="rounded-lg border border-[#F0EAE3] bg-[#FBF9F7] p-4">
                 <div className="space-y-3">
-                  <div>
-                    <label className="block text-[12px] text-[#3B3B3B] mb-1">
-                      Nama P4S *
-                    </label>
-                    <input
-                      name="namaP4s"
-                      value={laporanForm.namaP4s}
-                      onChange={handleLaporanChange}
-                      placeholder="Contoh : P4S Tani Makmur"
-                      className="w-full rounded-lg border border-[#E8E2DB] bg-white px-3 py-2 text-[12px] text-[#3B3B3B]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[12px] text-[#3B3B3B] mb-1">
-                      Kabupaten / Kota *
-                    </label>
-                    <input
-                      name="kota"
-                      value={laporanForm.kota}
-                      onChange={handleLaporanChange}
-                      placeholder="Contoh : Kota Lumajang"
-                      className="w-full rounded-lg border border-[#E8E2DB] bg-white px-3 py-2 text-[12px] text-[#3B3B3B]"
-                    />
-                  </div>
+                  {/* Field yang bisa diedit: hanya Nama P4S dan Kota */}
+                  {[
+                    {
+                      label: "Nama P4S",
+                      name: "namaP4s" as const, // ✅
+                      placeholder: "Contoh : P4S Tani Makmur",
+                    },
+                    {
+                      label: "Kabupaten / Kota",
+                      name: "kota" as const,
+                      placeholder: "Contoh : Kota Lumajang",
+                    },
+                  ].map((f) => (
+                    <div key={f.name}>
+                      <label className="block text-[12px] text-[#3B3B3B] mb-1">
+                        {f.label} *
+                      </label>
+                      <input
+                        name={f.name}
+                        value={laporanForm[f.name]}
+                        onChange={handleLaporanChange}
+                        placeholder={f.placeholder}
+                        className="w-full rounded-lg border border-[#E8E2DB] bg-white px-3 py-2 text-[12px] text-[#3B3B3B]"
+                      />
+                    </div>
+                  ))}
+
+                  {/* Jenis Kegiatan - Read-only, sesuaikan value untuk masing-masing */}
                   <div>
                     <label className="block text-[12px] text-[#3B3B3B] mb-1">
                       Jenis Kegiatan *
                     </label>
-                    <select
-                      name="jenisKegiatan"
-                      value={laporanForm.jenisKegiatan}
-                      onChange={handleLaporanChange}
-                      className="w-full rounded-lg border border-[#E8E2DB] bg-white px-3 py-2 text-[12px] text-[#3B3B3B]"
-                    >
-                      <option value="">Pilih Jenis Kegiatan</option>
-                      <option value="pkl">PKL</option>
-                      <option value="magang">Magang</option>
-                      <option value="pelatihan">Pelatihan</option>
-                    </select>
+                    <input
+                      type="text"
+                      value="Pelatihan" // Ganti dengan "Magang" atau "Pelatihan" sesuai file
+                      disabled
+                      className="w-full rounded-lg border border-[#E8E2DB] bg-gray-50 px-3 py-2 text-[12px] text-gray-500 cursor-not-allowed"
+                    />
                   </div>
+
+                  {/* Asal Peserta - Auto-filled */}
                   <div>
                     <label className="block text-[12px] text-[#3B3B3B] mb-1">
                       Asal Peserta / Mitra Kerjasama *
                     </label>
                     <input
-                      name="asalPeserta"
-                      value={laporanForm.asalPeserta}
-                      onChange={handleLaporanChange}
-                      placeholder="Contoh : Universitas Jember"
-                      className="w-full rounded-lg border border-[#E8E2DB] bg-white px-3 py-2 text-[12px] text-[#3B3B3B]"
+                      type="text"
+                      value={layananData?.instansi_asal || "-"}
+                      disabled
+                      className="w-full rounded-lg border border-[#E8E2DB] bg-gray-50 px-3 py-2 text-[12px] text-gray-500 cursor-not-allowed"
                     />
                   </div>
+
+                  {/* Jumlah Peserta - Auto-filled from layananData */}
                   <div>
                     <label className="block text-[12px] text-[#3B3B3B] mb-1">
                       Jumlah Peserta *
                     </label>
                     <input
-                      name="jumlahPeserta"
-                      value={laporanForm.jumlahPeserta}
-                      onChange={handleLaporanChange}
-                      placeholder="Contoh : 1"
-                      className="w-full rounded-lg border border-[#E8E2DB] bg-white px-3 py-2 text-[12px] text-[#3B3B3B]"
+                      type="text"
+                      value={layananData?.jumlah_peserta?.toString() || "1"}
+                      disabled
+                      className="w-full rounded-lg border border-[#E8E2DB] bg-gray-50 px-3 py-2 text-[12px] text-gray-500 cursor-not-allowed"
                     />
                   </div>
+
+                  {/* Tanggal Pelaksanaan - Auto-filled */}
                   <div>
                     <label className="block text-[12px] text-[#3B3B3B] mb-1">
                       Tanggal Pelaksanaan *
                     </label>
                     <input
-                      name="tanggalPelaksanaan"
-                      value={laporanForm.tanggalPelaksanaan}
-                      onChange={handleLaporanChange}
-                      type="date"
-                      className="w-full rounded-lg border border-[#E8E2DB] bg-white px-3 py-2 text-[12px] text-[#3B3B3B]"
+                      type="text"
+                      value={
+                        layananData?.tanggal_mulai
+                          ? formatDate(layananData.tanggal_mulai)
+                          : "-"
+                      }
+                      disabled
+                      className="w-full rounded-lg border border-[#E8E2DB] bg-gray-50 px-3 py-2 text-[12px] text-gray-500 cursor-not-allowed"
                     />
                   </div>
+
+                  {/* Lama Pelaksanaan - Auto-calculated or from data */}
                   <div>
                     <label className="block text-[12px] text-[#3B3B3B] mb-1">
                       Lama Pelaksanaan *
                     </label>
                     <input
-                      name="lamaPelaksanaan"
-                      value={laporanForm.lamaPelaksanaan}
-                      onChange={handleLaporanChange}
-                      placeholder="Contoh : 4 Bulan"
-                      className="w-full rounded-lg border border-[#E8E2DB] bg-white px-3 py-2 text-[12px] text-[#3B3B3B]"
+                      type="text"
+                      value={(() => {
+                        if (
+                          !layananData?.tanggal_mulai ||
+                          !layananData?.tanggal_selesai
+                        )
+                          return "-";
+                        const start = new Date(layananData.tanggal_mulai);
+                        const end = new Date(layananData.tanggal_selesai);
+                        const diffTime = Math.abs(
+                          end.getTime() - start.getTime()
+                        );
+                        const diffDays = Math.ceil(
+                          diffTime / (1000 * 60 * 60 * 24)
+                        );
+                        return `${diffDays} hari`;
+                      })()}
+                      disabled
+                      className="w-full rounded-lg border border-[#E8E2DB] bg-gray-50 px-3 py-2 text-[12px] text-gray-500 cursor-not-allowed"
                     />
                   </div>
 

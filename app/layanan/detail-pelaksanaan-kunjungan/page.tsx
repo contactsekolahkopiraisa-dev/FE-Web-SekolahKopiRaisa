@@ -879,6 +879,7 @@ function LaporanAkhirForm({
 
         <div className="rounded-lg border border-[#F0EAE3] bg-[#FBF9F7] p-4">
           <div className="space-y-3">
+            {/* Field yang bisa diedit: Nama P4S dan Kota */}
             {[
               {
                 label: "Nama P4S",
@@ -889,21 +890,6 @@ function LaporanAkhirForm({
                 label: "Kabupaten / Kota",
                 name: "kota",
                 placeholder: "Contoh : Banyuwangi",
-              },
-              {
-                label: "Asal Peserta",
-                name: "asalPeserta",
-                placeholder: "Contoh : Universitas Jember",
-              },
-              {
-                label: "Jumlah Peserta",
-                name: "jumlahPeserta",
-                placeholder: "Contoh : 5 orang",
-              },
-              {
-                label: "Lama Pelaksanaan",
-                name: "lamaPelaksanaan",
-                placeholder: "Contoh : 3 hari",
               },
             ].map((f) => (
               <div key={f.name}>
@@ -922,18 +908,72 @@ function LaporanAkhirForm({
               </div>
             ))}
 
-            {/* Tanggal Pelaksanaan */}
+            {/* Jenis Kegiatan - Auto-filled */}
+            <div>
+              <label className="block text-[12px] text-[#3B3B3B] mb-1">
+                Jenis Kegiatan *
+              </label>
+              <input
+                type="text"
+                value="Kunjungan"
+                disabled
+                className="w-full rounded-lg border border-[#E8E2DB] bg-gray-50 px-3 py-2 text-[12px] text-gray-500 cursor-not-allowed"
+              />
+            </div>
+
+            {/* Asal Peserta - Auto-filled from layananData */}
+            <div>
+              <label className="block text-[12px] text-[#3B3B3B] mb-1">
+                Asal Peserta / Mitra Kerjasama *
+              </label>
+              <input
+                type="text"
+                value={laporanForm.asalPeserta}
+                disabled
+                className="w-full rounded-lg border border-[#E8E2DB] bg-gray-50 px-3 py-2 text-[12px] text-gray-500 cursor-not-allowed"
+              />
+            </div>
+
+            {/* Jumlah Peserta - Auto-filled */}
+            <div>
+              <label className="block text-[12px] text-[#3B3B3B] mb-1">
+                Jumlah Peserta *
+              </label>
+              <input
+                type="text"
+                value={laporanForm.jumlahPeserta}
+                disabled
+                className="w-full rounded-lg border border-[#E8E2DB] bg-gray-50 px-3 py-2 text-[12px] text-gray-500 cursor-not-allowed"
+              />
+            </div>
+
+            {/* Tanggal Pelaksanaan - Auto-filled */}
             <div>
               <label className="block text-[12px] text-[#3B3B3B] mb-1">
                 Tanggal Pelaksanaan *
               </label>
               <input
-                type="date"
-                name="tanggalPelaksanaan"
-                value={laporanForm.tanggalPelaksanaan}
-                onChange={handleLaporanChange}
-                disabled={isReadOnly}
-                className="w-full rounded-lg border border-[#E8E2DB] bg-white px-3 py-2 text-[12px] text-[#3B3B3B] disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed"
+                type="text"
+                value={
+                  laporanForm.tanggalPelaksanaan
+                    ? formatDate(laporanForm.tanggalPelaksanaan)
+                    : "-"
+                }
+                disabled
+                className="w-full rounded-lg border border-[#E8E2DB] bg-gray-50 px-3 py-2 text-[12px] text-gray-500 cursor-not-allowed"
+              />
+            </div>
+
+            {/* Lama Pelaksanaan - Auto-filled */}
+            <div>
+              <label className="block text-[12px] text-[#3B3B3B] mb-1">
+                Lama Pelaksanaan *
+              </label>
+              <input
+                type="text"
+                value="1 hari"
+                disabled
+                className="w-full rounded-lg border border-[#E8E2DB] bg-gray-50 px-3 py-2 text-[12px] text-gray-500 cursor-not-allowed"
               />
             </div>
 

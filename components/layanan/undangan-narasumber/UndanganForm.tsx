@@ -66,6 +66,7 @@ export default function UndanganForm({
             type="text"
             value={formData.tempatKegiatan}
             onChange={onInputChange}
+            placeholder="Masukkan Tempat Kegiatan"
           />
 
           <div className="bg-gray-100 p-6 rounded-lg">
