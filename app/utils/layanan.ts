@@ -4,6 +4,7 @@ import api from "./api";
 export interface LayananItem {
   status_pengajuan_kode: any;
   id: number;
+  opened_at: string | null;  // ✅ TAMBAH INI
   nama_kegiatan: string;
   tempat_kegiatan: string;
   jumlah_peserta: number;
@@ -145,6 +146,19 @@ export interface LayananItem {
   };
 }
 
+export const markLayananAsOpened = async (id: number): Promise<void> => {
+  try {
+    console.log("🔵 Marking layanan as opened:", id); // ← TAMBAH INI
+    const response = await api.put(`/api/v1/layanan/${id}/set-as-opened`);
+    console.log("✅ Mark opened response:", response.data); // ← TAMBAH INI
+    if (!response.data.success) {
+      throw new Error(response.data.message || "Gagal menandai layanan sebagai dibuka");
+    }
+  } catch (error: any) {
+    console.error("❌ Error marking layanan as opened:", error); // ← TAMBAH INI
+  }
+};
+
 export interface LayananQueryParams {
   include_jenis?: boolean;
   include_peserta?: boolean;
@@ -154,6 +168,8 @@ export interface LayananQueryParams {
   include_rejection?: boolean;
   include_pengajuan?: boolean;
   include_pelaksanaan?: boolean;
+  opened_at?: "asc" | "desc";  // ✅ TAMBAH INI
+  created_at?: "asc" | "desc";
 }
 
 // GET ALL LAYANAN (untuk user dan admin)

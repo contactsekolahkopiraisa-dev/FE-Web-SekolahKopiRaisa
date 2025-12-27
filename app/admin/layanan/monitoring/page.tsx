@@ -10,6 +10,7 @@ import {
   LayananItem,
   getStatusColor,
   formatDate,
+  markLayananAsOpened
 } from "@/app/utils/layanan";
 import { createSertifikat } from "@/app/utils/sertifikat";
 import Swal from "sweetalert2";
@@ -286,10 +287,10 @@ export default function AdminLayananMonitoringPage() {
     const style = isApproved
       ? "bg-emerald-50 text-emerald-700 border-emerald-200"
       : isPending
-      ? "bg-amber-50 text-amber-700 border-amber-200"
-      : isRejected
-      ? "bg-rose-50 text-rose-700 border-rose-200"
-      : "bg-gray-50 text-gray-700 border-gray-200";
+        ? "bg-amber-50 text-amber-700 border-amber-200"
+        : isRejected
+          ? "bg-rose-50 text-rose-700 border-rose-200"
+          : "bg-gray-50 text-gray-700 border-gray-200";
 
     return (
       <span
@@ -317,11 +318,10 @@ export default function AdminLayananMonitoringPage() {
             ].map((t) => (
               <button
                 key={t.key}
-                className={`pb-2 text-sm font-medium ${
-                  activeTab === t.key
-                    ? "text-amber-900 border-b-2 border-amber-900"
-                    : "text-gray-500"
-                }`}
+                className={`pb-2 text-sm font-medium ${activeTab === t.key
+                  ? "text-amber-900 border-b-2 border-amber-900"
+                  : "text-gray-500"
+                  }`}
                 onClick={() => setActiveTab(t.key as any)}
               >
                 {t.label}
@@ -364,9 +364,8 @@ export default function AdminLayananMonitoringPage() {
                     ).map((opt) => (
                       <button
                         key={opt}
-                        className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 ${
-                          opt === filterMou ? "bg-gray-50" : ""
-                        }`}
+                        className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 ${opt === filterMou ? "bg-gray-50" : ""
+                          }`}
                         onClick={() => {
                           setFilterMou(opt as any);
                           setOpenMou(false);
@@ -429,9 +428,8 @@ export default function AdminLayananMonitoringPage() {
                     ).map((opt) => (
                       <button
                         key={opt}
-                        className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 ${
-                          opt === filterPengajuan ? "bg-gray-50" : ""
-                        }`}
+                        className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 ${opt === filterPengajuan ? "bg-gray-50" : ""
+                          }`}
                         onClick={() => {
                           setFilterPengajuan(opt as any);
                           setOpenPengajuan(false);
@@ -513,19 +511,33 @@ export default function AdminLayananMonitoringPage() {
 
                       // Check if sertifikat already uploaded
                       const hasSertifikat = !!sertifikat?.file_sertifikat;
-
+                      const isUnopened = !row.opened_at;
                       return (
-                        <tr key={row.id} className="hover:bg-gray-50">
+                        <tr key={row.id}
+                          className={`${isUnopened
+                            ? "bg-blue-50 hover:bg-blue-100 border-l-4 border-l-blue-500"
+                            : "hover:bg-gray-50"
+                            }`}>
                           <td className="px-4 py-3 text-center">
-                            <div className="font-medium text-gray-900">
-                              {pemohonNama}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {jenisNama.includes("Undangan Narasumber")
-                                ? formatDate(row.tanggal_mulai)
-                                : `${row.jumlah_peserta} Peserta • ${formatDate(
-                                    row.tanggal_mulai
-                                  )}`}
+                            <div className="flex items-center gap-2 justify-center">
+                              {isUnopened && (
+                                <span className="flex h-2 w-2 relative">
+                                  <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-blue-400 opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                                </span>
+                              )}
+                              <div>
+                                <div className={`font-medium ${isUnopened ? "text-blue-900" : "text-gray-900"}`}>
+                                  {pemohonNama}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  {jenisNama.includes("Undangan Narasumber")
+                                    ? formatDate(row.tanggal_mulai)
+                                    : `${row.jumlah_peserta} Peserta • ${formatDate(
+                                      row.tanggal_mulai
+                                    )}`}
+                                </div>
+                              </div>
                             </div>
                           </td>
                           <td className="px-4 py-3 text-center text-gray-700">
@@ -563,7 +575,14 @@ export default function AdminLayananMonitoringPage() {
                                 </button>
                               ))
                             ) : (
-                              <Link href={`/admin/layanan/monitoring/${row.id}`}>
+                              <Link href={`/admin/layanan/monitoring/${row.id}`}
+                                onClick={async () => {
+                                  if (isUnopened) {
+                                    await markLayananAsOpened(row.id);
+                                    // Reload data setelah mark as opened
+                                    await loadLayananData();
+                                  }
+                                }}>
                                 <button className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-md border hover:bg-gray-50">
                                   <Eye size={14} /> Detail
                                 </button>
@@ -602,11 +621,10 @@ export default function AdminLayananMonitoringPage() {
                         if (activeTab === "berlangsung") setPageBerlangsung(page);
                         else setPageSelesai(page);
                       }}
-                      className={`px-3 py-2 text-sm rounded-lg ${
-                        currentPage === page
-                          ? "bg-amber-900 text-white"
-                          : "bg-white border border-gray-300 hover:bg-gray-50"
-                      }`}
+                      className={`px-3 py-2 text-sm rounded-lg ${currentPage === page
+                        ? "bg-amber-900 text-white"
+                        : "bg-white border border-gray-300 hover:bg-gray-50"
+                        }`}
                     >
                       {page}
                     </button>
