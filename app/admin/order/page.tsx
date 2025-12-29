@@ -34,8 +34,8 @@ export default function AdminOrderPage() {
   const [statusFilter, setStatusFilter] = useState<OrderStatus | "ALL">("ALL");
   const [contactedPartners, setContactedPartners] = useState<number[]>([]);
   const [showPopup, setShowPopup] = useState(false);
-    const [message, setMessage] = useState("");
-    const [popupType, setPopupType] = useState<"success" | "error">("success");
+  const [message, setMessage] = useState("");
+  const [popupType, setPopupType] = useState<"success" | "error">("success");
 
   const [statusSortOrder, setStatusSortOrder] = useState<"asc" | "desc">("asc");
   const [sortOption, setSortOption] = useState<"newest" | "oldest" | "az">(
@@ -45,7 +45,6 @@ export default function AdminOrderPage() {
   const [itemsPerPage] = useState(15);
 
   const statusPriority: OrderStatus[] = [
-    "PENDING",
     "PROCESSING",
     "SHIPPED",
     "DELIVERED",
@@ -59,14 +58,13 @@ export default function AdminOrderPage() {
 
   const handleContactPartner = async (partnerId: number) => {
     try {
-      const response = await callPartner(partnerId); // Panggil API
+      const response = await callPartner(partnerId);
       const url = response.data?.whatsappUrl;
 
       if (url) {
-        window.open(url, "_blank"); // Redirect ke WhatsApp
+        window.open(url, "_blank");
       }
 
-      // (Opsional) Tandai partner sudah dihubungi
       setContactedPartners((prev) => [...prev, partnerId]);
     } catch (err: any) {
       alert(err.message || "Gagal menghubungi partner.");
@@ -75,15 +73,17 @@ export default function AdminOrderPage() {
   };
 
   // Fungsi map status API ke enum status frontend
+  // PENDING otomatis diubah ke PROCESSING
   const mapApiStatus = (apiStatus: string): OrderStatus => {
     const lower = apiStatus.toLowerCase();
-    if (["pending", "created"].includes(lower)) return "PENDING";
+    // PENDING dan CREATED otomatis menjadi PROCESSING
+    if (["pending", "created"].includes(lower)) return "PROCESSING";
     if (["processing"].includes(lower)) return "PROCESSING";
     if (["shipped"].includes(lower)) return "SHIPPED";
     if (["delivered", "success", "completed", "paid"].includes(lower))
       return "DELIVERED";
     if (["canceled", "failed"].includes(lower)) return "CANCELED";
-    return "PENDING"; // fallback
+    return "PROCESSING"; // fallback ke PROCESSING
   };
 
   // Ambil data order dari API
@@ -126,7 +126,7 @@ export default function AdminOrderPage() {
             createdAt: order.created_at,
             partnerId: partnerList[0]?.id || null,
             partnerName: partnerList[0]?.name || null,
-            orderItems: order.orderItems || [], // 🟢 Tambahkan ini untuk akses partner nanti
+            orderItems: order.orderItems || [],
           };
         });
 
@@ -143,7 +143,6 @@ export default function AdminOrderPage() {
 
   // Sort orders sesuai filter dropdown dan status sort
   const sortedOrders = [...filteredOrders].sort((a, b) => {
-    // Sort berdasarkan pilihan filter utama (newest, oldest, az)
     if (sortOption === "newest" || sortOption === "oldest") {
       const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
       const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
@@ -159,7 +158,6 @@ export default function AdminOrderPage() {
       if (aName !== bName) return aName < bName ? -1 : 1;
     }
 
-    // Jika masih sama, urutkan berdasarkan status
     const aStatusIndex = statusPriority.indexOf(a.status);
     const bStatusIndex = statusPriority.indexOf(b.status);
     return statusSortOrder === "asc"
@@ -249,7 +247,10 @@ export default function AdminOrderPage() {
 
     try {
       setIsSubmitting(true);
-     const response = await updateStatusOrder(pendingStatus.orderId, pendingStatus.newStatus);
+      const response = await updateStatusOrder(
+        pendingStatus.orderId,
+        pendingStatus.newStatus
+      );
 
       setOrdersData((prev) =>
         prev.map((order) =>
@@ -259,8 +260,8 @@ export default function AdminOrderPage() {
         )
       );
       setMessage(response.message);
-        setPopupType("success");
-        setShowPopup(true);
+      setPopupType("success");
+      setShowPopup(true);
     } catch (error: any) {
       console.error("Gagal update status:", error);
       alert(error.message || "Gagal mengubah status pesanan.");
@@ -279,8 +280,8 @@ export default function AdminOrderPage() {
   // Function to get Indonesian label for status
   const getStatusLabel = (status: OrderStatus): string => {
     switch (status) {
-      case "PENDING":
-        return "Dibuat";
+      // case "PENDING":
+      //   return "Dibuat";
       case "PROCESSING":
         return "Diproses";
       case "SHIPPED":
@@ -313,7 +314,6 @@ export default function AdminOrderPage() {
                 className="appearance-none border border-gray-500 rounded-xl px-3 py-2 text-sm pr-8"
               >
                 <option value="ALL">Semua Status</option>
-                <option value="PENDING">Dibuat</option>
                 <option value="PROCESSING">Diproses</option>
                 <option value="SHIPPED">Dikirim</option>
                 <option value="DELIVERED">Diterima</option>
@@ -439,12 +439,12 @@ export default function AdminOrderPage() {
   return (
     <div className="">
       {showPopup && (
-              <Popup
-                message={message}
-                type={popupType}
-                onClose={() => setShowPopup(false)}
-              />
-            )}
+        <Popup
+          message={message}
+          type={popupType}
+          onClose={() => setShowPopup(false)}
+        />
+      )}
       <ConfirmModal
         isOpen={isConfirmOpen}
         onClose={() => {
@@ -477,7 +477,6 @@ export default function AdminOrderPage() {
                 className="appearance-none border border-gray-500 rounded-xl px-3 py-2 text-sm pr-8"
               >
                 <option value="ALL">Semua Status</option>
-                <option value="PENDING">Dibuat</option>
                 <option value="PROCESSING">Diproses</option>
                 <option value="SHIPPED">Dikirim</option>
                 <option value="DELIVERED">Diterima</option>
@@ -510,10 +509,10 @@ export default function AdminOrderPage() {
           </div>
         </div>
 
-        {/* Button Hubungi Mitra untuk Pending Orders */}
+        {/* Button Hubungi Mitra untuk Processing Orders */}
         {(() => {
-          const pendingPartners = ordersData
-            .filter((o) => o.status === "PENDING")
+          const processingPartners = ordersData
+            .filter((o) => o.status === "PROCESSING")
             .flatMap(
               (o: any) => o.orderItems?.map((item: any) => item.partner) || []
             )
@@ -523,13 +522,13 @@ export default function AdminOrderPage() {
               return unique;
             }, []);
 
-          return pendingPartners.length > 0 ? (
+          return processingPartners.length > 0 ? (
             <div className="mb-4 p-4 bg-secondary rounded-xl shadow-lg">
               <h3 className="text-sm font-medium mb-3">
-                Mitra dengan Order Pending ({pendingPartners.length} mitra)
+                Mitra dengan Order Diproses ({processingPartners.length} mitra)
               </h3>
               <div className="flex flex-wrap gap-2">
-                {pendingPartners.map((partner) => (
+                {processingPartners.map((partner) => (
                   <button
                     key={partner.id}
                     onClick={() => handleContactPartner(partner.id)}

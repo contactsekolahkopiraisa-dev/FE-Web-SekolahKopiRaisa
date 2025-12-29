@@ -19,7 +19,7 @@ export interface Order {
   productName: string;
   totalQuantity: number;
   totalPrice: string;
-  status: "PENDING" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELED";
+  status: "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELED";
   notes?: string;
   partnerName?: string;
   price?: number;
@@ -28,14 +28,14 @@ export interface Order {
 }
 
 export type OrderStatus =
-  | "PENDING"
+  // | "PENDING"
   | "PROCESSING"
   | "SHIPPED"
   | "DELIVERED"
   | "CANCELED";
 
 const ALL_STATUSES: OrderStatus[] = [
-  "PENDING",
+  // "PENDING",
   "PROCESSING",
   "SHIPPED",
   "DELIVERED",
@@ -62,7 +62,7 @@ const getUserRole = (): string | null => {
 const getAvailableStatuses = (userRole: string | null): OrderStatus[] => {
   if (userRole === "umkm") {
     // UMKM hanya bisa akses PENDING, PROCESSING, dan SHIPPED
-    return ["PENDING", "PROCESSING", "SHIPPED"];
+    return ["PROCESSING", "SHIPPED"];
   }
   // Role lain (admin, customer, dll) bisa akses semua status
   return ALL_STATUSES;
@@ -116,8 +116,8 @@ function StatusDropdown({
   // Function to get Indonesian label for status
   const getStatusLabel = (status: OrderStatus): string => {
     switch (status) {
-      case "PENDING":
-        return "Dibuat";
+      // case "PENDING":
+      //   return "Dibuat";
       case "PROCESSING":
         return "Diproses";
       case "SHIPPED":
@@ -135,10 +135,10 @@ function StatusDropdown({
   let statusIcon = null;
 
   switch (currentStatus) {
-    case "PENDING":
-      statusColorClass = "bg-gray-100 text-gray-800";
-      statusIcon = <Loader size={18} className="mr-1.5" />;
-      break;
+    // case "PENDING":
+    //   statusColorClass = "bg-gray-100 text-gray-800";
+    //   statusIcon = <Loader size={18} className="mr-1.5" />;
+    //   break;
     case "PROCESSING":
       statusColorClass = "bg-yellow-100 text-yellow-800";
       statusIcon = <Loader size={18} className="animate-spin mr-1.5" />;
