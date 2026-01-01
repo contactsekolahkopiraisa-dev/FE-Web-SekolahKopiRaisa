@@ -32,10 +32,29 @@ interface ErrorResponse {
 }
 
 // ==================== TOKEN MANAGEMENT ====================
-export const setToken = (token: string) => {
+export const setToken = async (token: string) => {
   if (typeof window !== "undefined") {
+    // Save to localStorage
     localStorage.setItem("token", token);
-    document.cookie = `token=${token}; path=/; max-age=${24 * 60 * 60}`;
+    
+    // Set cookie via server-side API for proper middleware access
+    try {
+      const response = await fetch('/api/auth/set-cookie', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token }),
+      });
+      
+      if (response.ok) {
+        console.log('✅ Token saved to localStorage and cookie (server-side)');
+      } else {
+        console.error('❌ Failed to set cookie server-side');
+      }
+    } catch (error) {
+      console.error('❌ Error calling set-cookie API:', error);
+    }
   }
 };
 
@@ -312,7 +331,7 @@ export const loginUser = async (formData: LoginData) => {
   try {
     const res = await api.post("/api/v1/auth/login", formData);
     const { token } = res.data.data;
-    setToken(token);
+    await setToken(token);
     return res.data.data;
   } catch (error) {
     return handleApiError(error);

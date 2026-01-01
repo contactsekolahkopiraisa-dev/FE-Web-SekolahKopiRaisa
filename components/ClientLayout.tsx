@@ -3,9 +3,44 @@
 import { usePathname } from "next/navigation";
 import { Building, CalendarCheck, Coffee, House, Settings } from "lucide-react";
 import Navbar from "./main/Navbar";
+import { useEffect } from "react";
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+
+  // Sync token from localStorage to cookie on app load (server-side)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("token");
+      const cookieExists = document.cookie.split(';').some((item) => item.trim().startsWith('token='));
+      
+      if (token && !cookieExists) {
+        console.log("⚠️ Token found in localStorage but not in cookie, calling server to set cookie...");
+        
+        // Call server-side API to set cookie properly
+        fetch('/api/auth/set-cookie', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ token }),
+        })
+          .then(response => {
+            if (response.ok) {
+              console.log("✅ Cookie set via server, reloading...");
+              window.location.reload();
+            } else {
+              console.error("❌ Failed to set cookie via server");
+            }
+          })
+          .catch(error => {
+            console.error("❌ Error calling set-cookie API:", error);
+          });
+      } else if (cookieExists) {
+        console.log("✅ Token cookie already exists");
+      }
+    }
+  }, []);
 
   const isAuthPage =
     pathname === "/login" ||
