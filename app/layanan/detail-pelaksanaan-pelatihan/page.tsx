@@ -477,8 +477,8 @@ function DetailPelaksanaanPelatihanContent() {
         "Pelatihan",
     },
     {
-      label: "Penanggungjawab",
-      value: pesertaInfo?.nama || pesertaInfo?.nama_peserta || "-",
+      label: "Nama Perwakilan",
+      value: layananData?.pemohon?.name || layananData?.peserta?.[0]?.nama_peserta || "-", 
     },
     {
       label: "Jumlah Peserta",
@@ -564,6 +564,7 @@ function DetailPelaksanaanPelatihanContent() {
             "swal2-confirm bg-[#5C3A1E] text-white px-6 py-2 rounded-lg",
           cancelButton:
             "swal2-cancel border border-[#E8E2DB] text-[#3B3B3B] px-6 py-2 rounded-lg",
+          actions: "gap-2",
           popup: "rounded-xl",
         },
         buttonsStyling: false,
@@ -589,6 +590,7 @@ function DetailPelaksanaanPelatihanContent() {
           "swal2-confirm bg-[#5C3A1E] text-white px-6 py-2 rounded-lg",
         cancelButton:
           "swal2-cancel border border-[#E8E2DB] text-[#3B3B3B] px-6 py-2 rounded-lg",
+        actions: "gap-2",
         popup: "rounded-xl",
       },
       buttonsStyling: false,
@@ -753,6 +755,7 @@ function DetailPelaksanaanPelatihanContent() {
           "swal2-confirm bg-[#5C3A1E] text-white px-6 py-2 rounded-lg",
         cancelButton:
           "swal2-cancel border border-[#E8E2DB] text-[#3B3B3B] px-6 py-2 rounded-lg",
+        actions: "gap-2",
         popup: "rounded-xl",
       },
       buttonsStyling: false,
@@ -760,9 +763,20 @@ function DetailPelaksanaanPelatihanContent() {
 
     if (result.isConfirmed) {
       try {
+        // Show loading
+        Swal.fire({
+          title: "Mengirim Logbook...",
+          text: "Mohon tunggu sebentar",
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          },
+        });
+
         // Call API to submit or update logbook (both use PUT)
         if (isLogbookSubmitted && !isEditingLogbook) {
           // Jika sudah pernah submit, tidak perlu update lagi
+          Swal.close();
           return;
         }
 
@@ -856,20 +870,23 @@ function DetailPelaksanaanPelatihanContent() {
   const handleSubmitLaporan = async () => {
     const Swal = (await import("sweetalert2")).default;
 
-    // Validasi form
-    if (
-      !laporanForm.namaP4s ||
-      !laporanForm.kota ||
-      !laporanForm.jenisKegiatan ||
-      !laporanForm.asalPeserta ||
-      !laporanForm.jumlahPeserta ||
-      !laporanForm.tanggalPelaksanaan ||
-      !laporanForm.lamaPelaksanaan ||
-      !fotoKegiatan
-    ) {
+    // Debug log untuk cek nilai form
+    console.log("Validasi Laporan:", {
+      namaP4s: laporanForm.namaP4s,
+      kota: laporanForm.kota,
+      fotoKegiatan: fotoKegiatan ? fotoKegiatan.name : null,
+    });
+
+    // Validasi form - hanya field yang diisi manual oleh user
+    const missingFields = [];
+    if (!laporanForm.namaP4s.trim()) missingFields.push("Nama P4S");
+    if (!laporanForm.kota.trim()) missingFields.push("Kabupaten/Kota");
+    if (!fotoKegiatan) missingFields.push("Foto Kegiatan");
+
+    if (missingFields.length > 0) {
       await Swal.fire({
         title: "Form Tidak Lengkap",
-        text: "Mohon lengkapi semua field yang wajib diisi.",
+        text: `Mohon lengkapi field berikut: ${missingFields.join(", ")}`,
         icon: "warning",
         confirmButtonText: "OK",
         customClass: {
@@ -895,6 +912,7 @@ function DetailPelaksanaanPelatihanContent() {
           "swal2-confirm bg-[#5C3A1E] text-white px-6 py-2 rounded-lg",
         cancelButton:
           "swal2-cancel border border-[#E8E2DB] text-[#3B3B3B] px-6 py-2 rounded-lg",
+        actions: "gap-2",
         popup: "rounded-xl",
       },
       buttonsStyling: false,
@@ -908,13 +926,27 @@ function DetailPelaksanaanPelatihanContent() {
         id_layanan: Number(layananId),
         nama_p4s: laporanForm.namaP4s,
         asal_kab_kota: laporanForm.kota,
-        foto_kegiatan: fotoKegiatan,
+        foto_kegiatan: fotoKegiatan!,
       });
 
       setSubmitting(false);
-      // setSuccessOpen(true); // Removed: laporan tidak diverifikasi admin
       setLaporanSubmitted(true);
       setLaporanDecision("disetujui" as typeof laporanDecision); // Auto-approve laporan
+      
+      // Show success alert
+      await Swal.fire({
+        title: "Laporan Berhasil Dikirim!",
+        text: "Selamat! Laporan Anda sudah berhasil dikirim. Anda dapat mengunduh sertifikat sekarang.",
+        icon: "success",
+        confirmButtonText: "OK",
+        customClass: {
+          confirmButton:
+            "swal2-confirm bg-[#5C3A1E] text-white px-6 py-2 rounded-lg",
+          popup: "rounded-xl",
+        },
+        buttonsStyling: false,
+      });
+      
       scrollToSertifikat();
     } catch (error: any) {
       setSubmitting(false);
@@ -972,10 +1004,11 @@ function DetailPelaksanaanPelatihanContent() {
                 <span className="font-medium">Kembali ke Layanan</span>
               </Link>
             </div>
-            <div className="animate-pulse space-y-4">
-              <div className="h-8 bg-gray-200 rounded w-3/4 mx-auto"></div>
-              <div className="h-64 bg-gray-200 rounded"></div>
-              <div className="h-96 bg-gray-200 rounded"></div>
+            <div className="rounded-xl border border-[#E8E2DB] bg-white p-6 text-center">
+              <div className="animate-spin mx-auto mb-4 w-12 h-12 border-4 border-primary border-t-transparent rounded-full"></div>
+              <p className="text-[12px] text-[#6B6B6B]">
+                Memuat data layanan...
+              </p>
             </div>
           </div>
         </div>
@@ -1926,12 +1959,23 @@ function DetailPelaksanaanPelatihanContent() {
                             "swal2-confirm bg-[#5C3A1E] text-white px-6 py-2 rounded-lg",
                           cancelButton:
                             "swal2-cancel border border-[#E8E2DB] text-[#3B3B3B] px-6 py-2 rounded-lg",
+                          actions: "gap-2",
                           popup: "rounded-xl",
                         },
                         buttonsStyling: false,
                       });
                       if (result.isConfirmed) {
                         try {
+                          // Show loading
+                          Swal.fire({
+                            title: "Menyelesaikan Program...",
+                            text: "Mohon tunggu sebentar",
+                            allowOutsideClick: false,
+                            didOpen: () => {
+                              Swal.showLoading();
+                            },
+                          });
+
                           // Update status pelaksanaan di backend
                           await updateStatusPelaksanaan(
                             Number(layananId),
@@ -2174,9 +2218,10 @@ function DetailPelaksanaanPelatihanContent() {
                   <div className="pt-2 text-right">
                     <button
                       onClick={handleSubmitLaporan}
-                      className="inline-flex items-center rounded-lg bg-[#5C3A1E] text-white px-4 py-2 text-[12px] hover:opacity-90"
+                      disabled={submitting}
+                      className="inline-flex items-center rounded-lg bg-[#5C3A1E] text-white px-4 py-2 text-[12px] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Submit
+                      {submitting ? "Mengirim..." : "Submit"}
                     </button>
                   </div>
                 </div>
