@@ -217,7 +217,11 @@ function DetailPelaksanaanUndanganNarasumberContent() {
         layananData?.jenis_layanan?.nama_jenis_layanan ||
         "Undangan Narasumber",
     },
-    { label: "Nama Kegiatan", value: layananData?.nama_kegiatan || "-" },
+    {
+      label: "Penanggungjawab",
+      value: layananData?.pemohon?.name || layananData?.peserta?.[0]?.nama_peserta || "-",
+    },
+    
     { label: "Instansi", value: layananData?.instansi_asal || "-" },
   ];
 
@@ -228,6 +232,7 @@ function DetailPelaksanaanUndanganNarasumberContent() {
         ? formatDate(layananData.tanggal_mulai)
         : "-",
     },
+    { label: "Nama Kegiatan", value: layananData?.nama_kegiatan || "-" },
     { label: "Tempat Kegiatan", value: layananData?.tempat_kegiatan || "-" },
   ];
 
@@ -294,21 +299,17 @@ function DetailPelaksanaanUndanganNarasumberContent() {
   };
 
   const handleSubmitLaporan = async () => {
-    // Validasi form
+    const Swal = (await import("sweetalert2")).default;
+
+    // Validasi form - hanya field yang diisi manual oleh user
     if (
-      !laporanForm.namaP4s ||
-      !laporanForm.kota ||
-      !laporanForm.jenisKegiatan ||
-      !laporanForm.asalPeserta ||
-      !laporanForm.jumlahPeserta ||
-      !laporanForm.tanggalPelaksanaan ||
-      !laporanForm.lamaPelaksanaan ||
+      !laporanForm.namaP4s.trim() ||
+      !laporanForm.kota.trim() ||
       !fotoKegiatan
     ) {
-      const Swal = (await import("sweetalert2")).default;
       await Swal.fire({
         title: "Form Tidak Lengkap",
-        text: "Mohon lengkapi semua field yang wajib diisi.",
+        text: "Mohon lengkapi Nama P4S, Asal Kab/Kota, dan upload Foto Kegiatan.",
         icon: "warning",
         confirmButtonText: "OK",
         customClass: {
@@ -320,8 +321,6 @@ function DetailPelaksanaanUndanganNarasumberContent() {
       });
       return;
     }
-
-    const Swal = (await import("sweetalert2")).default;
 
     const result = await Swal.fire({
       title: "Yakin Mengirimkan Laporan Akhir?",
@@ -336,6 +335,7 @@ function DetailPelaksanaanUndanganNarasumberContent() {
           "swal2-confirm bg-[#5C3A1E] text-white px-6 py-2 rounded-lg",
         cancelButton:
           "swal2-cancel border border-[#E8E2DB] text-[#3B3B3B] px-6 py-2 rounded-lg",
+        actions: "gap-2",
         popup: "rounded-xl",
       },
       buttonsStyling: false,
@@ -1003,9 +1003,10 @@ function DetailPelaksanaanUndanganNarasumberContent() {
                   <div className="pt-2 text-right">
                     <button
                       onClick={handleSubmitLaporan}
-                      className="w-full md:w-auto bg-[#5C3A1E] text-white text-[13px] px-6 py-2 rounded-lg hover:bg-[#4C2E15] transition-colors"
+                      disabled={submitting}
+                      className="w-full md:w-auto bg-[#5C3A1E] text-white text-[13px] px-6 py-2 rounded-lg hover:bg-[#4C2E15] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Submit
+                      {submitting ? "Mengirim..." : "Submit"}
                     </button>
                   </div>
                 )}

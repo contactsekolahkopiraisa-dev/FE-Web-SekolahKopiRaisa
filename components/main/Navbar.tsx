@@ -45,34 +45,8 @@ export default function Navbar({ navbarItems }: { navbarItems: NavbarItem[] }) {
   const router = useRouter();
   const [cartCount, setCartCount] = useState(0);
 
-  // Add authentication check function
-  const checkUserAuthentication = async (): Promise<boolean> => {
-    try {
-      await getUser();
-      return true;
-    } catch (error) {
-      return false;
-    }
-  };
-
-  // Handle protected navigation
-  const handleProtectedNavigation = async (href: string, title: string) => {
-    // Proteksi untuk halaman yang perlu login
-    if (href === "/product" || href.startsWith("/layanan")) {
-      try {
-        const isLoggedIn = await checkUserAuthentication();
-        if (!isLoggedIn) {
-          router.push("/login");
-          return;
-        }
-      } catch (error) {
-        // Fallback jika ada error tak terduga
-        router.push("/login");
-        return;
-      }
-    }
-
-    // Navigate normally untuk halaman lain atau jika sudah login
+  // Handle navigation - let middleware handle auth protection
+  const handleNavigation = (href: string) => {
     router.push(href);
   };
 
@@ -248,7 +222,7 @@ export default function Navbar({ navbarItems }: { navbarItems: NavbarItem[] }) {
           return (
             <button
               key={index}
-              onClick={() => handleProtectedNavigation(item.link, item.title)}
+              onClick={() => handleNavigation(item.link)}
               className="relative group"
             >
               <span
@@ -506,11 +480,8 @@ export default function Navbar({ navbarItems }: { navbarItems: NavbarItem[] }) {
                     return (
                       <li key={index}>
                         <button
-                          onClick={async () => {
-                            await handleProtectedNavigation(
-                              item.link,
-                              item.title
-                            );
+                          onClick={() => {
+                            handleNavigation(item.link);
                             setIsMobileMenuOpen(false);
                           }}
                           className="w-full"

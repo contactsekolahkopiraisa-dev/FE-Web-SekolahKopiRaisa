@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { getUser } from "../../utils/user";
 import LayananHeader from "../../../components/layanan/LayananHeader";
 import SubNavLayanan from "../../../components/layanan/SubNavLayanan";
 import Link from "next/link";
@@ -23,8 +21,6 @@ interface StatusKode {
 }
 
 export default function RiwayatKegiatanPage() {
-  const router = useRouter();
-  const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [layananList, setLayananList] = useState<LayananItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -40,24 +36,14 @@ export default function RiwayatKegiatanPage() {
   const ITEMS_PER_PAGE = 6;
 
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        await getUser();
-        setAuthorized(true);
-        loadLayananHistory();
-        loadStatusKode();
-      } catch {
-        setAuthorized(false);
-        router.replace("/login");
-      }
-    };
-    checkAuth();
-  }, [router]);
+    loadLayananHistory();
+    loadStatusKode();
+  }, []);
 
   // Add effect to refresh data when page becomes visible
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (!document.hidden && authorized) {
+      if (!document.hidden) {
         console.log("Page became visible, refreshing data...");
         loadLayananHistory();
       }
@@ -67,12 +53,10 @@ export default function RiwayatKegiatanPage() {
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [authorized]);
+  }, []);
 
   // Add periodic refresh for real-time status updates
   useEffect(() => {
-    if (!authorized) return;
-
     // Refresh every 30 seconds to catch status changes
     const intervalId = setInterval(() => {
       console.log("Auto-refreshing layanan data for status updates...");
@@ -80,7 +64,7 @@ export default function RiwayatKegiatanPage() {
     }, 30000); // 30 seconds
 
     return () => clearInterval(intervalId);
-  }, [authorized]);
+  }, []);
 
   // Reset to page 1 when filters change
   useEffect(() => {
@@ -125,22 +109,12 @@ export default function RiwayatKegiatanPage() {
       console.log("Layanan history loaded:", data);
 
       setLayananList(data);
+      setIsLoading(false);
     } catch (error: any) {
       console.error("Error loading layanan history:", error);
-      const Swal = (await import("sweetalert2")).default;
-      await Swal.fire({
-        icon: "error",
-        title: "Gagal Memuat Riwayat",
-        text: error.message || "Terjadi kesalahan saat memuat riwayat layanan",
-        confirmButtonColor: "#4E342E",
-        customClass: { popup: "rounded-xl" },
-      });
-    } finally {
       setIsLoading(false);
     }
   };
-
-  if (authorized === null) return null;
 
   // Filter layanan berdasarkan kategori dan status
   const filteredLayanan = layananList.filter((item) => {

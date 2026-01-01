@@ -1226,40 +1226,101 @@ export default function AdminMonitoringDetailPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white border border-neutral-200 rounded-lg p-4 mb-4">
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white border border-neutral-200 rounded-lg p-4 mb-4">
               <div>
                 <p className="text-xs text-gray-500">Jenis Kegiatan</p>
                 <p className="text-sm">{jenisNama || "-"}</p>
               </div>
-              <div>
-                <p className="text-xs text-gray-500">Tanggal Mulai</p>
-                <p className="text-sm">
-                  {layananData.tanggal_mulai
-                    ? formatDate(layananData.tanggal_mulai)
-                    : "-"}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">Nama Peserta</p>
-                <p className="text-sm">
-                  {pesertaInfo?.nama_peserta ||
-                    pesertaInfo?.nama ||
-                    layananData.pemohon?.name ||
-                    "-"}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">Tanggal Selesai</p>
-                <p className="text-sm">
-                  {layananData.tanggal_selesai
-                    ? formatDate(layananData.tanggal_selesai)
-                    : "-"}
-                </p>
-              </div>
+              
+              {/* KHUSUS KUNJUNGAN: Hanya Tanggal Kunjungan + Jumlah Peserta */}
+              {jenisNama.includes("Kunjungan") ? (
+                <>
+                  <div>
+                    <p className="text-xs text-gray-500">Tanggal Kunjungan</p>
+                    <p className="text-sm">
+                      {layananData.tanggal_mulai
+                        ? formatDate(layananData.tanggal_mulai)
+                        : "-"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Nama Peserta / Penanggung Jawab</p>
+                    <p className="text-sm">
+                      {pesertaInfo?.nama_peserta ||
+                        pesertaInfo?.nama ||
+                        layananData.pemohon?.name ||
+                        "-"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Jumlah Peserta</p>
+                    <p className="text-sm">{layananData?.jumlah_peserta || "-"} orang</p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* LAYANAN LAIN: Tanggal Mulai & Selesai */}
+                  <div>
+                    <p className="text-xs text-gray-500">Tanggal Mulai</p>
+                    <p className="text-sm">
+                      {layananData.tanggal_mulai
+                        ? formatDate(layananData.tanggal_mulai)
+                        : "-"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Nama Peserta / Penanggung Jawab</p>
+                    <p className="text-sm">
+                      {jenisNama.includes("Pelatihan")
+                        ? layananData?.pemohon?.name || layananData?.peserta?.[0]?.nama_peserta || "-"
+                        : pesertaInfo?.nama_peserta ||
+                          pesertaInfo?.nama ||
+                          layananData.pemohon?.name ||
+                          "-"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Tanggal Selesai</p>
+                    <p className="text-sm">
+                      {layananData.tanggal_selesai
+                        ? formatDate(layananData.tanggal_selesai)
+                        : "-"}
+                    </p>
+                  </div>
+                  
+                  {/* Jumlah Peserta - khusus untuk Pelatihan */}
+                  {jenisNama.includes("Pelatihan") && (
+                    <div>
+                      <p className="text-xs text-gray-500">Jumlah Peserta</p>
+                      <p className="text-sm">{layananData?.jumlah_peserta || "-"} orang</p>
+                    </div>
+                  )}
+                  
+                  {/* Tambahan untuk PKL/Magang: NIM, Fakultas, Prodi */}
+                  {(jenisNama.includes("Magang") || jenisNama.includes("Praktek Kerja Lapangan")) && (
+                    <>
+                      <div>
+                        <p className="text-xs text-gray-500">NIM / NIS</p>
+                        <p className="text-sm">{pesertaInfo?.nim || "-"}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Fakultas</p>
+                        <p className="text-sm">{pesertaInfo?.fakultas || "-"}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Prodi / Jurusan</p>
+                        <p className="text-sm">{pesertaInfo?.program_studi || "-"}</p>
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
+              
               <div>
                 <p className="text-xs text-gray-500">Instansi</p>
                 <p className="text-sm">{layananData.instansi_asal || "-"}</p>
               </div>
+
               {/* Conditional: Show different fields based on jenis layanan */}
               {jenisNama.includes("Undangan Narasumber") ? (
                 <>
