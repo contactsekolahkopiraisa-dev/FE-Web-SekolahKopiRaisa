@@ -5,10 +5,18 @@ import { useEffect, useRef, useState } from "react";
 import { Calendar, Plus } from "lucide-react";
 import CalendarPicker from "@/components/CalenderPickerFilter";
 import Link from "next/link";
+// Import fungsi asli (commented untuk sementara)
+// import {
+//   fetchLaporanPenjualanUMKMByPeriode,
+//   LaporanPenjualanData
+// } from "@/app/utils/laporan-penjualan";
+
+// Import data dummy
 import {
-  fetchLaporanPenjualanUMKMByPeriode,
+  fetchDummyLaporanPenjualan,
   LaporanPenjualanData,
-} from "@/app/utils/laporan-penjualan";
+} from "@/lib/dummyLaporanPenjualan";
+
 import {
   LineChart,
   Line,
@@ -19,7 +27,10 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-export default function LaporanPenjualanAdmin() {
+// Toggle untuk menggunakan data dummy atau real API
+const USE_DUMMY_DATA = true; // Ubah ke false untuk menggunakan API asli
+
+export default function LaporanPenjualanUMKM() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [laporanData, setLaporanData] = useState<LaporanPenjualanData | null>(
@@ -44,7 +55,15 @@ export default function LaporanPenjualanAdmin() {
         const bulan = selectedDate.getMonth(); // 0-11
         const tahun = selectedDate.getFullYear();
 
-        const result = await fetchLaporanPenjualanUMKMByPeriode(bulan, tahun);
+        let result;
+
+        if (USE_DUMMY_DATA) {
+          // Gunakan data dummy
+          result = await fetchDummyLaporanPenjualan(bulan, tahun);
+        } else {
+          // Gunakan API asli (uncomment baris import di atas jika mau pakai ini)
+          // result = await fetchLaporanPenjualanUMKMByPeriode(bulan, tahun);
+        }
 
         console.log("API Response:", result);
 
@@ -120,7 +139,14 @@ export default function LaporanPenjualanAdmin() {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Laporan Penjualan Admin</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">Laporan Penjualan Admin</h1>
+        {USE_DUMMY_DATA && (
+          <span className="px-3 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full font-semibold">
+            Mode Data Dummy
+          </span>
+        )}
+      </div>
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         {/* Filter Periode */}
@@ -152,11 +178,11 @@ export default function LaporanPenjualanAdmin() {
         <div>
           {/* totalSummary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-lg shadow-sm border border-blue-200">
               <h3 className="text-sm text-gray-600 mb-2 font-medium">
                 Jumlah Produk Terjual
               </h3>
-              <p className="text-3xl font-bold">
+              <p className="text-3xl font-bold text-blue-700">
                 {laporanData.totalSummary.totalJumlahProdukTerjual.toLocaleString(
                   "id-ID"
                 )}
@@ -166,11 +192,11 @@ export default function LaporanPenjualanAdmin() {
               </p>
             </div>
 
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-lg shadow-sm border border-green-200">
               <h3 className="text-sm text-gray-600 mb-2 font-medium">
                 Laba Bersih
               </h3>
-              <p className="text-3xl font-bold">
+              <p className="text-3xl font-bold text-green-700">
                 {formatCurrency(laporanData.totalSummary.totalLabaBersih)}
               </p>
               <p className="text-xs text-gray-500 mt-1">
@@ -178,11 +204,11 @@ export default function LaporanPenjualanAdmin() {
               </p>
             </div>
 
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-lg shadow-sm border border-purple-200">
               <h3 className="text-sm text-gray-600 mb-2 font-medium">
                 Laba Kotor
               </h3>
-              <p className="text-3xl font-bold">
+              <p className="text-3xl font-bold text-purple-700">
                 {formatCurrency(laporanData.totalSummary.totalLabaKotor)}
               </p>
               <p className="text-xs text-gray-500 mt-1">
@@ -226,7 +252,7 @@ export default function LaporanPenjualanAdmin() {
                     },
                   }}
                   tick={{ fontSize: 12 }}
-                  width={100}
+                  width={10}
                   tickFormatter={(value) => {
                     if (value >= 1000000) {
                       return `${(value / 1000000).toFixed(1)}jt`;

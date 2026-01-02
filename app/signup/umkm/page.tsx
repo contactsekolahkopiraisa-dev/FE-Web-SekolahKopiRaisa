@@ -443,6 +443,7 @@ const handleSubmit = async (e: React.FormEvent) => {
   setIsSubmitting(true);
 
   try {
+    // ✅ PERBAIKAN: Jangan gunakan || undefined
     const submitData = {
       name: form.name.trim(),
       email: form.email.trim(),
@@ -450,13 +451,20 @@ const handleSubmit = async (e: React.FormEvent) => {
       phone_number: form.phone_number,
       namaUmkm: form.umkm_name.trim(),
       ktp: form.nik,
-      suratIzinEdar: form.suratIzinEdar || undefined,
+      suratIzinEdar: form.suratIzinEdar, // ✅ Kirim langsung tanpa || undefined
       addresses: form.addresses.map((addr) => ({
         id_desa: parseInt(addr.id_desa),
         alamat: addr.alamat.trim(),
         kode_pos: addr.kode_pos,
       })),
     };
+
+    console.log("🚀 Submitting data:", {
+      ...submitData,
+      suratIzinEdar: submitData.suratIzinEdar
+        ? `FILE: ${submitData.suratIzinEdar.name} (${submitData.suratIzinEdar.size} bytes)`
+        : "NO FILE",
+    });
 
     const response = await registerUMKM(submitData);
 

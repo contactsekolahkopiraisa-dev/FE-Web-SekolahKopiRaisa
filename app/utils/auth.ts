@@ -12,7 +12,7 @@ interface RegisterUserData {
 interface RegisterUMKMData extends RegisterUserData {
   namaUmkm: string;
   ktp: string;
-  sertifikasiHalal?: File;
+  suratIzinEdar?: File | null;
   addresses: Array<{
     id_desa: number;
     alamat: string;
@@ -161,12 +161,12 @@ export const registerUMKM = async (formData: RegisterUMKMData) => {
       email: formData.email,
       namaUmkm: formData.namaUmkm,
       ktp: formData.ktp,
-      hasFile: !!formData.sertifikasiHalal,
-      fileDetails: formData.sertifikasiHalal
+      hasFile: !!formData.suratIzinEdar,
+      fileDetails: formData.suratIzinEdar
         ? {
-            name: formData.sertifikasiHalal.name,
-            type: formData.sertifikasiHalal.type,
-            size: formData.sertifikasiHalal.size,
+            name: formData.suratIzinEdar.name,
+            type: formData.suratIzinEdar.type,
+            size: formData.suratIzinEdar.size,
           }
         : null,
       addresses: formData.addresses,
@@ -184,19 +184,19 @@ export const registerUMKM = async (formData: RegisterUMKMData) => {
 
     // ✅ CRITICAL FIX: Append file HANYA jika ada dan valid
     if (
-      formData.sertifikasiHalal &&
-      formData.sertifikasiHalal instanceof File
+      formData.suratIzinEdar &&
+      formData.suratIzinEdar instanceof File
     ) {
       console.log("📎 File akan dikirim:", {
-        name: formData.sertifikasiHalal.name,
-        type: formData.sertifikasiHalal.type,
-        size: `${(formData.sertifikasiHalal.size / 1024).toFixed(2)} KB`,
+        name: formData.suratIzinEdar.name,
+        type: formData.suratIzinEdar.type,
+        size: `${(formData.suratIzinEdar.size / 1024).toFixed(2)} KB`,
       });
 
       // PASTIKAN HANYA APPEND SEKALI
-      data.append("sertifikasiHalal", formData.sertifikasiHalal);
+      data.append("suratIzinEdar", formData.suratIzinEdar);
     } else {
-      console.log("ℹ️ NO FILE - skipping sertifikasiHalal");
+      console.log("ℹ️ NO FILE - skipping suratIzinEdar");
     }
 
     // Append addresses
@@ -233,14 +233,14 @@ export const registerUMKM = async (formData: RegisterUMKMData) => {
     console.log("  File fields:", fileCounts);
 
     // ❌ CRITICAL CHECK: Detect duplicates
-    const sertifikasiHalalCount = fileCounts["sertifikasiHalal"] || 0;
-    if (sertifikasiHalalCount > 1) {
+    const suratIzinEdarCount = fileCounts["suratIzinEdar"] || 0;
+    if (suratIzinEdarCount > 1) {
       console.error(
-        "❌ CRITICAL ERROR: Multiple sertifikasiHalal files detected!"
+        "❌ CRITICAL ERROR: Multiple suratIzinEdar files detected!"
       );
-      console.error("   Count:", sertifikasiHalalCount);
+      console.error("   Count:", suratIzinEdarCount);
       throw new Error(
-        `DUPLICATE FILES DETECTED: ${sertifikasiHalalCount} files with key 'sertifikasiHalal'`
+        `DUPLICATE FILES DETECTED: ${suratIzinEdarCount} files with key 'suratIzinEdar'`
       );
     }
 

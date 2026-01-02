@@ -33,11 +33,11 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       text: "Produk",
       href: "/admin/product",
     },
-    {
-      icon: <Handshake size={20} />,
-      text: "Mitra",
-      href: "/admin/partner",
-    },
+    // {
+    //   icon: <Handshake size={20} />,
+    //   text: "Mitra",
+    //   href: "/admin/partner",
+    // },
     {
       icon: <StoreIcon size={20} />,
       text: "UMKM",

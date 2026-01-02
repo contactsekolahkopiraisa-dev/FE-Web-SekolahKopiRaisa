@@ -382,7 +382,7 @@ export default function UMKMOrderPage() {
                     Status
                   </th>
                   <th className="px-2 sm:px-4 py-3 text-left font-medium whitespace-nowrap">
-                    Aksi
+                    Detail
                   </th>
                 </tr>
               </thead>
