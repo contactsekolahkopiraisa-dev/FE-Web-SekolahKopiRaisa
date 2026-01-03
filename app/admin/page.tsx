@@ -136,8 +136,6 @@ export default function Dashboard() {
         setRecentProducts(sortedProducts);
       }
 
-      console.log("Product count:", products.length);
-      console.log("Product data:", products);
     } catch (error) {
       console.error("Error fetching product count:", error);
     }
@@ -152,8 +150,6 @@ export default function Dashboard() {
       const response = await fetchAllPartner();
       const partners = response.data;
       setCountPartner(Array.isArray(partners) ? partners.length : 0);
-      console.log("Partner count:", partners.length);
-      console.log("Partner data:", partners);
     } catch (error) {
       console.error("Error fetching partner count:", error);
     }

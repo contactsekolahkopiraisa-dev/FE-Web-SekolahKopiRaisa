@@ -1,3 +1,4 @@
+// app\admin\product\create\page.tsx
 "use client";
 
 import { useState, useRef, ChangeEvent, useEffect } from "react";

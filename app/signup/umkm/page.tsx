@@ -653,7 +653,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                   {/* ✅ PERBAIKAN: Upload file yang lebih jelas */}
                   <div>
                     <label className="block text-sm font-medium mb-2">
-                      Surat Izin Edar (Opsional)
+                      Surat Izin Edar (File Img/Png)
                     </label>
 
                     {!form.suratIzinEdar ? (
@@ -679,27 +679,29 @@ const handleSubmit = async (e: React.FormEvent) => {
                         </div>
                       </div>
                     ) : (
-                      <div className="border-2 border-green-300 bg-green-50 rounded-xl p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3 flex-1 min-w-0">
-                            <FileUp
-                              size={24}
-                              className="text-green-600 flex-shrink-0"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-green-800 truncate">
-                                {form.suratIzinEdar.name}
-                              </p>
-                              <p className="text-xs text-green-600">
-                                {(form.suratIzinEdar.size / 1024).toFixed(2)}{" "}
-                                KB
-                              </p>
-                            </div>
+                      <div className="border-2 border-green-300 bg-green-50 rounded-xl p-4 max-w-full overflow-hidden">
+                        <div className="flex items-center gap-3 w-full overflow-hidden">
+                          <FileUp
+                            size={24}
+                            className="text-green-600 flex-shrink-0"
+                          />
+
+                          <div className="flex-1 w-0 min-w-0">
+                            <p
+                              className="text-sm font-medium text-green-800 truncate"
+                              title={form.suratIzinEdar.name}
+                            >
+                              {form.suratIzinEdar.name}
+                            </p>
+                            <p className="text-xs text-green-600">
+                              {(form.suratIzinEdar.size / 1024).toFixed(2)} KB
+                            </p>
                           </div>
+
                           <button
                             type="button"
                             onClick={handleRemoveFile}
-                            className="ml-2 p-1 hover:bg-red-100 rounded-full transition-colors flex-shrink-0"
+                            className="ml-auto p-1 hover:bg-red-100 rounded-full transition-colors flex-shrink-0"
                             disabled={isSubmitting}
                           >
                             <X size={18} className="text-red-600" />

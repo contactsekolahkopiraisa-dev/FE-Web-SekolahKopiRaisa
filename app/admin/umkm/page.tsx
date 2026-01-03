@@ -10,7 +10,7 @@ interface UMKM {
   id_users: number;
   nama_umkm: string;
   ktp: string;
-  suratIzinEdar?: string;
+  surat_izin_edar?: string;
   status_verifikasi?: string;
   User?: {
     name?: string;
@@ -336,9 +336,9 @@ export default function UmkmAdmin() {
                       {item.ktp}
                     </td>
                     <td className="px-2 sm:px-4 py-3 whitespace-nowrap">
-                      {item.suratIzinEdar ? (
+                      {item.surat_izin_edar ? (
                         <a
-                          href={item.suratIzinEdar}
+                          href={item.surat_izin_edar}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-blue-600 hover:text-blue-800 underline hover:no-underline transition-colors"

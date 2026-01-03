@@ -253,17 +253,32 @@ export default function Navbar({ navbarItems }: { navbarItems: NavbarItem[] }) {
             >
               <span
                 className={`relative after:content-[''] after:absolute after:left-0 after:-bottom-1/4 after:h-[2px] after:bg-primary after:transition-all after:duration-300
-                ${
-                  isActive
-                    ? "after:w-full"
-                    : "after:w-0 group-hover:after:w-full"
-                }`}
+          ${isActive ? "after:w-full" : "after:w-0 group-hover:after:w-full"}`}
               >
                 {item.title}
               </span>
             </button>
           );
         })}
+
+        {/* 🔹 MENU UMKM (hanya untuk role umkm) */}
+        {user?.role === "umkm" && (
+          <button
+            onClick={() => router.push("/umkm")}
+            className="relative group"
+          >
+            <span
+              className={`relative after:content-[''] after:absolute after:left-0 after:-bottom-1/4 after:h-[2px] after:bg-primary after:transition-all after:duration-300
+        ${
+          pathname === "/umkm"
+            ? "after:w-full"
+            : "after:w-0 group-hover:after:w-full"
+        }`}
+            >
+              UMKM
+            </span>
+          </button>
+        )}
       </div>
 
       {/* Desktop Auth */}
@@ -552,6 +567,8 @@ export default function Navbar({ navbarItems }: { navbarItems: NavbarItem[] }) {
                       </Link>
                     </li>
                   )}
+
+                  
                 </ul>
               </nav>
 
