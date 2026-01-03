@@ -375,3 +375,81 @@ export const fetchLaporanPenjualanById = async (id: number) => {
     };
   }
 };
+
+// Interface untuk laporan by partner ID
+export interface LaporanPenjualanByPartnerData {
+  partner: {
+    id: number;
+    nama: string;
+    owner: string;
+    user: {
+      id: number;
+      name: string;
+    };
+  };
+  periode: string;
+  summary: {
+    jumlahProdukTerjual: number;
+    labaBersih: string;
+    labaKotor: string;
+    pajak: string;
+    persentasePajak: string;
+  };
+  chart: Array<{
+    tanggal: number;
+    totalPenjualan: number;
+  }>;
+  topProducts: TopProduct[];
+}
+
+export interface LaporanPenjualanByPartnerResponse {
+  message: string;
+  data: LaporanPenjualanByPartnerData;
+}
+
+// Fetch laporan penjualan by Partner ID (Admin)
+export const fetchLaporanPenjualanByIdPartner = async (
+  partnerId: number,
+  bulan: number, // 0-11 (JavaScript month index)
+  tahun: number
+) => {
+  try {
+    const response = await api.get(`/api/v1/penjualan/admin/partner/${partnerId}`, {
+      params: {
+        bulan: bulan + 1, // API expects 1-12
+        tahun: tahun
+      }
+    });
+
+    return response.data as LaporanPenjualanByPartnerResponse;
+  } catch (error: any) {
+    if (error.response) {
+      const { data } = error.response;
+
+      if (data.errors && typeof data.errors === "object") {
+        throw {
+          type: "validation",
+          message: data.message || "Validasi gagal!",
+          errors: data.errors
+        };
+      }
+
+      if (data.errors && typeof data.errors === "string") {
+        throw {
+          type: "general",
+          message: data.errors
+        };
+      }
+
+      throw {
+        type: "general",
+        message: data.message || "Terjadi kesalahan!"
+      };
+    }
+
+    throw {
+      type: "network",
+      message: "Tidak dapat terhubung ke server. Coba lagi nanti."
+    };
+  }
+};
