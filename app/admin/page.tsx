@@ -244,7 +244,7 @@ export default function Dashboard() {
 
   // Doughnut chart data for overview
   const overviewChartData = {
-    labels: ["Kegiatan", "Mitra", "Produk"],
+    labels: ["Kegiatan", "UMKM", "Produk"],
     datasets: [
       {
         label: "Total",
