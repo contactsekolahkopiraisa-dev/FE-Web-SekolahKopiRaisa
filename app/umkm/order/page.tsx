@@ -2,7 +2,8 @@
 "use client";
 
 import OrderTable, { Order, OrderStatus } from "@/components/order/OrderTable";
-import { fetchAllUMKMOrder, updateStatusOrder } from "@/app/utils/order-umkm";
+import { fetchAllUMKMOrder } from "@/app/utils/order-umkm";
+import { updateStatusOrder } from "@/app/utils/order";
 import { useEffect, useState } from "react";
 import OrderDetailModal from "@/components/order/OrderDetailModal";
 import { formatCurrency } from "@/app/utils/helper";

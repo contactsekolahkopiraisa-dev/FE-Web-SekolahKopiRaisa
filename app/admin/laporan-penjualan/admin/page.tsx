@@ -58,6 +58,8 @@ export default function LaporanPenjualanAdmin() {
           tahun
         );
 
+        console.log("Laporan Result:", laporanResult);
+
         if (laporanResult && laporanResult.data) {
           setLaporanData(laporanResult.data);
 
@@ -155,22 +157,6 @@ export default function LaporanPenjualanAdmin() {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">Laporan Penjualan Admin</h1>
-
-      {/* Info UMKM Admin */}
-      {laporanData && (
-        <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-          <div className="flex items-center gap-3">
-            <div>
-              <p className="text-sm text-gray-600">UMKM:</p>
-              <p className="font-semibold text-lg">{laporanData.partner.nama}</p>
-            </div>
-            <div className="ml-auto">
-              <p className="text-sm text-gray-600">Owner:</p>
-              <p className="font-medium">{laporanData.partner.owner}</p>
-            </div>
-          </div>
-        </div>
-      )}
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         {/* Filter Periode */}
@@ -325,17 +311,12 @@ export default function LaporanPenjualanAdmin() {
                         <td className="px-6 py-4">{product.ranking}</td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
-                            <img
-                              src={product.gambarProduk}
-                              alt={product.namaProduk}
-                              className="w-12 h-12 object-cover rounded"
-                            />
                             <span>{product.namaProduk}</span>
                           </div>
                         </td>
                         <td className="px-6 py-4">{product.jumlahTerjual}</td>
                         <td className="px-6 py-4">
-                          {formatCurrency(product.totalPendapatan)}
+                          {(product.totalPendapatan)}
                         </td>
                       </tr>
                     ))}

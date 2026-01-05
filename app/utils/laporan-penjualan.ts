@@ -24,11 +24,8 @@ export interface LaporanPenjualanUMKMData {
   summary: {
     jumlahProdukTerjual: number;
     labaBersih: string;
-    labaBersihRaw: number;
     labaKotor: string;
-    labaKotorRaw: number;
     pajak: string;
-    pajakRaw: number;
     persentasePajak: string;
   };
   chart: Array<{
@@ -59,6 +56,7 @@ export interface LaporanPenjualanAdminData {
     labaBersih: string;
     labaKotor: string;
   }>;
+  topProducts: TopProduct[];
 }
 
 // Response interfaces
@@ -258,10 +256,57 @@ export const fetchLaporanPenjualanUMKMByPeriode = async (
 export const fetchTopProducts = async (
   bulan: number,
   tahun: number,
-  limit: number = 10
+  limit: number = 5
 ) => {
   try {
     const response = await api.get("/api/v1/penjualan/admin/top-products", {
+      params: {
+        bulan: bulan + 1, // API expects 1-12
+        tahun: tahun,
+        limit: limit
+      }
+    });
+
+    return response.data as TopProductsResponse;
+  } catch (error: any) {
+    if (error.response) {
+      const { data } = error.response;
+
+      if (data.errors && typeof data.errors === "object") {
+        throw {
+          type: "validation",
+          message: data.message || "Validasi gagal!",
+          errors: data.errors
+        };
+      }
+
+      if (data.errors && typeof data.errors === "string") {
+        throw {
+          type: "general",
+          message: data.errors
+        };
+      }
+
+      throw {
+        type: "general",
+        message: data.message || "Terjadi kesalahan!"
+      };
+    }
+
+    throw {
+      type: "network",
+      message: "Tidak dapat terhubung ke server. Coba lagi nanti."
+    };
+  }
+};
+
+export const fetchUMKMTopProducts = async (
+  bulan: number,
+  tahun: number,
+  limit: number = 5
+) => {
+  try {
+    const response = await api.get("/api/v1/penjualan/my-top-products", {
       params: {
         bulan: bulan + 1, // API expects 1-12
         tahun: tahun,
