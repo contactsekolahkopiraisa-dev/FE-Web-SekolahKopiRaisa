@@ -291,7 +291,7 @@ export default function Dashboard() {
         />
         <StatCard
           icon={<Building size={28} className="text-green-500" />}
-          title="Total Mitra"
+          title="Total UMKM"
           value={countPartner.toString()}
         />
         <StatCard
