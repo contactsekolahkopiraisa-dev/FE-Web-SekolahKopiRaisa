@@ -37,6 +37,11 @@ export default function ServiceCard({
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+  
+  // Check if this is undangan narasumber or kunjungan
+  const isUndanganNarasumber = title.toLowerCase().includes("narasumber");
+  const isKunjungan = title.toLowerCase().includes("kunjungan");
+  
   return (
     <div className="bg-white rounded-lg shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 p-8 flex flex-col border border-gray-100">
       {/* Icon */}
@@ -60,17 +65,19 @@ export default function ServiceCard({
         {description}
       </p>
 
-      {/* Info Tags */}
-      <div className="flex justify-center gap-4 mb-6 text-xs text-gray-500">
-        <span className="bg-gray-100 px-3 py-1 rounded-full flex items-center gap-1">
-          <Clock size={12} />
-          {duration}
-        </span>
-        <span className="bg-gray-100 px-3 py-1 rounded-full flex items-center gap-1">
-          <User size={12} />
-          {target}
-        </span>
-      </div>
+      {/* Info Tags - Hidden for Undangan Narasumber */}
+      {!isUndanganNarasumber && (
+        <div className="flex justify-center gap-4 mb-6 text-xs text-gray-500">
+          <span className="bg-gray-100 px-3 py-1 rounded-full flex items-center gap-1">
+            <Clock size={12} />
+            {duration}
+          </span>
+          <span className="bg-gray-100 px-3 py-1 rounded-full flex items-center gap-1">
+            <User size={12} />
+            {target}
+          </span>
+        </div>
+      )}
 
       {/* Action Button */}
       <Link href={route}>
@@ -132,26 +139,28 @@ export default function ServiceCard({
                   </div>
                 </div>
 
-                {/* Duration and Target - Compact */}
-                <div className="mb-8">
-                  <div className="flex items-center gap-6">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-gray-900">
-                        Durasi:
-                      </span>
-                      <span className="text-gray-700">{duration}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-gray-900">
-                        Peserta:
-                      </span>
-                      <span className="text-gray-700">{target}</span>
+                {/* Duration and Target - Compact - Hidden for Undangan Narasumber */}
+                {!isUndanganNarasumber && (
+                  <div className="mb-8">
+                    <div className="flex items-center gap-6">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-gray-900">
+                          Durasi:
+                        </span>
+                        <span className="text-gray-700">{duration}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-gray-900">
+                          Peserta:
+                        </span>
+                        <span className="text-gray-700">{target}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
-                {/* Activities - Two Column Layout */}
-                {activities.length > 0 && (
+                {/* Activities - Two Column Layout - Hidden for Undangan Narasumber and Kunjungan */}
+                {activities.length > 0 && !isUndanganNarasumber && !isKunjungan && (
                   <div>
                     <h3 className="font-semibold text-lg text-gray-900 mb-6">
                       Kegiatan yang bisa dipilih

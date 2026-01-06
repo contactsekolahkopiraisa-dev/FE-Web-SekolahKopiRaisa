@@ -38,14 +38,7 @@ export default function AdminLayananModulPage() {
       setModules(data);
     } catch (error: any) {
       console.error("Error in loadModules:", error);
-      const Swal = (await import("sweetalert2")).default;
-      await Swal.fire({
-        icon: "error",
-        title: "Gagal Memuat Data",
-        text: error.message || "Terjadi kesalahan saat memuat data modul",
-        confirmButtonColor: "#4E342E",
-        customClass: { popup: "rounded-xl" },
-      });
+      // Just log the error, no popup alert
     } finally {
       setIsLoading(false);
     }
@@ -135,7 +128,7 @@ export default function AdminLayananModulPage() {
       {!isLoading && modules.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20">
           <FileText size={48} className="text-gray-300 mb-4" />
-          <p className="text-gray-500 text-lg">Belum ada modul</p>
+          <p className="text-gray-500 text-lg">Data modul belum ada</p>
           <p className="text-gray-400 text-sm">Tambahkan modul pertama Anda</p>
         </div>
       )}
