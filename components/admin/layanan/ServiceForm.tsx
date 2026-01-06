@@ -18,6 +18,7 @@ interface ServiceFormProps {
   onSubmit: (data: any, file: File | null) => void;
   onCancel: () => void;
   isLoading?: boolean;
+  isEditMode?: boolean;
 }
 
 export default function ServiceForm({
@@ -26,6 +27,7 @@ export default function ServiceForm({
   onSubmit,
   onCancel,
   isLoading = false,
+  isEditMode = false,
 }: ServiceFormProps) {
   const [formData, setFormData] = useState({
     nama: initialData?.nama || "",
@@ -243,30 +245,32 @@ export default function ServiceForm({
           </div>
         </div>
 
-        {/* Status Aktif */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-3">
-            Status Layanan
-          </label>
-          <div className="flex items-center gap-4">
-            <button
-              type="button"
-              onClick={() => setIsActive(!isActive)}
-              className={`px-6 py-2.5 rounded-lg font-medium transition-all ${
-                isActive
-                  ? "bg-emerald-600 text-white shadow-sm hover:bg-emerald-700"
-                  : "bg-rose-600 text-white shadow-sm hover:bg-rose-700"
-              }`}
-            >
-              {isActive ? "Aktif" : "Nonaktif"}
-            </button>
-            <span className="text-sm text-gray-500">
-              {isActive
-                ? "Layanan ditampilkan ke pengguna"
-                : "Layanan disembunyikan dari pengguna"}
-            </span>
+        {/* Status Aktif - Hidden in Edit Mode */}
+        {!isEditMode && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Status Layanan
+            </label>
+            <div className="flex items-center gap-4">
+              <button
+                type="button"
+                onClick={() => setIsActive(!isActive)}
+                className={`px-6 py-2.5 rounded-lg font-medium transition-all ${
+                  isActive
+                    ? "bg-emerald-600 text-white shadow-sm hover:bg-emerald-700"
+                    : "bg-rose-600 text-white shadow-sm hover:bg-rose-700"
+                }`}
+              >
+                {isActive ? "Aktif" : "Nonaktif"}
+              </button>
+              <span className="text-sm text-gray-500">
+                {isActive
+                  ? "Layanan ditampilkan ke pengguna"
+                  : "Layanan disembunyikan dari pengguna"}
+              </span>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Action Buttons */}
         <div className="flex gap-4 pt-6">

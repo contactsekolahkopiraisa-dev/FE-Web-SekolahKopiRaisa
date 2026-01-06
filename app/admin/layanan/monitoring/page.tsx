@@ -59,13 +59,7 @@ export default function AdminLayananMonitoringPage() {
       setLayananList(data);
     } catch (error: any) {
       console.error("Error loading layanan data:", error);
-      await Swal.fire({
-        icon: "error",
-        title: "Gagal Memuat Data",
-        text: error.message || "Terjadi kesalahan saat memuat data layanan",
-        confirmButtonColor: "#4E342E",
-        customClass: { popup: "rounded-xl" },
-      });
+      // Just log the error, no popup alert
     } finally {
       setIsLoading(false);
     }
@@ -450,6 +444,11 @@ export default function AdminLayananMonitoringPage() {
               <div className="mx-auto mb-3 h-10 w-10 animate-spin rounded-full border-4 border-amber-200 border-t-amber-900" />
               <p className="text-sm font-semibold text-gray-800">Memuat data...</p>
               <p className="text-xs text-gray-500">Mohon tunggu, sedang mengambil daftar layanan.</p>
+            </div>
+          ) : pageItems.length === 0 ? (
+            <div className="mt-4 rounded-xl border border-gray-100 bg-white p-8 text-center">
+              <p className="text-sm font-semibold text-gray-800">Data pengajuan belum ada</p>
+              <p className="text-xs text-gray-500 mt-2">Belum ada data yang sesuai dengan filter yang dipilih</p>
             </div>
           ) : (
             <div className="mt-4 rounded-xl border border-gray-100 overflow-hidden">
