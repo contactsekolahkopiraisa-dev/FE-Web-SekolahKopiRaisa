@@ -493,8 +493,8 @@ function DetailPelaksanaanUndanganNarasumberContent() {
 
   return (
     <>
-      <div className="min-h-screen bg-[#FCFBF7] pt-16 md:pt-20">
-        <div className="container mx-auto px-5 max-w-5l py-20">
+      <div className="min-h-screen bg-[#FCFBF7] pt-16 md:pt-20 pb-4">
+        <div className="container mx-auto px-5 max-w-5l py-8">
           <div className="mb-4">
             <Link
               href="/layanan"
@@ -505,12 +505,12 @@ function DetailPelaksanaanUndanganNarasumberContent() {
             </Link>
           </div>
 
-          <h1 className="text-center text-2xl md:text-[22px] font-semibold text-[#3B3B3B]">
+          <h1 className="text-center text-2xl md:text-[22px] font-semibold text-[#3B3B3B] mb-6">
             Detail Pelaksanaan Undangan Narasumber
           </h1>
 
           {/* ---- Ringkasan Pengajuan ---- */}
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="rounded-xl border border-[#E8E2DB] bg-white p-4 md:p-6">
               {/* Progress Kegiatan */}
               <div className="flex flex-col items-center gap-2 text-center">
@@ -791,15 +791,13 @@ function DetailPelaksanaanUndanganNarasumberContent() {
               </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Laporan Akhir Section */}
-      {pengajuanDecision === "disetujui" && (
-        <div
-          className="container mx-auto px-4 max-w-5l mb-6"
-          id="laporan-section"
-        >
+          {/* Laporan Akhir Section */}
+          {pengajuanDecision === "disetujui" && (
+            <div
+              className="mt-4"
+              id="laporan-section"
+            >
           <div className="rounded-xl border border-[#E8E2DB] bg-white p-5 md:p-6">
             <div className="flex items-center gap-2 mb-2">
               <span className="w-5 h-5 rounded-full border border-[#E8E2DB] flex items-center justify-center">
@@ -1012,8 +1010,10 @@ function DetailPelaksanaanUndanganNarasumberContent() {
               </div>
             </div>
           </div>
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       {/* Footer */}
       <Footer />
