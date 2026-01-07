@@ -9,7 +9,6 @@ import { Box, Search } from "lucide-react";
 import Skeleton, { SkeletonTheme } from "react-loading-skeleton";
 // import "react-loading-skeleton/dist/skeleton.css";
 import Footer from "../../components/main/Footer";
-import { getUser } from "../utils/user";
 
 export default function ProductPage() {
   const [products, setProducts] = useState<ProductItem[]>([]);
@@ -17,28 +16,11 @@ export default function ProductPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const [authorized, setAuthorized] = useState<boolean | null>(null);
 
   const router = useRouter();
 
-  // Authentication check
+  // Load products - public access
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        await getUser();
-        setAuthorized(true);
-      } catch {
-        setAuthorized(false);
-        router.push("/login");
-      }
-    };
-    checkAuth();
-  }, [router]);
-
-  // Load products - hanya jika sudah terautentikasi
-  useEffect(() => {
-    if (authorized !== true) return;
-
     const loadProducts = async () => {
       setLoading(true);
       setError(null);
@@ -81,7 +63,7 @@ export default function ProductPage() {
     };
 
     loadProducts();
-  }, [authorized]);
+  }, []);
 
   // Search filter
   useEffect(() => {
@@ -98,29 +80,6 @@ export default function ProductPage() {
   const handleViewDetails = (id: number) => {
     router.push(`/product/${id}`);
   };
-
-  // Early returns AFTER all hooks
-  if (authorized === null) {
-    return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Memeriksa autentikasi...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (authorized === false) {
-    return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Mengalihkan ke halaman login...</p>
-        </div>
-      </div>
-    );
-  }
 
   if (loading) {
     return (

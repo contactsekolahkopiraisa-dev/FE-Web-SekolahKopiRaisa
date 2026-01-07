@@ -10,24 +10,45 @@ export default function OAuthSuccess() {
   const token = searchParams.get("token");
 
   useEffect(() => {
-    if (token) {
-      api
-        .post(
-          "/api/v1/auth/save-token",
-          {},
-          {
+    const handleToken = async () => {
+      if (token) {
+        try {
+          // Save to localStorage first
+          localStorage.setItem("token", token);
+          
+          // Set cookie via server-side API
+          const cookieResponse = await fetch('/api/auth/set-cookie', {
+            method: 'POST',
             headers: {
-              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
             },
+            body: JSON.stringify({ token }),
+          });
+          
+          if (cookieResponse.ok) {
+            console.log('✅ OAuth token saved successfully');
           }
-        )
-        .then(() => {
+          
+          // Call backend save-token endpoint
+          await api.post(
+            "/api/v1/auth/save-token",
+            {},
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+          
           router.replace("/");
-        })
-        .catch(() => {
+        } catch (error) {
+          console.error('❌ OAuth token save failed:', error);
           router.push("/login?error=failed");
-        });
-    }
+        }
+      }
+    };
+    
+    handleToken();
   }, [token, router]);
 
   return null;

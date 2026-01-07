@@ -5,8 +5,6 @@ import LayananHeader from "../../components/layanan/LayananHeader";
 import ServiceGrid from "../../components/layanan/ServiceGrid";
 import Footer from "../../components/main/Footer";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { getUser } from "../utils/user";
 import SubNavLayanan from "../../components/layanan/SubNavLayanan";
 import { fetchAllJenisLayanan } from "../utils/jenisLayanan";
 import { JenisLayananItem } from "../types/jenisLayananType";
@@ -45,25 +43,12 @@ const getRouteFromName = (nama_jenis_layanan: string | undefined): string => {
 };
 
 export default function LayananPage() {
-  const router = useRouter();
-  const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [services, setServices] = useState<JenisLayananItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        await getUser();
-        setAuthorized(true);
-        // Load services after auth check
-        loadServices();
-      } catch {
-        setAuthorized(false);
-        router.push("/login");
-      }
-    };
-    checkAuth();
-  }, [router]);
+    loadServices();
+  }, []);
 
   const loadServices = async () => {
     try {
@@ -78,28 +63,6 @@ export default function LayananPage() {
       setIsLoading(false);
     }
   };
-
-  if (authorized === null) {
-    return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Memeriksa autentikasi...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (authorized === false) {
-    return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Mengalihkan ke halaman login...</p>
-        </div>
-      </div>
-    );
-  }
 
   // Transform services data for ServiceGrid
   const transformedServices = services.map((s) => {
@@ -146,7 +109,7 @@ export default function LayananPage() {
   });
 
   return (
-    <div className="min-h-screen bg-neutral-50 flex flex-col">
+    <div className="min-h-screen bg-tertiary flex flex-col">
       <LayananHeader />
       <SubNavLayanan />
       {isLoading ? (

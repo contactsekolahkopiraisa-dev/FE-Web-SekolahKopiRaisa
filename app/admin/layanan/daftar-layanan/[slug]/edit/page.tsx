@@ -82,7 +82,9 @@ export default function EditLayananPage() {
       }
 
       const foundLayanan = allLayanan.find((l) =>
-        l.nama_jenis_layanan.toLowerCase().includes(slug.toLowerCase())
+        targetName
+          ? l.nama_jenis_layanan.toLowerCase() === targetName.toLowerCase()
+          : l.nama_jenis_layanan.toLowerCase().includes(slug.toLowerCase())
       );
 
       console.log("9. Found layanan:", foundLayanan);
@@ -228,6 +230,7 @@ export default function EditLayananPage() {
             onSubmit={handleSubmit}
             onCancel={handleCancel}
             isLoading={isSubmitting}
+            isEditMode={true}
           />
         </div>
       </div>

@@ -195,13 +195,10 @@ export default function Home() {
               </h1>
             </div>
             <div className="w-full md:w-1/2 flex justify-center">
-              <Image
-                src="/assets/product1.png"
+              <img
+                src={`/assets/product14.png?t=${Date.now()}`}
                 alt="Logo"
-                width={700}
-                height={200}
-                className="w-full max-w-[450px] lg:max-w-[800px] object-contain mt-4 md:mt-40 md:ml-20"
-                priority
+                className="w-full max-w-[450px] lg:max-w-[600px] object-contain mt-4 md:mt-40 md:ml-20"
               />
             </div>
           </div>
