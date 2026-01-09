@@ -46,69 +46,74 @@ export default function UmkmDashboard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchProductCount = async () => {
-    try {
-      setLoading(true);
+const fetchProductCount = async () => {
+  try {
+    setLoading(true);
+    setError(null);
 
-      // Dapatkan user_id dari user yang sedang login
-      const currentUserId = getUserId();
+    // Ambil user_id user login
+    const currentUserId = getUserId();
 
-      // Validasi jika user_id tidak ditemukan
-      if (currentUserId === null) {
-        setError("User ID tidak ditemukan. Silakan login kembali.");
-        setLoading(false);
-        return;
-      }
-
-      const response = await fetchAllProduct();
-      console.log("Full API response:", response);
-      const rawData = response.data;
-      console.log("Raw product data:", rawData);
-
-      if (!Array.isArray(rawData)) {
-        console.error("Expected array but got:", typeof rawData, rawData);
-        setError("Data produk tidak valid.");
-        setLoading(false);
-        return;
-      }
-
-      // Filter produk berdasarkan partner.user_id
-      const filteredProducts = rawData.filter(
-        (item: any) => item.partner?.user_id === currentUserId
-      );
-
-      console.log(
-        "Filtered products for user_id",
-        currentUserId,
-        ":",
-        filteredProducts
-      );
-
-      setCountProduct(filteredProducts.length);
-
-      // Get recent products (last 3) dari data yang sudah difilter
-      if (filteredProducts.length > 0) {
-        const sortedProducts = filteredProducts
-          .sort(
-            (a: any, b: any) =>
-              new Date(b.created_at).getTime() -
-              new Date(a.created_at).getTime()
-          )
-          .slice(0, 3);
-        setRecentProducts(sortedProducts);
-      } else {
-        setRecentProducts([]);
-      }
-
-      console.log("Product count:", filteredProducts.length);
-      console.log("Recent products:", filteredProducts.slice(0, 3));
-    } catch (error) {
-      console.error("Error fetching product count:", error);
-      setError("Gagal memuat data produk. Silakan coba lagi.");
-    } finally {
-      setLoading(false);
+    if (!currentUserId) {
+      setError("User ID tidak ditemukan. Silakan login kembali.");
+      return;
     }
-  };
+
+    const response = await fetchAllProduct();
+    console.log("Full API response:", response);
+
+    const rawData = response?.data;
+
+    // Validasi data dari API
+    if (!Array.isArray(rawData)) {
+      setError("Data produk tidak valid.");
+      return;
+    }
+
+    // 🔴 KONDISI 1: API mengembalikan array kosong
+    if (rawData.length === 0) {
+      setCountProduct(0);
+      setRecentProducts([]);
+      console.log("Tidak ada produk sama sekali di database");
+      return;
+    }
+
+    // Filter produk berdasarkan partner.user_id
+    const filteredProducts = rawData.filter(
+      (item: any) => item?.partner?.user_id === currentUserId
+    );
+
+    // 🔴 KONDISI 2: Produk ada, tapi bukan milik user ini
+    if (filteredProducts.length === 0) {
+      setCountProduct(0);
+      setRecentProducts([]);
+      console.log("User belum memiliki produk");
+      return;
+    }
+
+    // Set jumlah produk
+    setCountProduct(filteredProducts.length);
+
+    // Ambil 3 produk terbaru
+    const recent = filteredProducts
+      .sort(
+        (a: any, b: any) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      )
+      .slice(0, 3);
+
+    setRecentProducts(recent);
+
+    console.log("Product count:", filteredProducts.length);
+    console.log("Recent products:", recent);
+  } catch (error) {
+    console.error("Error fetching product count:", error);
+    setError("Gagal memuat data produk. Silakan coba lagi.");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   useEffect(() => {
     fetchProductCount();

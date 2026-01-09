@@ -2,7 +2,8 @@
 "use client";
 
 import OrderTable, { Order, OrderStatus } from "@/components/order/OrderTable";
-import { fetchAllUMKMOrder, updateStatusOrder } from "@/app/utils/order-umkm";
+import { fetchAllUMKMOrder } from "@/app/utils/order-umkm";
+import { updateStatusOrder } from "@/app/utils/order";
 import { useEffect, useState } from "react";
 import OrderDetailModal from "@/components/order/OrderDetailModal";
 import { formatCurrency } from "@/app/utils/helper";
@@ -46,7 +47,6 @@ export default function UMKMOrderPage() {
   const [itemsPerPage] = useState(15);
 
   const statusPriority: OrderStatus[] = [
-    "PENDING",
     "PROCESSING",
     "SHIPPED",
     // "DELIVERED",
@@ -59,16 +59,18 @@ export default function UMKMOrderPage() {
       : ordersData.filter((order) => order.status === statusFilter);
 
   // Fungsi map status API ke enum status frontend
+  // PENDING otomatis diubah ke PROCESSING
   const mapApiStatus = (apiStatus: string | undefined | null): OrderStatus => {
-    if (!apiStatus) return "PENDING"; // Handle undefined/null
+    if (!apiStatus) return "PROCESSING"; // Handle undefined/null
     const upper = apiStatus.toUpperCase();
-    if (["PENDING", "CREATED"].includes(upper)) return "PENDING";
+    // PENDING dan CREATED otomatis menjadi PROCESSING
+    if (["PENDING", "CREATED"].includes(upper)) return "PROCESSING";
     if (["PROCESSING"].includes(upper)) return "PROCESSING";
     if (["SHIPPED"].includes(upper)) return "SHIPPED";
     if (["DELIVERED", "SUCCESS", "COMPLETED", "PAID"].includes(upper))
       return "DELIVERED";
     if (["CANCELED", "FAILED"].includes(upper)) return "CANCELED";
-    return "PENDING"; // fallback
+    return "PROCESSING"; // fallback ke PROCESSING
   };
 
   // Ambil data order dari API - TANPA FILTERING USER
@@ -280,8 +282,8 @@ export default function UMKMOrderPage() {
   // Function to get Indonesian label for status
   const getStatusLabel = (status: OrderStatus): string => {
     switch (status) {
-      case "PENDING":
-        return "Dibuat";
+      // case "PENDING":
+        // return "Dibuat";
       case "PROCESSING":
         return "Diproses";
       case "SHIPPED":
@@ -314,7 +316,6 @@ export default function UMKMOrderPage() {
                 className="appearance-none border border-gray-500 rounded-xl px-3 py-2 text-sm pr-8"
               >
                 <option value="ALL">Semua Status</option>
-                <option value="PENDING">Dibuat</option>
                 <option value="PROCESSING">Diproses</option>
                 <option value="SHIPPED">Dikirim</option>
                 {/* <option value="DELIVERED">Diterima</option>
@@ -382,7 +383,7 @@ export default function UMKMOrderPage() {
                     Status
                   </th>
                   <th className="px-2 sm:px-4 py-3 text-left font-medium whitespace-nowrap">
-                    Aksi
+                    Detail
                   </th>
                 </tr>
               </thead>
@@ -491,7 +492,6 @@ export default function UMKMOrderPage() {
                 className="appearance-none border border-gray-500 rounded-xl px-3 py-2 text-sm pr-8"
               >
                 <option value="ALL">Semua Status</option>
-                <option value="PENDING">Dibuat</option>
                 <option value="PROCESSING">Diproses</option>
                 <option value="SHIPPED">Dikirim</option>
                 {/* <option value="DELIVERED">Diterima</option>

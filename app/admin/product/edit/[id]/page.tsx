@@ -1,13 +1,9 @@
+// app\admin\product\edit\[id]\page.tsx
 "use client";
 
 import { useState, useRef, ChangeEvent, useEffect } from "react";
 import { LoaderCircle } from "lucide-react";
-import { fetchAllPartner } from "@/app/utils/partner";
-import {
-  createProduct,
-  fetchProductById,
-  updateProduct,
-} from "@/app/utils/product";
+import { fetchProductById, updateProduct } from "@/app/utils/product";
 import { useParams, useRouter } from "next/navigation";
 import Popup from "@/components/Popup";
 import ProductListAdmin from "@/components/product/ProductListAdmin";
@@ -17,21 +13,16 @@ export default function EditProductPage() {
   // State for product data
   const [product, setProduct] = useState({
     name: "",
-    partnerId: "",
     description: "",
     price: "",
     weight: "",
-    stock: "",
+    stock: ""
   });
 
   const params = useParams();
   const productId = params?.id;
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-
-  // State for partners dropdown
-  const [partners, setPartners] = useState<{ id: string; name: string }[]>([]);
-  const [isLoadingPartners, setIsLoadingPartners] = useState(false);
 
   // State for image upload
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -40,8 +31,6 @@ export default function EditProductPage() {
 
   // State for form submission
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitSuccess, setSubmitSuccess] = useState(false);
-  const [submitError, setSubmitError] = useState("");
 
   const [showPopup, setShowPopup] = useState(false);
   const [message, setMessage] = useState("");
@@ -74,7 +63,7 @@ export default function EditProductPage() {
 
     setProduct((prev) => ({
       ...prev,
-      [name]: value, // ✅ Simpan sebagai string, jangan konversi langsung
+      [name]: value
     }));
 
     // Hilangkan error saat field diperbarui
@@ -90,23 +79,19 @@ export default function EditProductPage() {
   // Handle form submission
   const handleSubmit = async () => {
     setIsSubmitting(true);
-    setSubmitError("");
 
     try {
       const formData = new FormData();
       formData.append("name", product.name);
-      formData.append("partner_id", product.partnerId);
       formData.append("description", product.description);
       formData.append("price", product.price.toString());
       formData.append("weight", product.weight.toString());
       formData.append("stock", product.stock.toString());
       if (imageFile) {
-        formData.append("productFile", imageFile); // ⬅️ Ini ditambahkan
+        formData.append("productFile", imageFile);
       }
-      const response = await updateProduct(
-        Number(productId), // Convert productId to number
-        formData
-      );
+
+      const response = await updateProduct(Number(productId), formData);
 
       if (response && response.message) {
         // Simpan ke sessionStorage
@@ -114,7 +99,7 @@ export default function EditProductPage() {
           "popup",
           JSON.stringify({
             message: response.message,
-            type: "success",
+            type: "success"
           })
         );
 
@@ -123,57 +108,35 @@ export default function EditProductPage() {
       }
     } catch (error: any) {
       if (error.type === "validation") {
-        setErrors(error.errors); // ✅ Ambil langsung dari backend
+        setErrors(error.errors);
         setShowConfirmModal(false);
+        console.error("Validation errors:", error.errors);
       } else {
         console.error("Error:", error);
-        setMessage(error.message || "Terjadi kesalahan saat menyimpan berita.");
+        setMessage(error.message || "Terjadi kesalahan saat menyimpan produk.");
         setPopupType("error");
         setShowPopup(true);
       }
     } finally {
       setIsSubmitting(false);
-      setShowConfirmModal(false);
     }
   };
-
-  useEffect(() => {
-    const loadPartners = async () => {
-      setIsLoadingPartners(true);
-      try {
-        const response = await fetchAllPartner();
-        const rawData = response.data;
-        const formattedData = rawData.map((item: any) => ({
-          id: item.id,
-          name: item.name,
-        }));
-        setPartners(formattedData);
-      } catch (error) {
-        console.error("Failed to fetch partners:", error);
-      } finally {
-        setIsLoadingPartners(false);
-      }
-    };
-
-    loadPartners();
-  }, []);
 
   useEffect(() => {
     const loadProduct = async () => {
       if (!productId) return;
       try {
-        const response = await fetchProductById(Number(productId)); // Convert productId to number
+        const response = await fetchProductById(Number(productId));
         const product = response.data;
         setProduct({
           name: product.name || "",
-          partnerId: product.partner_id?.toString() || "", // ✅ ganti ke partner_id
           description: product.description || "",
           price: product.price?.toString() || "",
           weight: product.weight?.toString() || "",
-          stock: product.inventory?.stock?.toString() || "",
+          stock: product.inventory?.stock?.toString() || ""
         });
 
-        setImagePreview(product.image); // asumsi field image_url dari backend
+        setImagePreview(product.image);
       } catch (error) {
         console.error("Gagal ambil produk:", error);
       }
@@ -183,7 +146,7 @@ export default function EditProductPage() {
   }, [productId]);
 
   return (
-    <div className="mx-auto bg-tertiary p-6 rounded-xl shadow-lg">
+    <div className="mx-auto bg-tertiary p-6 rounded-lg shadow-md">
       {showPopup && (
         <Popup
           message={message}
@@ -216,7 +179,7 @@ export default function EditProductPage() {
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="cursor-pointer font-medium bg-primary text-white px-3 py-1.5 rounded-xl hover:-translate-y-1 duration-150 ease-in text-sm"
+                  className="cursor-pointer font-medium bg-primary text-white px-4 py-2 rounded-xl hover:-translate-y-1 duration-150 ease-in text-sm"
                 >
                   Pilih Gambar
                 </button>
@@ -232,7 +195,7 @@ export default function EditProductPage() {
                 />
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                Format: JPG, PNG. Maksimal 2MB.
+                Format: JPG, PNG. Maksimal 5MB.
               </p>
               {errors.productFile && (
                 <p className="text-sm text-red-600 mt-1">
@@ -254,32 +217,6 @@ export default function EditProductPage() {
               />
               {errors.name && (
                 <p className="text-sm text-red-600 mt-1">{errors.name}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Nama Mitra
-              </label>
-              {isLoadingPartners ? (
-                <div className="flex items-center gap-2">
-                  <LoaderCircle className="animate-spin w-4" />
-                  <span>Memuat daftar mitra...</span>
-                </div>
-              ) : (
-                <select
-                  name="partnerId"
-                  value={product.partnerId}
-                  onChange={handleInputChange}
-                  className="w-full p-2 border border-gray-300 rounded-xl"
-                >
-                  <option value="">Pilih Mitra</option>
-                  {partners.map((partner) => (
-                    <option key={partner.id} value={partner.id}>
-                      {partner.name}
-                    </option>
-                  ))}
-                </select>
               )}
             </div>
 
@@ -352,7 +289,7 @@ export default function EditProductPage() {
             <button
               type="button"
               onClick={() => setShowConfirmModal(true)}
-              className="cursor-pointer w-full bg-primary text-white py-2 px-4 text-sm font-medium rounded-xl hover:-translate-y-1 duration-150 ease-in flex justify-center items-center gap-2 disabled:opacity-50"
+              className="cursor-pointer w-full bg-primary text-white py-2 px-4 text-sm font-medium rounded-xl hover:-translate-y-1 duration-150 ease-in flex justify-center items-center gap-2"
             >
               Simpan Produk
             </button>
@@ -364,23 +301,13 @@ export default function EditProductPage() {
           <h2 className="text-lg font-medium mb-4">Pratinjau Produk</h2>
           <ProductListAdmin
             id={0}
-            image={imagePreview || "/assets/activity.png"}
+            image={imagePreview || "/assets/noimage.png"}
             name={product.name || "Nama Produk"}
             price={product.price ? Number(product.price) : 0}
             stock={Number(product.stock) || 0}
-            sold={product.stock ? 0 : 0}
+            sold={0}
             weight={product.weight ? Number(product.weight) : 0}
-            partner={
-              product.partnerId && partners.length > 0
-                ? {
-                    name:
-                      partners.find(
-                        (p) => p.id.toString() === product.partnerId
-                      )?.name || "Pilih Mitra",
-                    id: Number(product.partnerId),
-                  }
-                : { name: "Pilih Mitra" }
-            }
+            partner={{ name: "Mitra Anda", id: 0 }}
             onEdit={() => {}}
             onDelete={() => {}}
           />

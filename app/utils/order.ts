@@ -1,3 +1,4 @@
+// app\utils\order.ts
 import { AddressSearchResponse, ShippingCostResponse } from "../types/orderType";
 import api from "./api";
 
@@ -270,3 +271,31 @@ export const searchCost = async (destinationId: number, weight: number): Promise
   }
 }
 
+export const fetchOrderHistory = async () => {
+  try {
+    const response = await api.get("/api/v1/order/history");
+    return response.data;
+  } catch (error: any) {
+    if (error.response) {
+      const { data } = error.response;
+
+      if (data?.errors && typeof data.errors === "object") {
+        throw {
+          type: "validation",
+          message: data.message || "Validasi gagal!",
+          errors: data.errors
+        };
+      }
+
+      throw {
+        type: "general",
+        message: data.message || "Gagal mengambil riwayat pesanan!"
+      };
+    }
+
+    throw {
+      type: "network",
+      message: "Tidak dapat menghubungi server"
+    };
+  }
+};

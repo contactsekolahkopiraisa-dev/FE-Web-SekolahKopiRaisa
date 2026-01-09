@@ -10,7 +10,7 @@ interface UMKM {
   id_users: number;
   nama_umkm: string;
   ktp: string;
-  sertifikat_halal?: string;
+  surat_izin_edar?: string;
   status_verifikasi?: string;
   User?: {
     name?: string;
@@ -297,7 +297,7 @@ export default function UmkmAdmin() {
                   NIK
                 </th>
                 <th className="px-2 sm:px-4 py-3 text-left font-medium whitespace-nowrap">
-                  Sertifikat Halal
+                  Surat Izin Edar (PIRT)
                 </th>
                 <th className="px-2 sm:px-4 py-3 text-left font-medium whitespace-nowrap">
                   Alamat
@@ -336,9 +336,9 @@ export default function UmkmAdmin() {
                       {item.ktp}
                     </td>
                     <td className="px-2 sm:px-4 py-3 whitespace-nowrap">
-                      {item.sertifikat_halal ? (
+                      {item.surat_izin_edar ? (
                         <a
-                          href={item.sertifikat_halal}
+                          href={item.surat_izin_edar}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-blue-600 hover:text-blue-800 underline hover:no-underline transition-colors"
