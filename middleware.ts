@@ -4,23 +4,38 @@ import type { NextRequest } from 'next/server';
 export function middleware(request: NextRequest) {
   const token = request.cookies.get('token')?.value;
   const allCookies = request.cookies.getAll();
+  const pathname = request.nextUrl.pathname;
   
-  const isAdminRoute = request.nextUrl.pathname.startsWith('/admin');
-  const isLayananRoute = request.nextUrl.pathname.startsWith('/layanan');
-  const isUmkmRoute = request.nextUrl.pathname.startsWith("/umkm");
+  const isAdminRoute = pathname.startsWith('/admin');
+  const isUmkmRoute = pathname.startsWith("/umkm");
+  
+  // Protected layanan routes that require authentication (riwayat dan detail-pelaksanaan)
+  const isProtectedLayananRoute = 
+    pathname.startsWith('/layanan/riwayat') ||
+    pathname.startsWith('/layanan/detail-pelaksanaan');
+  
+  // Protected routes that always require auth
+  const isProtectedRoute = 
+    isAdminRoute || 
+    isUmkmRoute || 
+    isProtectedLayananRoute ||
+    pathname.startsWith('/cart') ||
+    pathname.startsWith('/checkout') ||
+    pathname === '/profile' ||
+    (pathname.startsWith('/order') && pathname !== '/order'); // Allow /order but protect /order/[id]
 
   console.log('🔍 Middleware check:', {
-    path: request.nextUrl.pathname,
+    path: pathname,
     hasToken: !!token,
     tokenLength: token?.length,
     cookiesCount: allCookies.length,
-    isLayananRoute,
+    isProtectedRoute,
   });
 
-  // If no token, block protected routes (/admin, /layanan, /umkm) and redirect to login
+  // If no token, block protected routes and redirect to login
   if (!token) {
-    if (isAdminRoute || isLayananRoute || isUmkmRoute) {
-      console.log("❌ No token found, redirecting to login for:", request.nextUrl.pathname);
+    if (isProtectedRoute) {
+      console.log("❌ No token found, redirecting to login for:", pathname);
       console.log("   All cookies:", allCookies);
       return NextResponse.redirect(new URL("/login", request.url));
     }
@@ -67,7 +82,7 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico|login|signup|oauth-success|unauthorized|reset-password|product|about|assets|public).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|login|signup|oauth-success|unauthorized|reset-password|assets|public).*)',
   ]
 };
 

@@ -78,10 +78,24 @@ api.interceptors.response.use(
         document.cookie =
           "token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT";
         
-        // Redirect to login if not already there
-        if (!window.location.pathname.includes("/login")) {
-          console.log('↪️ Redirecting to login...');
+        // Only redirect to login if on protected routes
+        const pathname = window.location.pathname;
+        const isProtectedRoute = 
+          pathname.startsWith('/admin') ||
+          pathname.startsWith('/umkm') ||
+          pathname.startsWith('/cart') ||
+          pathname.startsWith('/checkout') ||
+          pathname === '/profile' ||
+          pathname.startsWith('/layanan/riwayat') ||
+          pathname.startsWith('/layanan/detail-pelaksanaan') ||
+          (pathname.startsWith('/order/') && pathname !== '/order');
+        
+        // Redirect to login only if on protected route and not already on login page
+        if (isProtectedRoute && !pathname.includes("/login")) {
+          console.log('↪️ Redirecting to login from protected route...');
           window.location.href = "/login";
+        } else {
+          console.log('ℹ️ Auth error on public route, not redirecting');
         }
       }
     }

@@ -9,12 +9,23 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   const pathname = usePathname();
 
   // Sync token from localStorage to cookie on app load (server-side)
+  // Only sync when user tries to access protected routes
   useEffect(() => {
     if (typeof window !== "undefined") {
       const token = localStorage.getItem("token");
       const cookieExists = document.cookie.split(';').some((item) => item.trim().startsWith('token='));
       
-      if (token && !cookieExists) {
+      // Only sync token if user has token AND accessing protected routes
+      const isProtectedRoute = pathname.startsWith('/admin') || 
+                               pathname.startsWith('/umkm') || 
+                               pathname.startsWith('/layanan/riwayat') ||
+                               pathname.startsWith('/layanan/detail-pelaksanaan') ||
+                               pathname === '/cart' ||
+                               pathname === '/checkout' ||
+                               pathname === '/profile' ||
+                               pathname.startsWith('/order');
+      
+      if (token && !cookieExists && isProtectedRoute) {
         console.log("⚠️ Token found in localStorage but not in cookie, calling server to set cookie...");
         
         // Call server-side API to set cookie properly
@@ -40,7 +51,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         console.log("✅ Token cookie already exists");
       }
     }
-  }, []);
+  }, [pathname]);
 
   const isAuthPage =
     pathname === "/login" ||
