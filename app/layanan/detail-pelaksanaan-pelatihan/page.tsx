@@ -1056,8 +1056,8 @@ function DetailPelaksanaanPelatihanContent() {
 
   return (
     <>
-      <div className="min-h-screen bg-tertiary pt-16 md:pt-20">
-        <div className="container mx-auto px-5 max-w-5l py-20">
+      <div className="min-h-screen bg-tertiary pt-16 md:pt-20 pb-4">
+        <div className="container mx-auto px-5 max-w-5l py-8">
           <div className="mb-4 ">
             <Link
               href="/layanan"
@@ -1165,13 +1165,13 @@ function DetailPelaksanaanPelatihanContent() {
               </div>
             </div>
           </div> */}
-          <div className="mb-8">
+          <div className="mb-6">
             <h1 className="text-center text-2xl md:text-[22px] font-semibold text-[#3B3B3B]">
               Detail Pelaksanaan Pelatihan Kopi
             </h1>
           </div>
 
-          <div className=" fumt-4 grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="rounded-xl border border-[#E8E2DB] bg-white p-4 md:p-6">
               <div className="flex flex-col items-center gap-2 text-center">
                 <div className="w-10 h-10 rounded-lg border border-[#E8E2DB] flex items-center justify-center">
@@ -1489,10 +1489,9 @@ function DetailPelaksanaanPelatihanContent() {
               </div>
             </div>
           </div>
-        </div>
-      </div>
-      {pengajuanDecision === "ditolak" && (
-        <div className="container mx-auto px-4 max-w-6xl mt-4 mb-6">
+
+          {pengajuanDecision === "ditolak" && (
+            <div className="max-w-6xl mx-auto mt-4">
           <div className="rounded-xl border border-[#F0CFCF] bg-[#FFF6F6] p-6 shadow-sm">
             <div className="mx-auto mb-3 w-12 h-12 rounded-lg border border-[#F0C3C3] bg-[#FBECEC] flex items-center justify-center">
               <XCircle className="text-[#CD0300]" />
@@ -1538,11 +1537,12 @@ function DetailPelaksanaanPelatihanContent() {
               </Link>
             </div>
           </div>
-        </div>
-      )}
-      {pengajuanDecision === "disetujui" &&
-        mouDecision !== ("disetujui" as typeof mouDecision) && (
-          <div className="container mx-auto px-4 max-w-5l mb-6">
+            </div>
+          )}
+
+          {pengajuanDecision === "disetujui" &&
+            mouDecision !== ("disetujui" as typeof mouDecision) && (
+              <div className="mt-4">
             <div
               className={`rounded-xl border bg-white p-5 md:p-6 transition-shadow ${
                 mouDecision === "ditolak"
@@ -1696,12 +1696,12 @@ function DetailPelaksanaanPelatihanContent() {
                 )}
               </div>
             </div>
-          </div>
-        )}
+              </div>
+            )}
 
-      {mouDecision === "disetujui" &&
-        pelaksanaanDecision !== ("selesai" as typeof pelaksanaanDecision) && (
-          <div className="container mx-auto px-4 max-w-5l mb-6">
+          {mouDecision === "disetujui" &&
+            pelaksanaanDecision !== ("selesai" as typeof pelaksanaanDecision) && (
+              <div className="mt-4">
             <div
               className={`rounded-xl border bg-white p-5 md:p-6 ${
                 pelaksanaanDecision === "selesai"
@@ -2040,15 +2040,15 @@ function DetailPelaksanaanPelatihanContent() {
                 </div>
               </div>
             </div>
-          </div>
-        )}
+              </div>
+            )}
 
-      {pelaksanaanDecision === "selesai" &&
-        laporanDecision !== ("disetujui" as typeof laporanDecision) && (
-          <div
-            className="container mx-auto px-4 max-w-5l mb-6"
-            id="laporan-section"
-          >
+          {pelaksanaanDecision === "selesai" &&
+            laporanDecision !== ("disetujui" as typeof laporanDecision) && (
+              <div
+                className="mt-4"
+                id="laporan-section"
+              >
             <div className="rounded-xl border border-[#E8E2DB] bg-white p-5 md:p-6">
               <div className="flex items-center gap-2 mb-2">
                 <span className="w-5 h-5 rounded-full border border-[#E8E2DB] flex items-center justify-center">
@@ -2228,13 +2228,13 @@ function DetailPelaksanaanPelatihanContent() {
               </div>
             </div>
           </div>
-        )}
+            )}
 
-      {laporanSubmitted && (
-        <div
-          className="container mx-auto px-4 max-w-5l mb-6"
-          id="sertifikat-section"
-        >
+          {laporanSubmitted && (
+            <div
+              className="mt-4"
+              id="sertifikat-section"
+            >
           <div className="rounded-xl border border-[#E8E2DB] bg-white p-5 md:p-6">
             {/* Jika Laporan Ditolak */}
             {laporanSubmitted && laporanDecision === "ditolak" && (
@@ -2424,8 +2424,10 @@ function DetailPelaksanaanPelatihanContent() {
                 </div>
               )}
           </div>
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       {successOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-lg">

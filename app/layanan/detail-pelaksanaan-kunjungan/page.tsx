@@ -248,6 +248,20 @@ function DetailPelaksanaanKunjunganContent() {
     lamaPelaksanaan: "",
   });
 
+  // Auto-fill laporanForm dari layananData
+  useEffect(() => {
+    if (layananData) {
+      setLaporanForm((prev) => ({
+        ...prev,
+        jenisKegiatan: "Kunjungan",
+        asalPeserta: layananData?.instansi_asal || "",
+        jumlahPeserta: layananData?.jumlah_peserta?.toString() || "",
+        tanggalPelaksanaan: layananData?.tanggal_mulai || "",
+        lamaPelaksanaan: "1 hari",
+      }));
+    }
+  }, [layananData]);
+
   const [fotoKegiatan, setFotoKegiatan] = useState<File | null>(null);
   const fotoInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -753,65 +767,65 @@ function DetailPelaksanaanKunjunganContent() {
               </div>
             </div>
           </div>
+
+          {/* Laporan Akhir */}
+          {(() => {
+            // Check if this is admin view (URL contains /admin/)
+            const isAdminView =
+              typeof window !== "undefined" &&
+              window.location.pathname.includes("/admin/");
+            // Show for admin always, or for user only when approved
+            const shouldShowLaporan =
+              isAdminView || pengajuanDecision === "disetujui";
+
+            if (!shouldShowLaporan) return null;
+
+            // For admin, if laporan not filled yet, show message
+            if (isAdminView && !isLaporanTerisi) {
+              return (
+                <div className="mt-4" id="laporan-section">
+                  <div className="rounded-xl border border-[#E8E2DB] bg-white p-5 md:p-6">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="w-5 h-5 rounded-full border border-[#E8E2DB] flex items-center justify-center">
+                        <FileCheck size={14} className="text-[#3B3B3B]" />
+                      </span>
+                      <p className="text-sm font-semibold text-[#3B3B3B]">
+                        Laporan Akhir Kegiatan
+                      </p>
+                      <span className="ml-auto px-3 py-1 rounded-full bg-gray-100 border border-gray-300 text-gray-600 text-[11px] font-medium">
+                        Belum Terisi
+                      </span>
+                    </div>
+                    <div className="rounded-lg border border-[#F0EAE3] bg-[#FBF9F7] p-6 text-center">
+                      <p className="text-[14px] text-[#6B6B6B]">
+                        User belum mengisi laporan akhir kegiatan.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+
+            return (
+              <LaporanAkhirForm
+                laporanForm={laporanForm}
+                handleLaporanChange={handleLaporanChange}
+                fotoKegiatan={fotoKegiatan}
+                handlePickFoto={handlePickFoto}
+                handleFotoChange={handleFotoChange}
+                fotoInputRef={fotoInputRef}
+                handleSubmitLaporan={handleSubmitLaporan}
+                submitting={submitting}
+                isReadOnly={isAdminView ? true : isLaporanTerisi}
+                laporanData={laporanData}
+                openFile={openFile}
+                downloadFile={downloadFile}
+                isAdminView={isAdminView}
+              />
+            );
+          })()}
         </div>
       </div>
-
-      {/* Laporan Akhir */}
-      {(() => {
-        // Check if this is admin view (URL contains /admin/)
-        const isAdminView =
-          typeof window !== "undefined" &&
-          window.location.pathname.includes("/admin/");
-        // Show for admin always, or for user only when approved
-        const shouldShowLaporan =
-          isAdminView || pengajuanDecision === "disetujui";
-
-        if (!shouldShowLaporan) return null;
-
-        // For admin, if laporan not filled yet, show message
-        if (isAdminView && !isLaporanTerisi) {
-          return (
-            <div className="container mx-auto px-4 max-w-6xl mb-6">
-              <div className="rounded-xl border border-[#E8E2DB] bg-white p-5 md:p-6">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="w-5 h-5 rounded-full border border-[#E8E2DB] flex items-center justify-center">
-                    <FileCheck size={14} className="text-[#3B3B3B]" />
-                  </span>
-                  <p className="text-sm font-semibold text-[#3B3B3B]">
-                    Laporan Akhir Kegiatan
-                  </p>
-                  <span className="ml-auto px-3 py-1 rounded-full bg-gray-100 border border-gray-300 text-gray-600 text-[11px] font-medium">
-                    Belum Terisi
-                  </span>
-                </div>
-                <div className="rounded-lg border border-[#F0EAE3] bg-[#FBF9F7] p-6 text-center">
-                  <p className="text-[14px] text-[#6B6B6B]">
-                    User belum mengisi laporan akhir kegiatan.
-                  </p>
-                </div>
-              </div>
-            </div>
-          );
-        }
-
-        return (
-          <LaporanAkhirForm
-            laporanForm={laporanForm}
-            handleLaporanChange={handleLaporanChange}
-            fotoKegiatan={fotoKegiatan}
-            handlePickFoto={handlePickFoto}
-            handleFotoChange={handleFotoChange}
-            fotoInputRef={fotoInputRef}
-            handleSubmitLaporan={handleSubmitLaporan}
-            submitting={submitting}
-            isReadOnly={isAdminView ? true : isLaporanTerisi}
-            laporanData={laporanData}
-            openFile={openFile}
-            downloadFile={downloadFile}
-            isAdminView={isAdminView}
-          />
-        );
-      })()}
 
       <Footer />
     </>
@@ -859,7 +873,7 @@ function LaporanAkhirForm({
   downloadFile,
 }: any) {
   return (
-    <div className="container mx-auto px-4 max-w-5l mb-6" id="laporan-section">
+    <div className="mt-4" id="laporan-section">
       <div className="rounded-xl border border-[#E8E2DB] bg-white p-5 md:p-6">
         <div className="flex items-center gap-2 mb-2">
           <span className="w-5 h-5 rounded-full border border-[#E8E2DB] flex items-center justify-center">
@@ -880,8 +894,8 @@ function LaporanAkhirForm({
             : "Lengkapi Formulir Laporan Akhir untuk Menyelesaikan Program"}
         </p>
 
-        <div className="rounded-lg border border-[#F0EAE3] bg-[#FBF9F7] p-4">
-          <div className="space-y-3">
+        <div className="rounded-lg border border-[#F0EAE3] bg-[#FBF9F7] p-3">
+          <div className="space-y-2">
             {/* Field yang bisa diedit: Nama P4S dan Kota */}
             {[
               {
