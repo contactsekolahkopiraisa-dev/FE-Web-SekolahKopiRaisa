@@ -180,7 +180,7 @@ export default function OrderDetailPage() {
   // Status timeline component
   const StatusTimeline = ({ status }: { status: string }) => {
     const statuses = [
-      { key: "PENDING", label: "Dibuat", icon: Clock },
+      // { key: "PENDING", label: "Dibuat", icon: Clock },
       { key: "PROCESSING", label: "Diproses", icon: Package },
       { key: "SHIPPED", label: "Dikirim", icon: Truck },
       { key: "DELIVERED", label: "Diterima", icon: CheckCircle },

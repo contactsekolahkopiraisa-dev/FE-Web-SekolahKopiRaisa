@@ -13,6 +13,16 @@ interface LaporanKeuangan {
   pengeluaran: number;
   saldo?: number;
   tanggal?: string;
+  detail_pengeluaran?: DetailPengeluaran[];
+}
+
+interface DetailPengeluaran {
+  id_pengeluaran: number;
+  id_financialreport: number;
+  id_user: number;
+  tanggal: string;
+  jumlah_pengeluaran: number;
+  keterangan: string;
 }
 
 interface LaporanKeuanganTableProps {
@@ -26,7 +36,7 @@ export default function LaporanKeuanganTable({
   selectedYear,
   selectedMonth,
   onView,
-  dataSource,
+  dataSource
 }: LaporanKeuanganTableProps) {
   const [laporan, setLaporan] = useState<LaporanKeuangan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -86,7 +96,7 @@ export default function LaporanKeuanganTable({
       september: 8,
       oktober: 9,
       november: 10,
-      desember: 11,
+      desember: 11
     };
 
     const match = item.periode.match(/(\w+)\s+(\d{4})/i);
@@ -136,7 +146,7 @@ export default function LaporanKeuanganTable({
     new Intl.NumberFormat("id-ID", {
       style: "currency",
       currency: "IDR",
-      minimumFractionDigits: 0,
+      minimumFractionDigits: 0
     }).format(amount);
 
   const formatDate = (item: LaporanKeuangan) => {
@@ -146,8 +156,21 @@ export default function LaporanKeuanganTable({
     return date.toLocaleDateString("id-ID", {
       day: "2-digit",
       month: "long",
-      year: "numeric",
+      year: "numeric"
     });
+  };
+
+  // Fungsi untuk format keterangan pengeluaran
+  const formatKeteranganPengeluaran = (item: LaporanKeuangan) => {
+    // Cek detail_pengeluaran dulu (dari API)
+    if (item.detail_pengeluaran && item.detail_pengeluaran.length > 0) {
+      return item.detail_pengeluaran
+        .map((detail) => detail.keterangan)
+        .filter(Boolean)
+        .join(", ");
+    }
+
+    return "-";
   };
 
   if (loading) {
@@ -207,10 +230,13 @@ export default function LaporanKeuanganTable({
                   Tanggal
                 </th>
                 <th className="px-2 sm:px-4 py-3 text-left font-medium">
-                  Keterangan
+                  Keterangan Pemasukan
                 </th>
                 <th className="px-2 sm:px-4 py-3 text-left font-medium">
                   Pemasukan
+                </th>
+                <th className="px-2 sm:px-4 py-3 text-left font-medium">
+                  Keterangan Pengeluaran
                 </th>
                 <th className="px-2 sm:px-4 py-3 text-left font-medium">
                   Pengeluaran
@@ -236,6 +262,9 @@ export default function LaporanKeuanganTable({
                     <td className="px-2 sm:px-4 py-3 whitespace-nowrap text-primary font-medium">
                       {formatCurrency(item.pemasukan || 0)}
                     </td>
+                    <td className="px-2 sm:px-4 py-3">
+                      {formatKeteranganPengeluaran(item)}
+                    </td>
                     <td className="px-2 sm:px-4 py-3 whitespace-nowrap text-primary font-medium">
                       {formatCurrency(item.pengeluaran || 0)}
                     </td>
@@ -253,7 +282,7 @@ export default function LaporanKeuanganTable({
               ) : (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={7}
                     className="px-4 py-8 text-center text-gray-500"
                   >
                     Tidak ada data untuk periode yang dipilih

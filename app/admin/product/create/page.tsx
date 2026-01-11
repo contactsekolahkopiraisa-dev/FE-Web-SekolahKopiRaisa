@@ -1,3 +1,4 @@
+// app\admin\product\create\page.tsx
 "use client";
 
 import { useState, useRef, ChangeEvent, useEffect } from "react";
@@ -10,7 +11,6 @@ import ProductListAdmin from "@/components/product/ProductListAdmin";
 import ConfirmModal from "@/components/ConfirmModal";
 
 export default function UMKMCreateProductPage() {
-  // State for product data kontol
   const [product, setProduct] = useState({
     name: "",
     description: "",

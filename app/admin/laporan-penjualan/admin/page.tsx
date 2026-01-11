@@ -1,13 +1,13 @@
-// app/umkm/laporan-penjualan/page.tsx
+// app/admin/laporan-penjualan/page.tsx
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Calendar, Plus } from "lucide-react";
+import { Calendar } from "lucide-react";
 import CalendarPicker from "@/components/CalenderPickerFilter";
-import Link from "next/link";
 import {
-  fetchLaporanPenjualanUMKMByPeriode,
-  LaporanPenjualanData
+  fetchLaporanPenjualanByIdPartner,
+  LaporanPenjualanByPartnerData,
+  TopProduct
 } from "@/app/utils/laporan-penjualan";
 import {
   LineChart,
@@ -19,20 +19,27 @@ import {
   ResponsiveContainer
 } from "recharts";
 
+interface ChartDataPoint {
+  tanggal: string;
+  totalPenjualan: number;
+}
+
 export default function LaporanPenjualanAdmin() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  const [laporanData, setLaporanData] = useState<LaporanPenjualanData | null>(
-    null
-  );
+  const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
+  const [laporanData, setLaporanData] =
+    useState<LaporanPenjualanByPartnerData | null>(null);
+  const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const calendarRef = useRef<HTMLDivElement>(null);
 
-  const selectedYear = selectedDate?.getFullYear();
-  const selectedMonth = selectedDate?.getMonth(); // 0-11
+  // TODO: Ganti dengan partner ID admin yang sebenarnya
+  // Bisa didapat dari session/auth atau dari API profile admin
+  const ADMIN_PARTNER_ID = 28; // Contoh: ID partner admin
 
-  // 🧠 Fetch data laporan penjualan berdasarkan periode yang dipilih
+  // Fetch data laporan penjualan admin
   useEffect(() => {
     const loadData = async () => {
       if (!selectedDate) return;
@@ -44,20 +51,38 @@ export default function LaporanPenjualanAdmin() {
         const bulan = selectedDate.getMonth(); // 0-11
         const tahun = selectedDate.getFullYear();
 
-        const result = await fetchLaporanPenjualanUMKMByPeriode(bulan, tahun);
+        // Fetch laporan penjualan admin berdasarkan partner ID
+        const laporanResult = await fetchLaporanPenjualanByIdPartner(
+          ADMIN_PARTNER_ID,
+          bulan,
+          tahun
+        );
 
-        console.log("API Response:", result);
+        console.log("Laporan Result:", laporanResult);
 
-        if (result && result.data && result.data.totalSummary) {
-          setLaporanData(result.data);
+        if (laporanResult && laporanResult.data) {
+          setLaporanData(laporanResult.data);
+
+          // Convert chart data dari API ke format yang dibutuhkan komponen
+          const processedChartData = laporanResult.data.chart.map((item) => ({
+            tanggal: item.tanggal.toString(),
+            totalPenjualan: item.totalPenjualan
+          }));
+          setChartData(processedChartData);
+
+          // Set top products
+          setTopProducts(laporanResult.data.topProducts || []);
         } else {
-          setError("Data tidak ditemukan untuk periode ini");
           setLaporanData(null);
+          setChartData([]);
+          setTopProducts([]);
         }
       } catch (err: any) {
-        console.error("Error loading laporan penjualan:", err);
+        console.error("Error loading data:", err);
         setError(err.message || "Gagal memuat data laporan penjualan");
+        setChartData([]);
         setLaporanData(null);
+        setTopProducts([]);
       } finally {
         setLoading(false);
       }
@@ -66,7 +91,7 @@ export default function LaporanPenjualanAdmin() {
     loadData();
   }, [selectedDate]);
 
-  // 📆 Tutup kalender jika klik di luar
+  // Tutup kalender jika klik di luar
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -85,7 +110,7 @@ export default function LaporanPenjualanAdmin() {
     };
   }, [isCalendarOpen]);
 
-  // 🗓️ Teks tampilan periode
+  // Teks tampilan periode
   const getDisplayText = () => {
     if (!selectedDate) return "Pilih Periode";
     const bulanNames = [
@@ -107,15 +132,26 @@ export default function LaporanPenjualanAdmin() {
     } ${selectedDate.getFullYear()}`;
   };
 
-  // Format currency untuk tampilan
+  // Format currency
   const formatCurrency = (value: number | string) => {
-    const numValue = typeof value === "string" ? parseFloat(value) : value;
+    if (typeof value === "string") {
+      const cleaned = value.replace(/[^0-9.-]/g, "");
+      const numValue = parseFloat(cleaned);
+      if (isNaN(numValue)) return value;
+      return new Intl.NumberFormat("id-ID", {
+        style: "currency",
+        currency: "IDR",
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      }).format(numValue);
+    }
+
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
       currency: "IDR",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
-    }).format(numValue);
+    }).format(value);
   };
 
   return (
@@ -148,39 +184,43 @@ export default function LaporanPenjualanAdmin() {
         <p className="text-gray-500 mt-4">Memuat data...</p>
       ) : error ? (
         <p className="text-red-500 mt-4">{error}</p>
-      ) : laporanData ? (
+      ) : (
         <div>
-          {/* totalSummary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          {/* Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-gray-200 p-6 rounded-lg">
               <h3 className="text-sm text-gray-600 mb-2">
                 Jumlah Produk Terjual
               </h3>
               <p className="text-3xl font-bold">
-                {laporanData.totalSummary.totalJumlahProdukTerjual}
+                {laporanData?.summary.jumlahProdukTerjual || 0}
               </p>
-              <p className="text-xs text-gray-500 mt-1">
-                {laporanData.periode}
-              </p>
+              <p className="text-xs text-gray-500 mt-1">{getDisplayText()}</p>
             </div>
 
             <div className="bg-gray-200 p-6 rounded-lg">
               <h3 className="text-sm text-gray-600 mb-2">Laba Bersih</h3>
               <p className="text-3xl font-bold">
-                {laporanData.totalSummary.totalLabaBersih}
+                {laporanData?.summary.labaBersih || "Rp 0"}
               </p>
-              <p className="text-xs text-gray-500 mt-1">
-                {laporanData.periode}
-              </p>
+              <p className="text-xs text-gray-500 mt-1">{getDisplayText()}</p>
             </div>
 
             <div className="bg-gray-200 p-6 rounded-lg">
               <h3 className="text-sm text-gray-600 mb-2">Laba Kotor</h3>
               <p className="text-3xl font-bold">
-                {laporanData.totalSummary.totalLabaKotor}
+                {laporanData?.summary.labaKotor || "Rp 0"}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">{getDisplayText()}</p>
+            </div>
+
+            <div className="bg-gray-200 p-6 rounded-lg">
+              <h3 className="text-sm text-gray-600 mb-2">Pajak</h3>
+              <p className="text-3xl font-bold">
+                {laporanData?.summary.pajak || "Rp 0"}
               </p>
               <p className="text-xs text-gray-500 mt-1">
-                {laporanData.periode}
+                {laporanData?.summary.persentasePajak || "0%"}
               </p>
             </div>
           </div>
@@ -190,48 +230,60 @@ export default function LaporanPenjualanAdmin() {
             <h2 className="text-lg font-semibold mb-4">
               Statistik Penjualan Harian
             </h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={laporanData.chart}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                <XAxis
-                  dataKey="tanggal"
-                  label={{
-                    value: "Tanggal",
-                    position: "insideBottom",
-                    offset: -5
-                  }}
-                />
-                <YAxis
-                  label={{
-                    value: "Total Penjualan",
-                    angle: -90,
-                    position: "insideLeft"
-                  }}
-                />
-                <Tooltip
-                  formatter={(value) => formatCurrency(value as number)}
-                  labelFormatter={(label) => `Tanggal ${label}`}
-                />
-                2
-                <Line
-                  type="monotone"
-                  dataKey="totalPenjualan"
-                  stroke="#8884d8"
-                  strokeWidth={2}
-                  dot={{ fill: "#8884d8", r: 4 }}
-                  activeDot={{ r: 6 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+
+            {chartData && chartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={350}>
+                <LineChart 
+                  data={chartData}
+                  margin={{ top: 5, right: 30, left: 20, bottom: 25 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                  <XAxis
+                    dataKey="tanggal"
+                    label={{
+                      value: "Tanggal",
+                      position: "insideBottom",
+                      offset: -15,
+                      style: { textAnchor: "middle" }
+                    }}
+                  />
+                  <YAxis
+                    label={{
+                      value: "Total Penjualan (Rp)",
+                      angle: -90,
+                      dx: -20,
+                      position: "insideLeft",
+                      style: { textAnchor: "middle" }
+                    }}
+                  />
+                  <Tooltip
+                    formatter={(value) => formatCurrency(value as number)}
+                    labelFormatter={(label) => `Tanggal ${label}`}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="totalPenjualan"
+                    stroke="#8884d8"
+                    strokeWidth={2}
+                    dot={{ fill: "#8884d8", r: 4 }}
+                    activeDot={{ r: 6 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                Belum ada data penjualan harian untuk periode ini
+              </div>
+            )}
           </div>
 
           {/* Top Products Table */}
           <div className="bg-white rounded-lg shadow overflow-hidden">
             <div className="p-6 border-b">
-              <h2 className="text-lg font-semibold">TOP PRODUK UMKM</h2>
+              <h2 className="text-lg font-semibold">TOP PRODUK SAYA</h2>
             </div>
 
-            {(laporanData?.topProducts ?? []).length > 0 ? (
+            {topProducts.length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-200">
@@ -243,9 +295,6 @@ export default function LaporanPenjualanAdmin() {
                         Nama Produk
                       </th>
                       <th className="px-6 py-3 text-left text-sm font-semibold">
-                        Nama UMKM
-                      </th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold">
                         Jumlah Terjual
                       </th>
                       <th className="px-6 py-3 text-left text-sm font-semibold">
@@ -254,17 +303,20 @@ export default function LaporanPenjualanAdmin() {
                     </tr>
                   </thead>
                   <tbody>
-                    {laporanData.topProducts.map((product, index) => (
+                    {topProducts.map((product, index) => (
                       <tr
-                        key={index}
+                        key={product.productId}
                         className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}
                       >
-                        <td className="px-6 py-4">{index + 1}</td>
-                        <td className="px-6 py-4">{product.namaProduk}</td>
-                        <td className="px-6 py-4">{product.namaUMKM}</td>
+                        <td className="px-6 py-4">{product.ranking}</td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <span>{product.namaProduk}</span>
+                          </div>
+                        </td>
                         <td className="px-6 py-4">{product.jumlahTerjual}</td>
                         <td className="px-6 py-4">
-                          {formatCurrency(product.totalPendapatan)}
+                          {(product.totalPendapatan)}
                         </td>
                       </tr>
                     ))}
@@ -278,8 +330,6 @@ export default function LaporanPenjualanAdmin() {
             )}
           </div>
         </div>
-      ) : (
-        <p className="text-gray-500 mt-4">Tidak ada data tersedia</p>
       )}
     </div>
   );

@@ -136,8 +136,6 @@ export default function Dashboard() {
         setRecentProducts(sortedProducts);
       }
 
-      console.log("Product count:", products.length);
-      console.log("Product data:", products);
     } catch (error) {
       console.error("Error fetching product count:", error);
     }
@@ -152,8 +150,6 @@ export default function Dashboard() {
       const response = await fetchAllPartner();
       const partners = response.data;
       setCountPartner(Array.isArray(partners) ? partners.length : 0);
-      console.log("Partner count:", partners.length);
-      console.log("Partner data:", partners);
     } catch (error) {
       console.error("Error fetching partner count:", error);
     }
@@ -248,7 +244,7 @@ export default function Dashboard() {
 
   // Doughnut chart data for overview
   const overviewChartData = {
-    labels: ["Kegiatan", "Mitra", "Produk"],
+    labels: ["Kegiatan", "UMKM", "Produk"],
     datasets: [
       {
         label: "Total",
@@ -295,7 +291,7 @@ export default function Dashboard() {
         />
         <StatCard
           icon={<Building size={28} className="text-green-500" />}
-          title="Total Mitra"
+          title="Total UMKM"
           value={countPartner.toString()}
         />
         <StatCard

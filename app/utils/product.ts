@@ -18,6 +18,12 @@ export const fetchAllProduct = async () => {
         };
       }
 
+      if (error.response?.status === 404) {
+        return {
+          data: []
+        };
+      }
+
       // Error umum (errors berbentuk string)
       if (data.errors && typeof data.errors === "string") {
         throw {

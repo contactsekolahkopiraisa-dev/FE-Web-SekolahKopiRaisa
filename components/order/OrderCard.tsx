@@ -51,12 +51,12 @@ interface Props {
 
 const getStatusBadge = (status: string) => {
   switch (status) {
-    case "PENDING":
-      return {
-        style: "bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800 border border-yellow-300",
-        label: "Dibuat",
-        icon: Clock,
-      };
+    // case "PENDING":
+    //   return {
+    //     style: "bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800 border border-yellow-300",
+    //     label: "Dibuat",
+    //     icon: Clock,
+    //   };
     case "PROCESSING":
       return {
         style: "bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 border border-blue-300",
@@ -222,7 +222,7 @@ export default function OrderCard({ order }: Props) {
   </p>
   
   {/* Tombol Bayar jika pembayaran pending dan ada snapRedirectUrl */}
-  {order.payment.statusPembayaran === "PENDING" && order.payment.snapRedirectUrl && (
+  {order.payment.statusPembayaran === "PROCESS" && order.payment.snapRedirectUrl && (
     <div className="flex justify-end mt-2">
       <button
         onClick={handlePaymentClick}

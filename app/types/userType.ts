@@ -4,6 +4,7 @@ export interface UserItem {
   phone_number?: string;
   image?: string | null;
   admin?: boolean;
+  role?: string;
   verified?: boolean;
 }
 
