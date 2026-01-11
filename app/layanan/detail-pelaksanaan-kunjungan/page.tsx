@@ -200,7 +200,7 @@ function DetailPelaksanaanKunjunganContent() {
     },
     {
       label: "Penanggungjawab",
-      value: layananData?.pemohon?.name || layananData?.peserta?.[0]?.nama_peserta || "-",
+      value: pesertaInfo?.nama || pesertaInfo?.nama_peserta || "-",
     },
     {
       label: "Jumlah Peserta",
@@ -324,7 +324,6 @@ function DetailPelaksanaanKunjunganContent() {
           "swal2-confirm bg-[#5C3A1E] text-white px-6 py-2 rounded-lg",
         cancelButton:
           "swal2-cancel border border-[#E8E2DB] text-[#3B3B3B] px-6 py-2 rounded-lg",
-        actions: "gap-2",
         popup: "rounded-xl",
       },
       buttonsStyling: false,
@@ -363,8 +362,6 @@ function DetailPelaksanaanKunjunganContent() {
         include_rejection: true,
       });
       setLayananData(updatedData);
-
-      setSubmitting(false);
 
       await Swal.fire({
         title: "Laporan Berhasil Dikirim!",
