@@ -822,22 +822,10 @@ function DetailPelaksanaanPKLContent() {
   if (loading) {
     return (
       <>
-        <div className="min-h-screen bg-tertiary pt-24 md:pt-28">
-          <div className="container mx-auto px-4 max-w-6xl py-10">
-            <div className="mb-4">
-              <Link
-                href="/layanan"
-                className="flex items-center text-amber-600 hover:text-amber-700 transition-colors"
-              >
-                <ArrowLeft size={20} className="mr-2" />
-                <span className="font-medium">Kembali ke Layanan</span>
-              </Link>
-            </div>
-            <div className="animate-pulse space-y-4">
-              <div className="h-8 bg-gray-200 rounded w-3/4 mx-auto"></div>
-              <div className="h-64 bg-gray-200 rounded"></div>
-              <div className="h-96 bg-gray-200 rounded"></div>
-            </div>
+        <div className="min-h-screen bg-[#FCFBF7] pt-24 md:pt-28 flex items-center justify-center">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#5C3A1E]"></div>
+            <p className="mt-4 text-[#3B3B3B]">Memuat data layanan...</p>
           </div>
         </div>
         <Footer />
