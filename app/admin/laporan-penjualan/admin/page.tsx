@@ -187,7 +187,7 @@ export default function LaporanPenjualanAdmin() {
       ) : (
         <div>
           {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div className="bg-gray-200 p-6 rounded-lg">
               <h3 className="text-sm text-gray-600 mb-2">
                 Jumlah Produk Terjual
@@ -214,7 +214,7 @@ export default function LaporanPenjualanAdmin() {
               <p className="text-xs text-gray-500 mt-1">{getDisplayText()}</p>
             </div>
 
-            <div className="bg-gray-200 p-6 rounded-lg">
+            {/* <div className="bg-gray-200 p-6 rounded-lg">
               <h3 className="text-sm text-gray-600 mb-2">Pajak</h3>
               <p className="text-3xl font-bold">
                 {laporanData?.summary.pajak || "Rp 0"}
@@ -222,7 +222,7 @@ export default function LaporanPenjualanAdmin() {
               <p className="text-xs text-gray-500 mt-1">
                 {laporanData?.summary.persentasePajak || "0%"}
               </p>
-            </div>
+            </div> */}
           </div>
 
           {/* Chart */}
