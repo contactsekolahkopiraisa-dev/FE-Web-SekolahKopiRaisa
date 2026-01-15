@@ -454,6 +454,9 @@ export default function ProductDetailPage() {
                     <p className="font-medium mb-1">Informasi Pembelian:</p>
                     <ul className="space-y-1 text-xs">
                       <li>
+                        • Produk tersedia dalam Pre-Order
+                      </li>
+                      <li>
                         • Gratis ongkir untuk pembelian di atas Rp 100.000
                       </li>
                       <li>• Garansi kualitas produk terjamin</li>
