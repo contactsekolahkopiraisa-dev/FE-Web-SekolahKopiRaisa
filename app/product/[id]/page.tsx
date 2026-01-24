@@ -147,43 +147,61 @@ export default function ProductDetailPage() {
     setQuantity((prev) => Math.min(product?.inventory?.stock || 99, prev + 1));
 
   const handleAddToCart = async (productId: number) => {
-    if (isAddingToCart) return; // Prevent multiple clicks
+    // Show maintenance popup
+    setMessage(
+      "Maaf, fitur keranjang belanja sedang dalam maintenance dan belum bisa digunakan.",
+    );
+    setPopupType("error");
+    setShowPopup(true);
+    return;
 
-    setIsAddingToCart(true);
-    try {
-      const response = await addToCart(productId, quantity);
-      setMessage(response.message);
-      setPopupType("success");
-      setShowPopup(true);
-      window.dispatchEvent(new CustomEvent("cartUpdated"));
-    } catch (error: any) {
-      setMessage(error.message || "Terjadi kesalahan saat menghapus.");
-      setPopupType("error");
-      setShowPopup(true);
-    } finally {
-      setIsAddingToCart(false);
-    }
+    // Original code (commented out during maintenance)
+    // if (isAddingToCart) return; // Prevent multiple clicks
+
+    // setIsAddingToCart(true);
+    // try {
+    //   const response = await addToCart(productId, quantity);
+    //   setMessage(response.message);
+    //   setPopupType("success");
+    //   setShowPopup(true);
+    //   window.dispatchEvent(new CustomEvent("cartUpdated"));
+    // } catch (error: any) {
+    //   setMessage(error.message || "Terjadi kesalahan saat menghapus.");
+    //   setPopupType("error");
+    //   setShowPopup(true);
+    // } finally {
+    //   setIsAddingToCart(false);
+    // }
   };
 
   const handleBuyNow = () => {
-    if (!product) return;
+    // Show maintenance popup
+    setMessage(
+      "Maaf, fitur beli sekarang sedang dalam maintenance dan belum bisa digunakan.",
+    );
+    setPopupType("error");
+    setShowPopup(true);
+    return;
 
-    const item: CartItemData = {
-      id: product.id ?? 0,
-      products_id: product.id ?? 0,
-      imageUrl: product.image ?? "",
-      name: product.name ?? "",
-      partnerName: product.partner?.name ?? "",
-      price: Number(product.price),
-      quantity: quantity, // Use the selected quantity
-      selected: true,
-      fromCart: false,
-      weight: product.weight ?? 0, // Tambahkan berat jika ada
-      inventory: Number(product?.inventory?.stock)
-    };
+    // Original code (commented out during maintenance)
+    // if (!product) return;
 
-    useCartStore.getState().setCartItems([item]);
-    router.push("/checkout");
+    // const item: CartItemData = {
+    //   id: product.id ?? 0,
+    //   products_id: product.id ?? 0,
+    //   imageUrl: product.image ?? "",
+    //   name: product.name ?? "",
+    //   partnerName: product.partner?.name ?? "",
+    //   price: Number(product.price),
+    //   quantity: quantity, // Use the selected quantity
+    //   selected: true,
+    //   fromCart: false,
+    //   weight: product.weight ?? 0, // Tambahkan berat jika ada
+    //   inventory: Number(product?.inventory?.stock)
+    // };
+
+    // useCartStore.getState().setCartItems([item]);
+    // router.push("/checkout");
   };
 
   if (loading) {
@@ -210,14 +228,22 @@ export default function ProductDetailPage() {
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
                       <Skeleton width={30} height={20} />
-                      <Skeleton width={120} height={28} className="rounded-full" />
+                      <Skeleton
+                        width={120}
+                        height={28}
+                        className="rounded-full"
+                      />
                     </div>
-                    
+
                     <Skeleton height={32} count={2} />
-                    
+
                     <div className="flex items-center gap-4">
                       <Skeleton width={120} height={28} />
-                      <Skeleton width={100} height={28} className="rounded-full" />
+                      <Skeleton
+                        width={100}
+                        height={28}
+                        className="rounded-full"
+                      />
                     </div>
                   </div>
 
@@ -242,7 +268,11 @@ export default function ProductDetailPage() {
                   <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-200">
                     <Skeleton width={120} height={24} className="mb-4" />
                     <div className="flex items-center justify-between">
-                      <Skeleton width={180} height={50} className="rounded-xl" />
+                      <Skeleton
+                        width={180}
+                        height={50}
+                        className="rounded-xl"
+                      />
                       <div className="text-right">
                         <Skeleton width={80} height={16} className="mb-1" />
                         <Skeleton width={100} height={24} />
@@ -470,4 +500,3 @@ export default function ProductDetailPage() {
     </div>
   );
 }
-
