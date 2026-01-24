@@ -845,23 +845,10 @@ function DetailPelaksanaanMagangContent() {
   if (loading) {
     return (
       <>
-        <div className="min-h-screen bg-tertiary pt-24 md:pt-28">
-          <div className="container mx-auto px-4 max-w-6xl py-10">
-            <div className="mb-4">
-              <Link
-                href="/layanan"
-                className="flex items-center text-amber-600 hover:text-amber-700 transition-colors"
-              >
-                <ArrowLeft size={20} className="mr-2" />
-                <span className="font-medium">Kembali ke Layanan</span>
-              </Link>
-            </div>
-            <div className="rounded-xl border border-[#E8E2DB] bg-white p-6 text-center">
-              <div className="animate-spin mx-auto mb-4 w-12 h-12 border-4 border-primary border-t-transparent rounded-full"></div>
-              <p className="text-[12px] text-[#6B6B6B]">
-                Memuat data layanan...
-              </p>
-            </div>
+        <div className="min-h-screen bg-[#FCFBF7] pt-24 md:pt-28 flex items-center justify-center">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#5C3A1E]"></div>
+            <p className="mt-4 text-[#3B3B3B]">Memuat data layanan...</p>
           </div>
         </div>
         <Footer />
