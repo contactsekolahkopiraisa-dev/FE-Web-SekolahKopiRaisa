@@ -86,7 +86,7 @@ export default function Home() {
       // Sort by created_at date in descending order (newest first)
       const sortedData = [...rawData].sort(
         (a, b) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
       );
 
       // Map and filter, then take only the first 5 items
@@ -94,7 +94,7 @@ export default function Home() {
         .map((item: any) => {
           // Ambil media yang tipe-nya image
           const imageMedia = item.newsMedia?.find((media: any) =>
-            media.media_type?.startsWith("image/")
+            media.media_type?.startsWith("image/"),
           );
 
           if (!imageMedia) return null;
@@ -137,9 +137,7 @@ export default function Home() {
     // Check if user is logged in
     const isLoggedIn = await checkUserAuthentication();
     if (!isLoggedIn) {
-      setMessage(
-        "Silakan login terlebih dahulu"
-      );
+      setMessage("Silakan login terlebih dahulu");
       setPopupType("error");
       setShowPopup(true);
       return;
@@ -154,7 +152,7 @@ export default function Home() {
       window.dispatchEvent(new CustomEvent("cartUpdated"));
     } catch (error: any) {
       setMessage(
-        error.message || "Terjadi kesalahan saat menambahkan ke keranjang."
+        error.message || "Terjadi kesalahan saat menambahkan ke keranjang.",
       );
       setPopupType("error");
       setShowPopup(true);
@@ -230,6 +228,32 @@ export default function Home() {
 
           {/* Kolom Teks */}
           <div className="w-full mt-8 md:mt-0 md:ml-2">
+            {/* Frame Video */}
+            <div className="w-full flex justify-center mb-8">
+              <div className="relative group w-full max-w-2xl aspect-video rounded-3xl overflow-hidden shadow-2xl border-4 border-primary bg-gradient-to-br from-[#f5ede4] to-[#e3d5c0]">
+                {/* Overlay play icon on hover */}
+                <video
+                  src="/assets/kopi raisa.mp4"
+                  controls
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  poster="/assets/tk1.png"
+                  style={{ borderRadius: "1.5rem" }}
+                >
+                  Your browser does not support the video tag.
+                </video>
+                {/* Decorative corner element */}
+                <img
+                  src="/assets/flower-top.png"
+                  alt="Bunga"
+                  className="absolute -top-6 -right-6 w-20 opacity-70"
+                />
+                <img
+                  src="/assets/flower-bottom.png"
+                  alt="Bunga"
+                  className="absolute -bottom-6 -left-6 w-20 opacity-70"
+                />
+              </div>
+            </div>
             <h2 className="text-lg font-medium text-primary mb-4">
               Tentang Kami
             </h2>

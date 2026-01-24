@@ -1655,7 +1655,7 @@ function DetailPelaksanaanPKLContent() {
                       const Swal = (await import("sweetalert2")).default;
                       const result = await Swal.fire({
                         title: "Konfirmasi Selesaikan Program",
-                        text: "Apakah Anda yakin telah menyelesaikan semua kegiatan Program Magang?",
+                        text: "Apakah Anda yakin telah menyelesaikan semua kegiatan Program PKL?",
                         icon: "question",
                         showCancelButton: true,
                         confirmButtonText: "Ya, Selesaikan",
