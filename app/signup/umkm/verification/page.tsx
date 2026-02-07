@@ -42,12 +42,12 @@ export default function VerificationUMKM() {
             <div className="flex items-center gap-3 p-4 bg-green-50 rounded-lg border border-green-100">
               <Phone className="w-5 h-5 text-green-600 flex-shrink-0" />
               <a
-                href="https://wa.me/6289"
+                href="https://wa.me/6285258885377"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="font-semibold text-green-600 hover:text-green-700 hover:underline"
               >
-                089 xxx xxx
+                +6285258885377
               </a>
             </div>
           </div>

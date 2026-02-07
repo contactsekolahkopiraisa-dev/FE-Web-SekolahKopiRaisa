@@ -55,11 +55,7 @@ export default function Footer() {
               >
                 <li className="hover:underline">Facebook</li>
               </Link>
-              <Link
-                href=""
-                target="_blank"
-                rel="noopener noreferrer"
-              >
+              <Link href="" target="_blank" rel="noopener noreferrer">
                 <li className="hover:underline">Website</li>
               </Link>
             </ul>
@@ -69,7 +65,11 @@ export default function Footer() {
           <div className="justify-self-start md:justify-self-center">
             <h3 className="font-medium text-lg text-primary">HUBUNGI</h3>
             <hr className="w-12 border-black my-2" />
-            <Link href="https://wa.me/+6285172252910" target="_blank" rel="noopener noreferrer">
+            <Link
+              href="https://wa.me/+6285258885377"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <p className="text-gray-600 hover:underline text-sm">WhatsApp</p>
             </Link>
           </div>
